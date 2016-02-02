@@ -17,6 +17,7 @@ This chapter describes the SQL syntax used in Presto.
     sql/delete
     sql/describe
     sql/describe-input
+    sql/describe-output
     sql/drop-table
     sql/drop-view
     sql/execute

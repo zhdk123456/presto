@@ -46,4 +46,4 @@ Prepare an insert query:
 See Also
 --------
 
-:doc:`execute`, :doc:`deallocate-prepare`, :doc:`describe-input`
+:doc:`execute`, :doc:`deallocate-prepare`, :doc:`describe-input`, :doc:`describe-output`
