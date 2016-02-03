@@ -92,7 +92,7 @@ public class TestMapFilterFunction
                 new MapType(INTEGER, INTEGER),
                 ImmutableMap.of(25, 25, 27, 27));
         assertFunction(
-                "map_filter(map(ARRAY [25, 26, 27], ARRAY [25.5, 26.5, 27.5]), (k, v) -> k = 25 OR v = 27.5)",
+                "map_filter(map(ARRAY [25, 26, 27], ARRAY [DOUBLE '25.5', 26.5, 27.5]), (k, v) -> k = 25 OR v = 27.5)",
                 new MapType(INTEGER, DOUBLE),
                 ImmutableMap.of(25, 25.5, 27, 27.5));
         assertFunction(
@@ -109,23 +109,23 @@ public class TestMapFilterFunction
                 ImmutableMap.of(25, ImmutableList.of("a", "b"), 27, ImmutableList.of("a", "b", "c")));
 
         assertFunction(
-                "map_filter(map(ARRAY [25.5, 26.5, 27.5], ARRAY [25, 26, 27]), (k, v) -> k = 25.5 OR v = 27)",
+                "map_filter(map(ARRAY [DOUBLE '25.5', 26.5, 27.5], ARRAY [25, 26, 27]), (k, v) -> k = 25.5 OR v = 27)",
                 new MapType(DOUBLE, INTEGER),
                 ImmutableMap.of(25.5, 25, 27.5, 27));
         assertFunction(
-                "map_filter(map(ARRAY [25.5, 26.5, 27.5], ARRAY [25.5, 26.5, 27.5]), (k, v) -> k = 25.5 OR v = 27.5)",
+                "map_filter(map(ARRAY [DOUBLE '25.5', 26.5, 27.5], ARRAY [DOUBLE '25.5', 26.5, 27.5]), (k, v) -> k = 25.5 OR v = 27.5)",
                 new MapType(DOUBLE, DOUBLE),
                 ImmutableMap.of(25.5, 25.5, 27.5, 27.5));
         assertFunction(
-                "map_filter(map(ARRAY [25.5, 26.5, 27.5], ARRAY [false, null, true]), (k, v) -> k = 25.5 OR v)",
+                "map_filter(map(ARRAY [DOUBLE '25.5', 26.5, 27.5], ARRAY [false, null, true]), (k, v) -> k = 25.5 OR v)",
                 new MapType(DOUBLE, BOOLEAN),
                 ImmutableMap.of(25.5, false, 27.5, true));
         assertFunction(
-                "map_filter(map(ARRAY [25.5, 26.5, 27.5], ARRAY ['abc', 'def', 'xyz']), (k, v) -> k = 25.5 OR v = 'xyz')",
+                "map_filter(map(ARRAY [DOUBLE '25.5', 26.5, 27.5], ARRAY ['abc', 'def', 'xyz']), (k, v) -> k = 25.5 OR v = 'xyz')",
                 new MapType(DOUBLE, createVarcharType(3)),
                 ImmutableMap.of(25.5, "abc", 27.5, "xyz"));
         assertFunction(
-                "map_filter(map(ARRAY [25.5, 26.5, 27.5], ARRAY [ARRAY ['a', 'b'], ARRAY ['a', 'c'], ARRAY ['a', 'b', 'c']]), (k, v) -> k = 25.5 OR cardinality(v) = 3)",
+                "map_filter(map(ARRAY [DOUBLE '25.5', 26.5, 27.5], ARRAY [ARRAY ['a', 'b'], ARRAY ['a', 'c'], ARRAY ['a', 'b', 'c']]), (k, v) -> k = 25.5 OR cardinality(v) = 3)",
                 new MapType(DOUBLE, new ArrayType(createVarcharType(1))),
                 ImmutableMap.of(25.5, ImmutableList.of("a", "b"), 27.5, ImmutableList.of("a", "b", "c")));
 
@@ -134,7 +134,7 @@ public class TestMapFilterFunction
                 new MapType(BOOLEAN, INTEGER),
                 ImmutableMap.of(true, 25));
         assertFunction(
-                "map_filter(map(ARRAY [false, true], ARRAY [25.5, 26.5]), (k, v) -> k OR v > 100)",
+                "map_filter(map(ARRAY [false, true], ARRAY [DOUBLE '25.5', 26.5]), (k, v) -> k OR v > 100)",
                 new MapType(BOOLEAN, DOUBLE),
                 ImmutableMap.of(true, 26.5));
         Map<Boolean, Boolean> falseToNullMap = new HashMap<>();
@@ -157,7 +157,7 @@ public class TestMapFilterFunction
                 new MapType(createVarcharType(2), INTEGER),
                 ImmutableMap.of("s0", 25, "s2", 27));
         assertFunction(
-                "map_filter(map(ARRAY ['s0', 's1', 's2'], ARRAY [25.5, 26.5, 27.5]), (k, v) -> k = 's0' OR v = 27.5)",
+                "map_filter(map(ARRAY ['s0', 's1', 's2'], ARRAY [DOUBLE '25.5', 26.5, 27.5]), (k, v) -> k = 's0' OR v = 27.5)",
                 new MapType(createVarcharType(2), DOUBLE),
                 ImmutableMap.of("s0", 25.5, "s2", 27.5));
         assertFunction(
@@ -178,7 +178,7 @@ public class TestMapFilterFunction
                 new MapType(new ArrayType(INTEGER), INTEGER),
                 ImmutableMap.of(ImmutableList.of(1, 2), 25, ImmutableList.of(), 27));
         assertFunction(
-                "map_filter(map(ARRAY [ARRAY [1, 2], ARRAY [3, 4], ARRAY []], ARRAY [25.5, 26.5, 27.5]), (k, v) -> k = ARRAY [1, 2] OR v = 27.5)",
+                "map_filter(map(ARRAY [ARRAY [1, 2], ARRAY [3, 4], ARRAY []], ARRAY [DOUBLE '25.5', 26.5, 27.5]), (k, v) -> k = ARRAY [1, 2] OR v = 27.5)",
                 new MapType(new ArrayType(INTEGER), DOUBLE),
                 ImmutableMap.of(ImmutableList.of(1, 2), 25.5, ImmutableList.of(), 27.5));
         assertFunction(
