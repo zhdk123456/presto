@@ -108,10 +108,10 @@ public class TestDecimalCasts
         assertDecimalFunction("CAST(1234567890 AS DECIMAL(20,10))", decimal("1234567890.0000000000"));
         assertDecimalFunction("CAST(-1234567890 AS DECIMAL(20,10))", decimal("-1234567890.0000000000"));
 
-        assertInvalidCast("CAST(234.0 AS DECIMAL(2,0))", "Cannot cast DOUBLE '234.0' to DECIMAL(2, 0)");
-        assertInvalidCast("CAST(1000.01 AS DECIMAL(5,2))", "Cannot cast DOUBLE '1000.01' to DECIMAL(5, 2)");
-        assertInvalidCast("CAST(-234.0 AS DECIMAL(2,0))", "Cannot cast DOUBLE '-234.0' to DECIMAL(2, 0)");
-        assertInvalidCast("CAST(12345678901.1 AS DECIMAL(20, 10))", "Cannot cast DOUBLE '1.23456789011E10' to DECIMAL(20, 10)");
+        assertInvalidCast("CAST(DOUBLE '234.0' AS DECIMAL(2,0))", "Cannot cast DOUBLE '234.0' to DECIMAL(2, 0)");
+        assertInvalidCast("CAST(DOUBLE '1000.01' AS DECIMAL(5,2))", "Cannot cast DOUBLE '1000.01' to DECIMAL(5, 2)");
+        assertInvalidCast("CAST(DOUBLE '-234.0' AS DECIMAL(2,0))", "Cannot cast DOUBLE '-234.0' to DECIMAL(2, 0)");
+        assertInvalidCast("CAST(DOUBLE '12345678901.1' AS DECIMAL(20, 10))", "Cannot cast DOUBLE '1.23456789011E10' to DECIMAL(20, 10)");
     }
 
     @Test
