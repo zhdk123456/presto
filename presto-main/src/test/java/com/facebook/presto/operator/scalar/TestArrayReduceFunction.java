@@ -45,7 +45,7 @@ public class TestArrayReduceFunction
     {
         assertFunction("reduce(ARRAY [5, 20, 50], CAST (0 AS BIGINT), (s, x) -> s + x, s -> s)", BIGINT, 75L);
         assertFunction("reduce(ARRAY [5 + RANDOM(1), 20, 50], CAST (0 AS BIGINT), (s, x) -> s + x, s -> s)", BIGINT, 75L);
-        assertFunction("reduce(ARRAY [5, 6, 10, 20], 0.0, (s, x) -> s + x, s -> s)", DOUBLE, 41.0);
+        assertFunction("reduce(ARRAY [5, 6, 10, 20], DOUBLE '0.0', (s, x) -> s + x, s -> s)", DOUBLE, 41.0);
     }
 
     @Test

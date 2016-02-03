@@ -76,6 +76,7 @@ import static org.testng.Assert.assertTrue;
 
 public class TestExpressionInterpreter
 {
+    // todo add decimal cases
     private static final int TEST_VARCHAR_TYPE_LENGTH = 17;
     private static final Map<Symbol, Type> SYMBOL_TYPES = ImmutableMap.<Symbol, Type>builder()
             .put(new Symbol("bound_integer"), INTEGER)
@@ -561,36 +562,36 @@ public class TestExpressionInterpreter
             throws Exception
     {
         // integer
-        assertOptimizedEquals("cast(0 as DOUBLE)", "0.0");
-        assertOptimizedEquals("cast(123 as DOUBLE)", "123.0");
-        assertOptimizedEquals("cast(-123 as DOUBLE)", "-123.0");
+        assertOptimizedEquals("cast(0 as DOUBLE)", "cast(0.0 as DOUBLE)");
+        assertOptimizedEquals("cast(123 as DOUBLE)", "cast(123.0 as DOUBLE)");
+        assertOptimizedEquals("cast(-123 as DOUBLE)", "cast(-123.0 as DOUBLE)");
 
         // bigint
-        assertOptimizedEquals("cast(BIGINT '0' as DOUBLE)", "0.0");
-        assertOptimizedEquals("cast(12300000000 as DOUBLE)", "12300000000.0");
-        assertOptimizedEquals("cast(-12300000000 as DOUBLE)", "-12300000000.0");
+        assertOptimizedEquals("cast(BIGINT '0' as DOUBLE)", "cast(0.0 as DOUBLE)");
+        assertOptimizedEquals("cast(12300000000 as DOUBLE)", "cast(12300000000.0 AS DOUBLE)");
+        assertOptimizedEquals("cast(-12300000000 as DOUBLE)", "cast(-12300000000.0 AS DOUBLE)");
 
         // double
-        assertOptimizedEquals("cast(123.0 as DOUBLE)", "123.0");
-        assertOptimizedEquals("cast(-123.0 as DOUBLE)", "-123.0");
-        assertOptimizedEquals("cast(123.456 as DOUBLE)", "123.456");
-        assertOptimizedEquals("cast(-123.456 as DOUBLE)", "-123.456");
+        assertOptimizedEquals("cast(123.0 as DOUBLE)", "cast(123.0 as DOUBLE)");
+        assertOptimizedEquals("cast(-123.0 as DOUBLE)", "cast(-123.0 as DOUBLE)");
+        assertOptimizedEquals("cast(123.456 as DOUBLE)", "cast(123.456 as DOUBLE)");
+        assertOptimizedEquals("cast(-123.456 as DOUBLE)", "cast(-123.456 as DOUBLE)");
 
         // string
-        assertOptimizedEquals("cast('0' as DOUBLE)", "0.0");
-        assertOptimizedEquals("cast('123' as DOUBLE)", "123.0");
-        assertOptimizedEquals("cast('-123' as DOUBLE)", "-123.0");
-        assertOptimizedEquals("cast('123.0' as DOUBLE)", "123.0");
-        assertOptimizedEquals("cast('-123.0' as DOUBLE)", "-123.0");
-        assertOptimizedEquals("cast('123.456' as DOUBLE)", "123.456");
-        assertOptimizedEquals("cast('-123.456' as DOUBLE)", "-123.456");
+        assertOptimizedEquals("cast('0' as DOUBLE)", "cast(0.0 as DOUBLE)");
+        assertOptimizedEquals("cast('123' as DOUBLE)", "cast(123.0 as DOUBLE)");
+        assertOptimizedEquals("cast('-123' as DOUBLE)", "cast(-123.0 as DOUBLE)");
+        assertOptimizedEquals("cast('123.0' as DOUBLE)", "cast(123.0 as DOUBLE)");
+        assertOptimizedEquals("cast('-123.0' as DOUBLE)", "cast(-123.0 as DOUBLE)");
+        assertOptimizedEquals("cast('123.456' as DOUBLE)", "cast(123.456 as DOUBLE)");
+        assertOptimizedEquals("cast('-123.456' as DOUBLE)", "cast(-123.456 as DOUBLE)");
 
         // null
         assertOptimizedEquals("cast(null as DOUBLE)", "null");
 
         // boolean
-        assertOptimizedEquals("cast(true as DOUBLE)", "1.0");
-        assertOptimizedEquals("cast(false as DOUBLE)", "0.0");
+        assertOptimizedEquals("cast(true as DOUBLE)", "cast(1.0 as DOUBLE)");
+        assertOptimizedEquals("cast(false as DOUBLE)", "cast(0.0 as DOUBLE)");
     }
 
     @Test
@@ -1164,13 +1165,13 @@ public class TestExpressionInterpreter
         optimize("ROW(unbound_long + 0)");
         optimize("ROW(unbound_long + unbound_long2, unbound_string, unbound_double)");
         optimize("ROW(unbound_boolean, FALSE, ARRAY[unbound_long, unbound_long2], unbound_null_string, unbound_interval)");
-        optimize("ARRAY [ROW(unbound_string, unbound_double), ROW(unbound_string, 0.0)]");
+        optimize("ARRAY [ROW(unbound_string, unbound_double), ROW(unbound_string, CAST(0.0 AS DOUBLE))]");
         optimize("ARRAY [ROW('string', unbound_double), ROW('string', bound_double)]");
         optimize("ROW(ROW(NULL), ROW(ROW(ROW(ROW('rowception')))))");
         optimize("ROW(unbound_string, bound_string)");
 
-        optimize("ARRAY [ROW(unbound_string, unbound_double), ROW(CAST(bound_string AS VARCHAR), 0.0)]");
-        optimize("ARRAY [ROW(CAST(bound_string AS VARCHAR), 0.0), ROW(unbound_string, unbound_double)]");
+        optimize("ARRAY [ROW(unbound_string, unbound_double), ROW(CAST(bound_string AS VARCHAR), CAST(0.0 AS DOUBLE))]");
+        optimize("ARRAY [ROW(CAST(bound_string AS VARCHAR), CAST(0.0 AS DOUBLE)), ROW(unbound_string, unbound_double)]");
 
         optimize("ARRAY [ROW(unbound_string, unbound_double), CAST(NULL AS ROW(VARCHAR, DOUBLE))]");
         optimize("ARRAY [CAST(NULL AS ROW(VARCHAR, DOUBLE)), ROW(unbound_string, unbound_double)]");

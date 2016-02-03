@@ -65,7 +65,7 @@ public class TestArrayFilterFunction
             throws Exception
     {
         assertFunction("filter(ARRAY [25, 26, 27], x -> x % 2 = 1)", new ArrayType(INTEGER), ImmutableList.of(25, 27));
-        assertFunction("filter(ARRAY [25.6, 37.3, 28.6], x -> x < 30.0)", new ArrayType(DOUBLE), ImmutableList.of(25.6, 28.6));
+        assertFunction("filter(ARRAY [DOUBLE '25.6', 37.3, 28.6], x -> x < 30.0)", new ArrayType(DOUBLE), ImmutableList.of(25.6, 28.6));
         assertFunction("filter(ARRAY [true, false, true], x -> not x)", new ArrayType(BOOLEAN), ImmutableList.of(false));
         assertFunction("filter(ARRAY ['abc', 'def', 'ayz'], x -> substr(x, 1, 1) = 'a')", new ArrayType(createVarcharType(3)), ImmutableList.of("abc", "ayz"));
         assertFunction(
