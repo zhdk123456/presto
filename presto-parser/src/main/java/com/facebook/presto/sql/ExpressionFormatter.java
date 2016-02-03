@@ -220,7 +220,7 @@ public final class ExpressionFormatter
         @Override
         protected String visitDoubleLiteral(DoubleLiteral node, Void context)
         {
-            return Double.toString(node.getValue());
+            return "DOUBLE '" + Double.toString(node.getValue()) + "'";
         }
 
         @Override
