@@ -1431,7 +1431,7 @@ class AstBuilder
 
         if (context.DOUBLE_PRECISION() != null) {
             // TODO: Temporary hack that should be removed with new planner.
-            return new GenericLiteral(getLocation(context), "DOUBLE", value);
+            return new DoubleLiteral(getLocation(context), value);
         }
 
         String type = context.identifier().getText();
@@ -1447,6 +1447,9 @@ class AstBuilder
         if (type.equalsIgnoreCase("char")) {
             return new CharLiteral(getLocation(context), value);
         }
+        if (type.equalsIgnoreCase("double")) {
+            return new DoubleLiteral(getLocation(context), value);
+        }
 
         return new GenericLiteral(getLocation(context), type, value);
     }
@@ -1459,6 +1462,12 @@ class AstBuilder
 
     @Override
     public Node visitDecimalLiteral(SqlBaseParser.DecimalLiteralContext context)
+    {
+        return new DecimalLiteral(getLocation(context), context.getText());
+    }
+
+    @Override
+    public Node visitDoubleLiteral(SqlBaseParser.DoubleLiteralContext context)
     {
         return new DoubleLiteral(getLocation(context), context.getText());
     }
