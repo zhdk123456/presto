@@ -69,12 +69,12 @@ public class TestRowOperators
         assertFunction("CAST(CAST(ROW(1, 2) AS ROW(a BIGINT, b BIGINT)) AS JSON)", JSON, "[1,2]");
         assertFunction("CAST(ROW(1, NULL) AS JSON)", JSON, "[1,null]");
         assertFunction("CAST(ROW(1, CAST(NULL AS INTEGER)) AS JSON)", JSON, "[1,null]");
-        assertFunction("CAST(ROW(1, 2.0) AS JSON)", JSON, "[1,2.0]");
-        assertFunction("CAST(ROW(1.0, 2.5) AS JSON)", JSON, "[1.0,2.5]");
-        assertFunction("CAST(ROW(1.0, 'kittens') AS JSON)", JSON, "[1.0,\"kittens\"]");
+        assertFunction("CAST(ROW(1, CAST(2.0 as DOUBLE)) AS JSON)", JSON, "[1,2.0]");
+        assertFunction("CAST(ROW(CAST(1.0 as DOUBLE), CAST(2.5 as DOUBLE)) AS JSON)", JSON, "[1.0,2.5]");
+        assertFunction("CAST(ROW(CAST(1.0 as DOUBLE), 'kittens') AS JSON)", JSON, "[1.0,\"kittens\"]");
         assertFunction("CAST(ROW(TRUE, FALSE) AS JSON)", JSON, "[true,false]");
         assertFunction("CAST(ROW(from_unixtime(1)) AS JSON)", JSON, "[\"" + new SqlTimestamp(1000, TEST_SESSION.getTimeZoneKey()) + "\"]");
-        assertFunction("CAST(ROW(FALSE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[2.0, 4.0])) AS JSON)", JSON, "[false,[1,2],{\"1\":2.0,\"3\":4.0}]");
+        assertFunction("CAST(ROW(FALSE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[CAST(2.0 as DOUBLE), CAST(4.0 as DOUBLE)])) AS JSON)", JSON, "[false,[1,2],{\"1\":2.0,\"3\":4.0}]");
     }
 
     @Test
@@ -163,21 +163,21 @@ public class TestRowOperators
                 "row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:10')", BOOLEAN, true);
         assertFunction("row(1.0, row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:10')) =" +
                 "row(1.0, row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:10'))", BOOLEAN, true);
-        assertFunction("row(1.0, 'kittens') = row(1.0, 'kittens')", BOOLEAN, true);
-        assertFunction("row(1, 2.0) = row(1, 2.0)", BOOLEAN, true);
+        assertFunction("row(CAST(1.0 as DOUBLE), 'kittens') = row(CAST(1.0 as DOUBLE), 'kittens')", BOOLEAN, true);
+        assertFunction("row(1, CAST(2.0 as DOUBLE)) = row(1, CAST(2.0 as DOUBLE))", BOOLEAN, true);
         assertFunction("row(TRUE, FALSE, TRUE, FALSE) = row(TRUE, FALSE, TRUE, FALSE)", BOOLEAN, true);
         assertFunction("row(TRUE, FALSE, TRUE, FALSE) = row(TRUE, TRUE, TRUE, FALSE)", BOOLEAN, false);
-        assertFunction("row(1, 2.0, TRUE, 'kittens', from_unixtime(1)) = row(1, 2.0, TRUE, 'kittens', from_unixtime(1))", BOOLEAN, true);
+        assertFunction("row(1, CAST(2.0 as DOUBLE), TRUE, 'kittens', from_unixtime(1)) = row(1, CAST(2.0 as DOUBLE), TRUE, 'kittens', from_unixtime(1))", BOOLEAN, true);
 
         assertFunction("row(1.0, row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:10')) !=" +
                 "row(1.0, row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:11'))", BOOLEAN, true);
         assertFunction("row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:10') != " +
                 "row(TIMESTAMP '2001-01-02 03:04:05.321 +07:09', TIMESTAMP '2001-01-02 03:04:05.321 +07:11')", BOOLEAN, true);
-        assertFunction("row(1.0, 'kittens') != row(1.0, 'kittens')", BOOLEAN, false);
-        assertFunction("row(1, 2.0) != row(1, 2.0)", BOOLEAN, false);
+        assertFunction("row(CAST(1.0 as DOUBLE), 'kittens') != row(CAST(1.0 as DOUBLE), 'kittens')", BOOLEAN, false);
+        assertFunction("row(1, CAST(2.0 as DOUBLE)) != row(1, CAST(2.0 as DOUBLE))", BOOLEAN, false);
         assertFunction("row(TRUE, FALSE, TRUE, FALSE) != row(TRUE, FALSE, TRUE, FALSE)", BOOLEAN, false);
         assertFunction("row(TRUE, FALSE, TRUE, FALSE) != row(TRUE, TRUE, TRUE, FALSE)", BOOLEAN, true);
-        assertFunction("row(1, 2.0, TRUE, 'kittens', from_unixtime(1)) != row(1, 2.0, TRUE, 'puppies', from_unixtime(1))", BOOLEAN, true);
+        assertFunction("row(1, CAST(2.0 as DOUBLE), TRUE, 'kittens', from_unixtime(1)) != row(1, CAST(2.0 as DOUBLE), TRUE, 'puppies', from_unixtime(1))", BOOLEAN, true);
 
         try {
             assertFunction("cast(row(cast(cast ('' as varbinary) as hyperloglog)) as row(col0 hyperloglog)) = cast(row(cast(cast ('' as varbinary) as hyperloglog)) as row(col0 hyperloglog))", BOOLEAN, true);
@@ -190,8 +190,8 @@ public class TestRowOperators
             //Expected
         }
 
-        assertFunction("row(TRUE, ARRAY [1], MAP(ARRAY[1, 3], ARRAY[2.0, 4.0])) = row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[2.0, 4.0]))", BOOLEAN, false);
-        assertFunction("row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[2.0, 4.0])) = row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[2.0, 4.0]))", BOOLEAN, true);
+        assertFunction("row(TRUE, ARRAY [1], MAP(ARRAY[1, 3], ARRAY[CAST(2.0 as DOUBLE), CAST(4.0 as DOUBLE)])) = row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[CAST(2.0 as DOUBLE), CAST(4.0 as DOUBLE)]))", BOOLEAN, false);
+        assertFunction("row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[CAST(2.0 as DOUBLE), CAST(4.0 as DOUBLE)])) = row(TRUE, ARRAY [1, 2], MAP(ARRAY[1, 3], ARRAY[CAST(2.0 as DOUBLE), CAST(4.0 as DOUBLE)]))", BOOLEAN, true);
 
         try {
             assertFunction("row(1, CAST(NULL AS INTEGER)) = row(1, 2)", BOOLEAN, false);
@@ -203,11 +203,11 @@ public class TestRowOperators
 
         assertFunction("row(TRUE, ARRAY [1]) = row(TRUE, ARRAY [1])", BOOLEAN, true);
         assertFunction("row(TRUE, ARRAY [1]) = row(TRUE, ARRAY [1,2])", BOOLEAN, false);
-        assertFunction("row(1.0, ARRAY [1,2,3], row(2,2.0)) = row(1.0, ARRAY [1,2,3], row(2,2.0))", BOOLEAN, true);
+        assertFunction("row(CAST(1.0 as DOUBLE), ARRAY [1,2,3], row(2,CAST(2.0 as DOUBLE))) = row(CAST(1.0 as DOUBLE), ARRAY [1,2,3], row(2,CAST(2.0 as DOUBLE)))", BOOLEAN, true);
 
         assertFunction("row(TRUE, ARRAY [1]) != row(TRUE, ARRAY [1])", BOOLEAN, false);
         assertFunction("row(TRUE, ARRAY [1]) != row(TRUE, ARRAY [1,2])", BOOLEAN, true);
-        assertFunction("row(1.0, ARRAY [1,2,3], row(2,2.0)) != row(1.0, ARRAY [1,2,3], row(1,2.0))", BOOLEAN, true);
+        assertFunction("row(CAST(1.0 as DOUBLE), ARRAY [1,2,3], row(2,CAST(2.0 as DOUBLE))) != row(CAST(1.0 as DOUBLE), ARRAY [1,2,3], row(1,CAST(2.0 as DOUBLE)))", BOOLEAN, true);
 
         assertFunction("ROW(1, 2) = ROW(1, 2)", BOOLEAN, true);
         assertFunction("ROW(2, 1) != ROW(1, 2)", BOOLEAN, true);
