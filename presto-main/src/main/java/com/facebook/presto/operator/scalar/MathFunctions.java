@@ -30,6 +30,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slice;
 
+import javax.annotation.Nullable;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,6 +47,8 @@ import static com.facebook.presto.spi.type.Decimals.longTenToNth;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.type.DecimalOperators.modulusScalarFunction;
+import static com.facebook.presto.type.DecimalOperators.modulusSignatureBuilder;
 import static com.facebook.presto.util.Failures.checkCondition;
 import static io.airlift.slice.Slices.utf8Slice;
 import static java.lang.Character.MAX_RADIX;
@@ -57,6 +61,7 @@ public final class MathFunctions
 {
     public static final SqlScalarFunction[] DECIMAL_CEILING_FUNCTIONS = {decimalCeilingFunction("ceiling"), decimalCeilingFunction("ceil")};
     public static final SqlScalarFunction DECIMAL_FLOOR_FUNCTION = decimalFloorFunction();
+    public static final SqlScalarFunction DECIMAL_MOD_FUNCTION = decimalModFunction();
 
     private MathFunctions() {}
 
@@ -496,6 +501,15 @@ public final class MathFunctions
     public static double mod(@SqlType(StandardTypes.DOUBLE) double num1, @SqlType(StandardTypes.DOUBLE) double num2)
     {
         return num1 % num2;
+    }
+
+    private static SqlScalarFunction decimalModFunction()
+    {
+        Signature signature = modulusSignatureBuilder()
+                .kind(SCALAR)
+                .name("mod")
+                .build();
+        return modulusScalarFunction(signature);
     }
 
     @Description("remainder of given quotient")
