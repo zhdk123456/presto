@@ -220,6 +220,7 @@ import static com.facebook.presto.operator.scalar.MapToJsonCast.MAP_TO_JSON;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_CEILING_FUNCTIONS;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_FLOOR_FUNCTION;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_MOD_FUNCTION;
+import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_ROUND_FUNCTIONS;
 import static com.facebook.presto.operator.scalar.RowEqualOperator.ROW_EQUAL;
 import static com.facebook.presto.operator.scalar.RowHashCodeOperator.ROW_HASH_CODE;
 import static com.facebook.presto.operator.scalar.RowNotEqualOperator.ROW_NOT_EQUAL;
@@ -507,7 +508,11 @@ public class FunctionRegistry
                 .functions(DECIMAL_CEILING_FUNCTIONS)
                 .function(DECIMAL_FLOOR_FUNCTION)
                 .function(DECIMAL_MOD_FUNCTION)
+<<<<<<< 2a7fa731b4c9f2f5ad900a9184433cf22977b740
                 .function(TRY_CAST);
+=======
+                .functions(DECIMAL_ROUND_FUNCTIONS);
+>>>>>>> "round" scalar functions for decimal(p,s)
 
         builder.function(new ArrayAggregationFunction(featuresConfig.isLegacyArrayAgg()));
 
