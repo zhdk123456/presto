@@ -21,6 +21,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -97,13 +98,13 @@ public class TestJdbcResultSet
     public void testObjectTypes()
             throws Exception
     {
-        String sql = "SELECT 123, 12300000000, 0.1, true, 'hello', 1.0 / 0.0, 0.0 / 0.0, ARRAY[1, 2], cast('foo' as char(5))";
+        String sql = "SELECT 123, 12300000000, 0.1, true, 'hello', DOUBLE '1.0' / 0.0, DOUBLE '0.0' / 0.0, ARRAY[1, 2], cast('foo' as char(5))";
         try (ResultSet rs = statement.executeQuery(sql)) {
             ResultSetMetaData metadata = rs.getMetaData();
             assertEquals(metadata.getColumnCount(), 9);
             assertEquals(metadata.getColumnType(1), Types.INTEGER);
             assertEquals(metadata.getColumnType(2), Types.BIGINT);
-            assertEquals(metadata.getColumnType(3), Types.DOUBLE);
+            assertEquals(metadata.getColumnType(3), Types.DECIMAL);
             assertEquals(metadata.getColumnType(4), Types.BOOLEAN);
             assertEquals(metadata.getColumnType(5), Types.LONGNVARCHAR);
             assertEquals(metadata.getColumnType(6), Types.DOUBLE);
@@ -114,7 +115,7 @@ public class TestJdbcResultSet
             assertTrue(rs.next());
             assertEquals(rs.getObject(1), 123);
             assertEquals(rs.getObject(2), 12300000000L);
-            assertEquals(rs.getObject(3), 0.1d);
+            assertEquals(rs.getObject(3), new BigDecimal("0.1"));
             assertEquals(rs.getObject(4), true);
             assertEquals(rs.getObject(5), "hello");
             assertEquals(rs.getObject(6), Double.POSITIVE_INFINITY);
