@@ -44,6 +44,7 @@ import org.joda.time.DateTimeZone;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -60,6 +61,7 @@ import static com.facebook.presto.operator.scalar.ApplyFunction.APPLY_FUNCTION;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DateType.DATE;
+import static com.facebook.presto.spi.type.DecimalType.createDecimalType;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TimeType.TIME;
 import static com.facebook.presto.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
@@ -271,7 +273,7 @@ public abstract class AbstractTestQueries
     {
         //Dereference only
         assertQuery("SELECT a.col0 FROM (VALUES ROW (CAST(ROW(1, 2) AS ROW(col0 integer, col1 integer)))) AS t (a)", "SELECT 1");
-        assertQuery("SELECT a.col0 FROM (VALUES ROW (CAST(ROW(1.0, 2.0) AS ROW(col0 integer, col1 integer)))) AS t (a)", "SELECT 1.0");
+        assertQuery("SELECT a.col0 FROM (VALUES ROW (CAST(ROW(DOUBLE '1.0', DOUBLE '2.0') AS ROW(col0 integer, col1 integer)))) AS t (a)", "SELECT 1.0");
         assertQuery("SELECT a.col0 FROM (VALUES ROW (CAST(ROW(TRUE, FALSE) AS ROW(col0 boolean, col1 boolean)))) AS t (a)", "SELECT TRUE");
         assertQuery("SELECT a.col1 FROM (VALUES ROW (CAST(ROW(1.0, 'kittens') AS ROW(col0 varchar, col1 varchar)))) AS t (a)", "SELECT 'kittens'");
         assertQuery("SELECT a.col2.col1 FROM (VALUES ROW(CAST(ROW(1.0, ARRAY[2], row(3, 4.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 4.0");
@@ -281,8 +283,8 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT Y.col1 FROM (SELECT cast(row(1, t.x) as row(col0 bigint, col1 bigint)) AS Y FROM (VALUES 1, 2, 3) t(x)) test_t", "SELECT * FROM (VALUES 1, 2, 3)");
 
         // Subscript + Dereference
-        assertQuery("SELECT a.col1[2] FROM (VALUES ROW(CAST(ROW(1.0, ARRAY[22, 33, 44, 55], row(3, 4.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 33");
-        assertQuery("SELECT a.col1[2].col0, a.col1[2].col1 FROM (VALUES ROW(cast(row(1.0, ARRAY[row(31, 4.1), row(32, 4.2)], row(3, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 32, 4.2");
+        assertQuery("SELECT a.col1[2] FROM (VALUES ROW(CAST(ROW(1.0, ARRAY[22, 33, 44, 55], row(3, DOUBLE '4.0')) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 33");
+        assertQuery("SELECT a.col1[2].col0, a.col1[2].col1 FROM (VALUES ROW(cast(row(1.0, ARRAY[row(31, DOUBLE '4.1'), row(32, DOUBLE '4.2')], row(3, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a)", "SELECT 32, 4.2");
 
         assertQuery("SELECT cast(row(11, 12) as row(col0 bigint, col1 bigint)).col0", "SELECT 11");
     }
@@ -292,73 +294,73 @@ public abstract class AbstractTestQueries
     {
         assertQuery("SELECT a.col0, SUM(a.col1[2]), SUM(a.col2.col0), SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(12, 14.0))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(1.0, ARRAY[22, 33, 44], row(13, 5.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(12, DOUBLE '14.0'))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(1.0, ARRAY[22, 33, 44], row(13, DOUBLE '5.0')) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
                         "GROUP BY a.col0",
                 "SELECT * FROM VALUES (1.0, 46, 24, 9.1), (2.0, 23, 12, 14.0)");
 
         assertQuery("SELECT a.col2.col0, SUM(a.col0), SUM(a.col1[2]), SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(11, 14.0))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, 5.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(11, DOUBLE '14.0'))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, DOUBLE '5.0')) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
                         "GROUP BY a.col2.col0",
                 "SELECT * FROM VALUES (11, 3.0, 36, 18.1), (13, 7.0, 33, 5.0)");
 
         assertQuery("SELECT a.col1[1].col0, SUM(a.col0), SUM(a.col1[1].col1), SUM(a.col1[2].col0), SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[row(31, 4.5), row(12, 4.2)], row(3, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.1, ARRAY[row(41, 3.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(31, 4.2), row(22, 4.2)], row(5, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[row(31, DOUBLE '4.5'), row(12, DOUBLE '4.2')], row(3, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.1, ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(31, DOUBLE '4.2'), row(22, DOUBLE '4.2')], row(5, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) " +
                         "GROUP BY a.col1[1].col0",
                 "SELECT * FROM VALUES (31, 3.2, 8.7, 34, 8.0), (41, 3.1, 3.1, 32, 6.0)");
 
         assertQuery("SELECT a.col1[1].col0, SUM(a.col0), SUM(a.col1[1].col1), SUM(a.col1[2].col0), SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(31, 4.2), row(22, 4.2)], row(5, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(1.0, ARRAY[row(31, 4.5), row(12, 4.2)], row(3, 4.1)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.1, ARRAY[row(41, 3.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.3, ARRAY[row(41, 3.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))) " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(31, DOUBLE '4.2'), row(22, DOUBLE '4.2')], row(5, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(1.0, ARRAY[row(31, DOUBLE '4.5'), row(12, DOUBLE '4.2')], row(3, DOUBLE '4.1')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.1, ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.3, ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))) " +
                         ") t(a) " +
                         "GROUP BY a.col1[1]",
                 "SELECT * FROM VALUES (31, 2.2, 4.2, 22, 4.0), (31, 1.0, 4.5, 12, 4.1), (41, 6.4, 6.2, 64, 12.0)");
 
         assertQuery("SELECT a.col1[2], SUM(a.col0), SUM(a.col1[1]), SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.0, ARRAY[2, 13, 4], row(12, 14.0))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, 5.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.0, ARRAY[2, 13, 4], row(12, DOUBLE '14.0'))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, DOUBLE '5.0')) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
                         "GROUP BY a.col1[2]",
                 "SELECT * FROM VALUES (13, 3.0, 4, 18.1), (33, 7.0, 22, 5.0)");
 
         assertQuery("SELECT a.col2.col0, SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(31, 4.2), row(22, 4.2)], row(5, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(1.0, ARRAY[row(31, 4.5), row(12, 4.2)], row(3, 4.1)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.1, ARRAY[row(41, 3.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.3, ARRAY[row(41, 3.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))) " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(31, DOUBLE '4.2'), row(22, DOUBLE '4.2')], row(5, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(1.0, ARRAY[row(31, DOUBLE '4.5'), row(12, DOUBLE '4.2')], row(3, DOUBLE '4.1')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.1, ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.3, ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))) " +
                         ") t(a) " +
                         "GROUP BY a.col2",
                 "SELECT * FROM VALUES (5, 4.0), (3, 4.1), (6, 12.0)");
 
         assertQuery("SELECT a.col2.col0, a.col0, SUM(a.col2.col1) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(11, 14.0))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(1.5, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(1.5, ARRAY[2, 13, 4], row(11, 4.1))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, 5.0)) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.0, ARRAY[2, 23, 4], row(11, DOUBLE '14.0'))  AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(1.5, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(1.5, ARRAY[2, 13, 4], row(11, DOUBLE '4.1'))   AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(7.0, ARRAY[22, 33, 44], row(13, DOUBLE '5.0')) AS ROW(col0 double, col1 array(integer), col2 row(col0 integer, col1 double))))) t(a) " +
                         "WHERE a.col1[2] < 30 " +
                         "GROUP BY 1, 2 ORDER BY 1",
                 "SELECT * FROM VALUES (11, 1.0, 4.1), (11, 1.5, 8.2), (11, 2.0, 14.0)");
 
         assertQuery("SELECT a[1].col0, COUNT(1) FROM " +
                         "(VALUES " +
-                        "(ROW(CAST(ARRAY[row(31, 4.2), row(22, 4.2)] AS ARRAY(ROW(col0 integer, col1 double))))), " +
-                        "(ROW(CAST(ARRAY[row(31, 4.5), row(12, 4.2)] AS ARRAY(ROW(col0 integer, col1 double))))), " +
-                        "(ROW(CAST(ARRAY[row(41, 3.1), row(32, 4.2)] AS ARRAY(ROW(col0 integer, col1 double))))), " +
-                        "(ROW(CAST(ARRAY[row(31, 3.1), row(32, 4.2)] AS ARRAY(ROW(col0 integer, col1 double))))) " +
+                        "(ROW(CAST(ARRAY[row(31, DOUBLE '4.2'), row(22, DOUBLE '4.2')] AS ARRAY(ROW(col0 integer, col1 double))))), " +
+                        "(ROW(CAST(ARRAY[row(31, DOUBLE '4.5'), row(12, DOUBLE '4.2')] AS ARRAY(ROW(col0 integer, col1 double))))), " +
+                        "(ROW(CAST(ARRAY[row(41, DOUBLE '3.1'), row(32, DOUBLE '4.2')] AS ARRAY(ROW(col0 integer, col1 double))))), " +
+                        "(ROW(CAST(ARRAY[row(31, DOUBLE '3.1'), row(32, DOUBLE '4.2')] AS ARRAY(ROW(col0 integer, col1 double))))) " +
                         ") t(a) " +
                         "GROUP BY 1 " +
                         "ORDER BY 2 DESC",
@@ -372,11 +374,11 @@ public abstract class AbstractTestQueries
                         "SUM(a.col1[1].col1) OVER(PARTITION BY a.col2.col0), " +
                         "SUM(a.col2.col1) OVER(PARTITION BY a.col2.col0) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[row(31, 14.5), row(12, 4.2)], row(3, 4.0))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(41, 13.1), row(32, 4.2)], row(6, 6.0))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(41, 17.1), row(45, 4.2)], row(7, 16.0)) AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(41, 13.1), row(32, 4.2)], row(6, 6.0))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.1, ARRAY[row(41, 13.1), row(32, 4.2)], row(6, 6.0))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) ",
+                        "ROW(CAST(ROW(1.0, ARRAY[row(31, DOUBLE '14.5'), row(12, DOUBLE '4.2')], row(3, DOUBLE '4.0'))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(41, DOUBLE '13.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0'))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(41, DOUBLE '17.1'), row(45, DOUBLE '4.2')], row(7, DOUBLE '16.0')) AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(41, DOUBLE '13.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0'))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.1, ARRAY[row(41, DOUBLE '13.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0'))  AS ROW(col0 double, col1 array(ROW(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) ",
                 "SELECT * FROM VALUES (1.0, 14.5, 4.0), (2.2, 39.3, 18.0), (2.2, 39.3, 18.0), (2.2, 17.1, 16.0), (3.1, 39.3, 18.0)");
 
         assertQuery("SELECT a.col1[1].col0, " +
@@ -384,9 +386,9 @@ public abstract class AbstractTestQueries
                         "SUM(a.col1[1].col1) OVER(PARTITION BY a.col1[1].col0), " +
                         "SUM(a.col2.col1) OVER(PARTITION BY a.col1[1].col0) FROM " +
                         "(VALUES " +
-                        "ROW(CAST(ROW(1.0, ARRAY[row(31, 14.5), row(12, 4.2)], row(3, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(3.1, ARRAY[row(41, 13.1), row(32, 4.2)], row(6, 6.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
-                        "ROW(CAST(ROW(2.2, ARRAY[row(31, 14.2), row(22, 5.2)], row(5, 4.0)) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) " +
+                        "ROW(CAST(ROW(1.0, ARRAY[row(31, DOUBLE '14.5'), row(12, DOUBLE '4.2')], row(3, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(3.1, ARRAY[row(41, DOUBLE '13.1'), row(32, DOUBLE '4.2')], row(6, DOUBLE '6.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double)))), " +
+                        "ROW(CAST(ROW(2.2, ARRAY[row(31, DOUBLE '14.2'), row(22, DOUBLE '5.2')], row(5, DOUBLE '4.0')) AS ROW(col0 double, col1 array(row(col0 integer, col1 double)), col2 row(col0 integer, col1 double))))) t(a) " +
                         "WHERE a.col1[2].col1 > a.col2.col0",
                 "SELECT * FROM VALUES (31, 3.2, 28.7, 8.0), (31, 3.2, 28.7, 8.0)");
     }
@@ -721,7 +723,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testAggregationWithSomeArgumentCasts()
     {
-        assertQuery("SELECT APPROX_PERCENTILE(0.1, x), AVG(x), MIN(x) FROM (values 1, 1, 1) t(x)", "SELECT 0.1, 1.0, 1");
+        assertQuery("SELECT APPROX_PERCENTILE(DOUBLE '0.1', x), AVG(x), MIN(x) FROM (values 1, 1, 1) t(x)", "SELECT 0.1, 1.0, 1");
     }
 
     @Test
@@ -968,7 +970,7 @@ public abstract class AbstractTestQueries
         assertQuery(
                 "SELECT COUNT(DISTINCT custkey), " +
                         "SUM(DISTINCT custkey), " +
-                        "SUM(DISTINCT custkey + 1.0), " +
+                        "SUM(DISTINCT custkey + DOUBLE '1.0'), " +
                         "AVG(DISTINCT custkey), " +
                         "VARIANCE(DISTINCT custkey) FROM orders",
                 "SELECT COUNT(*), " +
@@ -3598,9 +3600,9 @@ public abstract class AbstractTestQueries
     {
         MaterializedResult actual = computeActual("SELECT orderkey, 1.0 / row_number() OVER (ORDER BY orderkey) FROM orders LIMIT 2");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, DOUBLE)
-                .row(1L, 1.0)
-                .row(2L, 0.5)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, createDecimalType(1, 1))
+                .row(1L, new BigDecimal("1.0"))
+                .row(2L, new BigDecimal("0.5"))
                 .build();
 
         assertEquals(actual, expected);
@@ -3881,7 +3883,7 @@ public abstract class AbstractTestQueries
     public void testSameWindowFunctionsTwoCoerces()
     {
         MaterializedResult actual = computeActual("" +
-                "SELECT 12.0 * row_number() OVER ()/row_number() OVER(),\n" +
+                "SELECT DOUBLE '12.0' * row_number() OVER ()/row_number() OVER(),\n" +
                 "row_number() OVER()\n" +
                 "FROM (SELECT * FROM orders ORDER BY orderkey LIMIT 10)\n" +
                 "ORDER BY 2 DESC\n" +
@@ -3898,7 +3900,7 @@ public abstract class AbstractTestQueries
         assertEquals(actual, expected);
 
         actual = computeActual("" +
-                "SELECT (MAX(x.a) OVER () - x.a) * 100.0 / MAX(x.a) OVER ()\n" +
+                "SELECT (MAX(x.a) OVER () - x.a) * DOUBLE '100.0' / MAX(x.a) OVER ()\n" +
                 "FROM (VALUES 1, 2, 3, 4) x(a)");
 
         expected = resultBuilder(getSession(), DOUBLE)
@@ -4822,7 +4824,7 @@ public abstract class AbstractTestQueries
     {
         assertQuery("SELECT orderkey FROM orders WHERE orderkey IN (1, 2, 3)");
         assertQuery("SELECT orderkey FROM orders WHERE orderkey IN (1.5, 2.3)", "SELECT orderkey FROM orders LIMIT 0"); // H2 incorrectly matches rows
-        assertQuery("SELECT orderkey FROM orders WHERE orderkey IN (1, 2.0, 3)");
+        assertQuery("SELECT orderkey FROM orders WHERE orderkey IN (1, CAST(2.0 AS DOUBLE), 3)");
         assertQuery("SELECT orderkey FROM orders WHERE totalprice IN (1, 2, 3)");
         assertQuery("SELECT x FROM (values 3, 100) t(x) WHERE x IN (2147483649)", "SELECT * WHERE false");
         assertQuery("SELECT x FROM (values 3, 100, 2147483648, 2147483649, 2147483650) t(x) WHERE x IN (2147483648, 2147483650)", "values 2147483648, 2147483650");
@@ -7602,7 +7604,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testValuesWithNonTrivialType()
     {
-        MaterializedResult actual = computeActual("VALUES (0.0/0.0, 1.0/0.0, -1.0/0.0)");
+        MaterializedResult actual = computeActual("VALUES (0.0/CAST(0.0 AS DOUBLE), 1.0/CAST(0.0 AS DOUBLE), -1.0/CAST(0.0 AS DOUBLE))");
 
         List<MaterializedRow> rows = actual.getMaterializedRows();
         assertEquals(rows.size(), 1);
