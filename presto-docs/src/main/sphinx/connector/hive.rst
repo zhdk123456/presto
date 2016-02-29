@@ -145,10 +145,7 @@ Property Name                                      Description                  
 
 ``hive.compression-codec``                         The compression codec to use when writing files.             ``GZIP``
 
-``hive.force-local-scheduling``                    Force splits to be scheduled on the same node as the Hadoop  ``false``
-                                                   DataNode process serving the split data.  This is useful for
-                                                   installations where Presto is collocated with every
-                                                   DataNode.
+``hive.force-local-scheduling``                    See :ref:`tuning section<force-local-scheduling>`            ``false``
 
 ``hive.allow-drop-table``                          Allow the Hive connector to drop tables.                     ``false``
 
