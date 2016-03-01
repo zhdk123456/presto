@@ -57,7 +57,8 @@ public class TestFeaturesConfig
                 .setSpillerSpillPath(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
                 .setOptimizeMixedDistinctAggregations(false)
-                .setLegacyOrderBy(false));
+                .setLegacyOrderBy(false)
+                .setParseDecimalLiteralsAsDouble(false));
     }
 
     @Test
@@ -87,6 +88,7 @@ public class TestFeaturesConfig
                 .put("experimental.operator-memory-limit-before-spill", "100MB")
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
+                .put("parse-decimal-literals-as-double", "true")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -112,6 +114,7 @@ public class TestFeaturesConfig
                 .put("experimental.operator-memory-limit-before-spill", "100MB")
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
+                .put("parse-decimal-literals-as-double", "true")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -137,7 +140,8 @@ public class TestFeaturesConfig
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"))
                 .setSpillerSpillPath("/tmp/custom/spill/path")
                 .setSpillerThreads(42)
-                .setLegacyOrderBy(true);
+                .setLegacyOrderBy(true)
+                .setParseDecimalLiteralsAsDouble(true);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
