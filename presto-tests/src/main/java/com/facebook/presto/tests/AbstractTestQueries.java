@@ -7029,4 +7029,27 @@ public abstract class AbstractTestQueries
     {
         assertQueryFails("EXECUTE my_query", "Prepared statement not found: my_query");
     }
+
+    @Test
+    public void testDefaultDecimalLiteralSwitch()
+            throws Exception
+    {
+        MaterializedResult decimalColumnResult = computeActual(
+                getSession()
+                        .withSystemProperty("parse_decimal_literals_as_double", "false"),
+                "SELECT 1.0");
+
+        assertEquals(decimalColumnResult.getRowCount(), 1);
+        assertEquals(decimalColumnResult.getTypes().get(0), createDecimalType(2, 1));
+        assertEquals(decimalColumnResult.getMaterializedRows().get(0).getField(0), new BigDecimal("1.0"));
+
+        MaterializedResult doubleColumnResult = computeActual(
+                getSession()
+                        .withSystemProperty("parse_decimal_literals_as_double", "true"),
+                "SELECT 1.0");
+
+        assertEquals(doubleColumnResult.getRowCount(), 1);
+        assertEquals(doubleColumnResult.getTypes().get(0), DOUBLE);
+        assertEquals(doubleColumnResult.getMaterializedRows().get(0).getField(0), 1.0);
+    }
 }

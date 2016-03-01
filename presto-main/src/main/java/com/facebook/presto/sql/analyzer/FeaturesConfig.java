@@ -71,6 +71,8 @@ public class FeaturesConfig
         return this;
     }
 
+    private boolean parseDecimalLiteralsAsDouble;
+
     public boolean isResourceGroupsEnabled()
     {
         return resourceGroups;
@@ -267,6 +269,18 @@ public class FeaturesConfig
     public FeaturesConfig setRegexLibrary(RegexLibrary regexLibrary)
     {
         this.regexLibrary = regexLibrary;
+        return this;
+    }
+
+    public boolean isParseDecimalLiteralsAsDouble()
+    {
+        return parseDecimalLiteralsAsDouble;
+    }
+
+    @Config("parse-decimal-literals-as-double")
+    public FeaturesConfig setParseDecimalLiteralsAsDouble(boolean parseDecimalLiteralsAsDouble)
+    {
+        this.parseDecimalLiteralsAsDouble = parseDecimalLiteralsAsDouble;
         return this;
     }
 }
