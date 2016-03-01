@@ -33,6 +33,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.parser.ParsingException;
+import com.facebook.presto.sql.parser.ParsingOptions;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.DependencyExtractor;
 import com.facebook.presto.sql.planner.ExpressionInterpreter;
@@ -130,6 +131,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.SystemSessionProperties.LEGACY_ORDER_BY;
+import static com.facebook.presto.SystemSessionProperties.isParseDecimalLiteralsAsDouble;
 import static com.facebook.presto.metadata.FunctionKind.AGGREGATE;
 import static com.facebook.presto.metadata.FunctionKind.WINDOW;
 import static com.facebook.presto.metadata.MetadataUtil.createQualifiedObjectName;
@@ -1774,7 +1776,8 @@ class StatementAnalyzer
     private Query parseView(String view, QualifiedObjectName name, Node node)
     {
         try {
-            Statement statement = sqlParser.createStatement(view);
+            ParsingOptions parsingOptions = new ParsingOptions().setParseDecimalLiteralsAsDouble(isParseDecimalLiteralsAsDouble(session));
+            Statement statement = sqlParser.createStatement(view, parsingOptions);
             return checkType(statement, Query.class, "parsed view");
         }
         catch (ParsingException e) {

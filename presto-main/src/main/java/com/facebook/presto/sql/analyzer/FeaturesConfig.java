@@ -75,6 +75,7 @@ public class FeaturesConfig
     private boolean iterativeOptimizerEnabled;
     private double memoryRevokingTarget = 0.5;
     private double memoryRevokingThreshold = 0.9;
+    private boolean parseDecimalLiteralsAsDouble;
 
     public boolean isResourceGroupsEnabled()
     {
@@ -417,6 +418,18 @@ public class FeaturesConfig
     public FeaturesConfig setOptimizeMixedDistinctAggregations(boolean value)
     {
         this.optimizeMixedDistinctAggregations = value;
+        return this;
+    }
+
+    public boolean isParseDecimalLiteralsAsDouble()
+    {
+        return parseDecimalLiteralsAsDouble;
+    }
+
+    @Config("parse-decimal-literals-as-double")
+    public FeaturesConfig setParseDecimalLiteralsAsDouble(boolean parseDecimalLiteralsAsDouble)
+    {
+        this.parseDecimalLiteralsAsDouble = parseDecimalLiteralsAsDouble;
         return this;
     }
 }
