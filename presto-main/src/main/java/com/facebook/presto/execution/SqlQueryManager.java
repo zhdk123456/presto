@@ -26,6 +26,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.sql.analyzer.SemanticException;
 import com.facebook.presto.sql.parser.ParsingException;
+import com.facebook.presto.sql.parser.ParsingOptions;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.Execute;
 import com.facebook.presto.sql.tree.Explain;
@@ -61,6 +62,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.facebook.presto.SystemSessionProperties.isParseDecimalLiteralsAsDouble;
 import static com.facebook.presto.execution.ParameterExtractor.getParameterCount;
 import static com.facebook.presto.execution.QueryState.RUNNING;
 import static com.facebook.presto.spi.StandardErrorCode.ABANDONED_QUERY;
@@ -307,8 +309,8 @@ public class SqlQueryManager
         Statement statement;
         try {
             session = sessionSupplier.createSession(queryId, transactionManager, accessControl, sessionPropertyManager);
-
-            Statement wrappedStatement = sqlParser.createStatement(query);
+            ParsingOptions parsingOptions = new ParsingOptions().setParseDecimalLiteralsAsDouble(isParseDecimalLiteralsAsDouble(session));
+            Statement wrappedStatement = sqlParser.createStatement(query, parsingOptions);
             statement = unwrapExecuteStatement(wrappedStatement, sqlParser, session);
             List<Expression> parameters = wrappedStatement instanceof Execute ? ((Execute) wrappedStatement).getParameters() : emptyList();
             validateParameters(statement, parameters);
@@ -359,15 +361,15 @@ public class SqlQueryManager
         queryMonitor.queryCreatedEvent(queryInfo);
 
         queryExecution.addFinalQueryInfoListener(finalQueryInfo -> {
-                try {
-                    QueryInfo info = queryExecution.getQueryInfo();
-                    stats.queryFinished(info);
-                    queryMonitor.queryCompletedEvent(info);
-                }
-                finally {
-                    // execution MUST be added to the expiration queue or there will be a leak
-                    expirationQueue.add(queryExecution);
-                }
+            try {
+                QueryInfo info = queryExecution.getQueryInfo();
+                stats.queryFinished(info);
+                queryMonitor.queryCompletedEvent(info);
+            }
+            finally {
+                // execution MUST be added to the expiration queue or there will be a leak
+                expirationQueue.add(queryExecution);
+            }
         });
 
         addStatsListener(queryExecution);
@@ -387,7 +389,8 @@ public class SqlQueryManager
         }
 
         String sql = session.getPreparedStatementFromExecute((Execute) statement);
-        return sqlParser.createStatement(sql);
+        ParsingOptions parsingOptions = new ParsingOptions().setParseDecimalLiteralsAsDouble(isParseDecimalLiteralsAsDouble(session));
+        return sqlParser.createStatement(sql, parsingOptions);
     }
 
     public static void validateParameters(Statement node, List<Expression> parameterValues)
