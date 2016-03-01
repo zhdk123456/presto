@@ -69,6 +69,7 @@ public final class SystemSessionProperties
     public static final String REORDER_WINDOWS = "reorder_windows";
     public static final String ITERATIVE_OPTIMIZER = "iterative_optimizer_enabled";
     public static final String EXCHANGE_COMPRESSION = "exchange_compression";
+    public static final String PARSE_DECIMAL_LITERALS_AS_DOUBLE = "parse_decimal_literals_as_double";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -283,6 +284,11 @@ public final class SystemSessionProperties
                         EXCHANGE_COMPRESSION,
                         "Enable compression in exchanges",
                         featuresConfig.isExchangeCompressionEnabled(),
+                        false),
+                booleanSessionProperty(
+                        PARSE_DECIMAL_LITERALS_AS_DOUBLE,
+                        "Parse decimal literals as DOUBLE instead of DECIMAL",
+                        featuresConfig.isParseDecimalLiteralsAsDouble(),
                         false));
     }
 
@@ -448,5 +454,10 @@ public final class SystemSessionProperties
     public static boolean isExchangeCompressionEnabled(Session session)
     {
         return session.getSystemProperty(EXCHANGE_COMPRESSION, Boolean.class);
+    }
+
+    public static boolean isParseDecimalLiteralsAsDouble(Session session)
+    {
+        return session.getSystemProperty(PARSE_DECIMAL_LITERALS_AS_DOUBLE, Boolean.class);
     }
 }
