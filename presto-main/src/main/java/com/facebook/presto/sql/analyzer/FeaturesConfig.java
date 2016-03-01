@@ -69,6 +69,7 @@ public class FeaturesConfig
     private String spillerImplementation = SpillerImplementation.BINARY_FILE;
     private Path spillerSpillPath = Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills");
     private int spillerThreads = 4;
+    private boolean parseDecimalLiteralsAsDouble;
 
     @NotNull
     public String getResourceGroupManager()
@@ -329,6 +330,18 @@ public class FeaturesConfig
     public FeaturesConfig setSpillerThreads(int spillerThreads)
     {
         this.spillerThreads = spillerThreads;
+        return this;
+    }
+
+    public boolean isParseDecimalLiteralsAsDouble()
+    {
+        return parseDecimalLiteralsAsDouble;
+    }
+
+    @Config("parse-decimal-literals-as-double")
+    public FeaturesConfig setParseDecimalLiteralsAsDouble(boolean parseDecimalLiteralsAsDouble)
+    {
+        this.parseDecimalLiteralsAsDouble = parseDecimalLiteralsAsDouble;
         return this;
     }
 }
