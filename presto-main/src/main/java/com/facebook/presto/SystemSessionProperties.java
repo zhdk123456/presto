@@ -62,6 +62,7 @@ public final class SystemSessionProperties
     public static final String OPTIMIZE_METADATA_QUERIES = "optimize_metadata_queries";
     public static final String QUERY_PRIORITY = "query_priority";
     public static final String OPERATOR_MEMORY_LIMIT_BEFORE_SPILL = "operator_memory_limit_before_spill";
+    public static final String PARSE_DECIMAL_LITERALS_AS_DOUBLE = "parse_decimal_literals_as_double";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -229,7 +230,12 @@ public final class SystemSessionProperties
                         featuresConfig.getOperatorMemoryLimitBeforeSpill(),
                         false,
                         value -> DataSize.valueOf((String) value),
-                        DataSize::toString));
+                        DataSize::toString),
+                booleanSessionProperty(
+                        PARSE_DECIMAL_LITERALS_AS_DOUBLE,
+                        "Parse decimal literals as DOUBLE instead of DECIMAL",
+                        featuresConfig.isParseDecimalLiteralsAsDouble(),
+                        false));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -359,5 +365,10 @@ public final class SystemSessionProperties
         DataSize memoryLimitBeforeSpill = session.getProperty(OPERATOR_MEMORY_LIMIT_BEFORE_SPILL, DataSize.class);
         checkArgument(memoryLimitBeforeSpill.toBytes() >= 0, "%s must be positive", OPERATOR_MEMORY_LIMIT_BEFORE_SPILL);
         return memoryLimitBeforeSpill;
+    }
+
+    public static boolean isParseDecimalLiteralsAsDouble(Session session)
+    {
+        return session.getProperty(PARSE_DECIMAL_LITERALS_AS_DOUBLE, Boolean.class);
     }
 }
