@@ -16,7 +16,7 @@ package com.facebook.presto.sql.tree;
 import java.util.Optional;
 
 public abstract class CatalogRelatedStatement
-    extends Statement
+    extends DataDefinitionStatement
 {
     protected CatalogRelatedStatement(Optional<NodeLocation> location)
     {
