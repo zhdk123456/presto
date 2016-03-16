@@ -93,6 +93,7 @@ import com.facebook.presto.operator.scalar.Re2JRegexpFunctions;
 import com.facebook.presto.operator.scalar.ScalarFunctionImplementation;
 import com.facebook.presto.operator.scalar.SequenceFunction;
 import com.facebook.presto.operator.scalar.StringFunctions;
+import com.facebook.presto.operator.scalar.TypeOfFunction;
 import com.facebook.presto.operator.scalar.UrlFunctions;
 import com.facebook.presto.operator.scalar.VarbinaryFunctions;
 import com.facebook.presto.operator.window.CumulativeDistributionFunction;
@@ -463,6 +464,7 @@ public class FunctionRegistry
                 .scalar(MapCardinalityFunction.class)
                 .scalar(MapConcatFunction.class)
                 .scalar(MapToMapCast.class)
+                .scalar(TypeOfFunction.class)
                 .functions(ZIP_FUNCTIONS)
                 .functions(ARRAY_JOIN, ARRAY_JOIN_WITH_NULL_REPLACEMENT)
                 .functions(ARRAY_TO_ARRAY_CAST, ARRAY_LESS_THAN)
