@@ -62,6 +62,7 @@ import static java.math.BigInteger.ZERO;
 
 public final class MathFunctions
 {
+    public static final SqlScalarFunction DECIMAL_TRUNCATE_FUNCTION = decimalTruncateNFunction();
     public static final SqlScalarFunction[] DECIMAL_CEILING_FUNCTIONS = {decimalCeilingFunction("ceiling"), decimalCeilingFunction("ceil")};
     public static final SqlScalarFunction DECIMAL_FLOOR_FUNCTION = decimalFloorFunction();
     public static final SqlScalarFunction DECIMAL_MOD_FUNCTION = decimalModFunction();
