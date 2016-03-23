@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.operator.aggregation.builder;
 
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.spi.Page;
 
 import java.io.Closeable;
@@ -26,6 +27,8 @@ public interface HashAggregationBuilder
     Iterator<Page> buildResult();
 
     boolean checkFullAndUpdateMemory();
+
+    void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter);
 
     @Override
     void close();

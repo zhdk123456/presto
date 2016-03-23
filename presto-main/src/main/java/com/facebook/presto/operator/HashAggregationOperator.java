@@ -175,6 +175,7 @@ public class HashAggregationOperator
     private final DataSize memoryLimitBeforeSpill;
 
     private final List<Type> types;
+    private final HashCollisionsCounter hashCollisionsCounter;
 
     private HashAggregationBuilder aggregationBuilder;
     private Iterator<Page> outputIterator;
@@ -205,6 +206,8 @@ public class HashAggregationOperator
         this.types = toTypes(groupByTypes, step, accumulatorFactories, hashChannel);
         this.spillerFactory = requireNonNull(spillerFactory, "spillerFactory is null");
         this.memoryLimitBeforeSpill = requireNonNull(memoryLimitBeforeSpill, "memoryLimitBeforeSpill is null");
+        this.hashCollisionsCounter = new HashCollisionsCounter(operatorContext);
+        operatorContext.setInfoSupplier(hashCollisionsCounter);
     }
 
     @Override
@@ -331,6 +334,7 @@ public class HashAggregationOperator
     {
         outputIterator = null;
         if (aggregationBuilder != null) {
+            aggregationBuilder.recordHashCollisions(hashCollisionsCounter);
             aggregationBuilder.close();
             aggregationBuilder = null;
         }
