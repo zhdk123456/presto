@@ -324,7 +324,7 @@ public class PagesIndex
         return new SimplePagesHashStrategy(types, ImmutableList.<List<Block>>copyOf(channels), joinChannels, hashChannel);
     }
 
-    public Supplier<LookupSource> createLookupSourceSupplier(
+    public LookupSourceSupplier createLookupSourceSupplier(
             Session session,
             List<Integer> joinChannels,
             Optional<Integer> hashChannel,
