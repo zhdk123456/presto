@@ -15,6 +15,7 @@ package com.facebook.presto.operator.aggregation.builder;
 
 import com.facebook.presto.operator.GroupByHash;
 import com.facebook.presto.operator.GroupByIdBlock;
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
 import com.facebook.presto.operator.aggregation.GroupedAccumulator;
@@ -125,6 +126,22 @@ public class InMemoryHashAggregationBuilder
             operatorContext.setMemoryReservation(memorySize);
             return false;
         }
+    }
+
+    @Override
+    public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
+    {
+        hashCollisionsCounter.recordHashCollision(groupByHash.getHashCollisions(), groupByHash.getExpectedHashCollisions());
+    }
+
+    public long getHashCollisions()
+    {
+        return groupByHash.getHashCollisions();
+    }
+
+    public double getExpectedHashCollisions()
+    {
+        return groupByHash.getExpectedHashCollisions();
     }
 
     @Override
