@@ -15,6 +15,7 @@ package com.facebook.presto.operator.aggregation.builder;
 
 import com.facebook.presto.memory.AbstractAggregatedMemoryContext;
 import com.facebook.presto.memory.LocalMemoryContext;
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.operator.MergeHashSort;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
@@ -38,7 +39,7 @@ import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static java.lang.Math.max;
 
 public class SpillableHashAggregationBuilder
-    implements HashAggregationBuilder
+        implements HashAggregationBuilder
 {
     private InMemoryHashAggregationBuilder hashAggregationBuilder;
     private final SpillerFactory spillerFactory;
@@ -56,6 +57,9 @@ public class SpillableHashAggregationBuilder
     private CompletableFuture<?> spillInProgress = CompletableFuture.completedFuture(null);
     private final LocalMemoryContext aggregationMemoryContext;
     private final LocalMemoryContext spillMemoryContext;
+
+    private long hashCollisions;
+    private double expectedHashCollisions;
 
     public SpillableHashAggregationBuilder(
             List<AccumulatorFactory> accumulatorFactories,
@@ -109,11 +113,19 @@ public class SpillableHashAggregationBuilder
         }
     }
 
+    public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
+    {
+        hashCollisionsCounter.recordHashCollision(hashCollisions, expectedHashCollisions);
+        hashCollisions = 0;
+        expectedHashCollisions = 0;
+    }
+
     @Override
     public boolean isFull()
     {
         return false;
     }
+
     @Override
     public boolean isBusy()
     {
@@ -249,6 +261,11 @@ public class SpillableHashAggregationBuilder
 
     private void rebuildHashAggregationBuilder()
     {
+        if (hashAggregationBuilder != null) {
+            hashCollisions += hashAggregationBuilder.getHashCollisions();
+            expectedHashCollisions += hashAggregationBuilder.getExpectedHashCollisions();
+        }
+
         this.hashAggregationBuilder = new InMemoryHashAggregationBuilder(
                 accumulatorFactories,
                 step,

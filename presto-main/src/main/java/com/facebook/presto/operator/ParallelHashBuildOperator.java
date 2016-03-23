@@ -134,6 +134,7 @@ public class ParallelHashBuildOperator
     private final PagesIndex index;
 
     private boolean finishing;
+    private final HashCollisionsCounter hashCollisionsCounter;
 
     public ParallelHashBuildOperator(
             OperatorContext operatorContext,
@@ -153,6 +154,9 @@ public class ParallelHashBuildOperator
 
         this.hashChannels = hashChannels;
         this.preComputedHashChannel = preComputedHashChannel;
+
+        this.hashCollisionsCounter = new HashCollisionsCounter(operatorContext);
+        operatorContext.setInfoSupplier(hashCollisionsCounter);
     }
 
     @Override
@@ -177,7 +181,7 @@ public class ParallelHashBuildOperator
 
         LookupSource lookupSource = index.createLookupSource(hashChannels, preComputedHashChannel, filterFunction);
         lookupSourceSupplier.setLookupSource(partitionIndex, lookupSource);
-
+        hashCollisionsCounter.recordHashCollision(lookupSource.getHashCollisions(), lookupSource.getExpectedHashCollisions());
         operatorContext.setMemoryReservation(lookupSource.getInMemorySizeInBytes());
     }
 

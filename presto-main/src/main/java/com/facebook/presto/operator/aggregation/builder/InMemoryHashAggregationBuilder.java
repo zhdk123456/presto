@@ -15,6 +15,7 @@ package com.facebook.presto.operator.aggregation.builder;
 
 import com.facebook.presto.operator.GroupByHash;
 import com.facebook.presto.operator.GroupByIdBlock;
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
 import com.facebook.presto.operator.aggregation.GroupedAccumulator;
@@ -135,6 +136,21 @@ public class InMemoryHashAggregationBuilder
         return full;
     }
 
+    public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
+    {
+        hashCollisionsCounter.recordHashCollision(groupByHash.getHashCollisions(), groupByHash.getExpectedHashCollisions());
+    }
+
+    public long getHashCollisions()
+    {
+        return groupByHash.getHashCollisions();
+    }
+
+    public double getExpectedHashCollisions()
+    {
+        return groupByHash.getExpectedHashCollisions();
+    }
+
     public boolean isBusy()
     {
         return false;
@@ -241,7 +257,7 @@ public class InMemoryHashAggregationBuilder
     {
         List<Integer> groupIds = Lists.newArrayList(consecutiveGroupIds());
         groupIds.sort((Integer leftGroupId, Integer rightGroupId) ->
-                        Long.compare(groupByHash.getRawHash(leftGroupId), groupByHash.getRawHash(rightGroupId)));
+                Long.compare(groupByHash.getRawHash(leftGroupId), groupByHash.getRawHash(rightGroupId)));
         return groupIds.iterator();
     }
 
