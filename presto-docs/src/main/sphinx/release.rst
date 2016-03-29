@@ -5,6 +5,8 @@ Release Notes
 .. toctree::
     :maxdepth: 1
 
+    release/teradata-additions
+    release/unsupported
     release/release-0.155
     release/release-0.154
     release/release-0.153
