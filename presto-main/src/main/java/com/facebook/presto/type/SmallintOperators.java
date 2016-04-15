@@ -39,6 +39,7 @@ import static com.facebook.presto.spi.function.OperatorType.MODULUS;
 import static com.facebook.presto.spi.function.OperatorType.MULTIPLY;
 import static com.facebook.presto.spi.function.OperatorType.NEGATION;
 import static com.facebook.presto.spi.function.OperatorType.NOT_EQUAL;
+import static com.facebook.presto.spi.function.OperatorType.SATURATED_FLOOR_CAST;
 import static com.facebook.presto.spi.function.OperatorType.SUBTRACT;
 import static io.airlift.slice.Slices.utf8Slice;
 import static java.lang.Float.floatToRawIntBits;
@@ -233,5 +234,12 @@ public final class SmallintOperators
     public static long hashCode(@SqlType(StandardTypes.SMALLINT) long value)
     {
         return SmallintType.hash((short) value);
+    }
+
+    @ScalarOperator(SATURATED_FLOOR_CAST)
+    @SqlType(StandardTypes.TINYINT)
+    public static long saturatedFloorCastToTinyint(@SqlType(StandardTypes.SMALLINT) long value)
+    {
+        return SignedBytes.saturatedCast(value);
     }
 }
