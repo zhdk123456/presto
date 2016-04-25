@@ -18,9 +18,9 @@ import com.facebook.presto.metadata.FunctionRegistry;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.planner.GroupingOperationAnalyzer;
 import com.facebook.presto.sql.rewrite.StatementRewrite;
 import com.facebook.presto.sql.tree.Expression;
-import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.Statement;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -28,7 +28,7 @@ import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Optional;
 
-import static com.facebook.presto.sql.analyzer.SemanticErrorCode.CANNOT_HAVE_AGGREGATIONS_OR_WINDOWS;
+import static com.facebook.presto.sql.analyzer.SemanticErrorCode.CANNOT_HAVE_AGGREGATIONS_WINDOWS_OR_GROUPING;
 import static java.util.Objects.requireNonNull;
 
 public class Analyzer
@@ -69,7 +69,7 @@ public class Analyzer
         return analysis;
     }
 
-    static void verifyNoAggregatesOrWindowFunctions(FunctionRegistry functionRegistry, Expression predicate, String clause)
+    static void verifyNoAggregateWindowOrGroupingFunctions(FunctionRegistry functionRegistry, Expression predicate, String clause)
     {
         AggregateExtractor extractor = new AggregateExtractor(functionRegistry);
         extractor.process(predicate, null);
@@ -77,10 +77,16 @@ public class Analyzer
         WindowFunctionExtractor windowExtractor = new WindowFunctionExtractor();
         windowExtractor.process(predicate, null);
 
-        List<FunctionCall> found = ImmutableList.copyOf(Iterables.concat(extractor.getAggregates(), windowExtractor.getWindowFunctions()));
+        GroupingOperationAnalyzer.Extractor groupingOperationExtractor = new GroupingOperationAnalyzer.Extractor();
+        groupingOperationExtractor.process(predicate, null);
+
+        List<Expression> found = ImmutableList.copyOf(Iterables.concat(
+                extractor.getAggregates(),
+                windowExtractor.getWindowFunctions(),
+                groupingOperationExtractor.getGroupingOperations()));
 
         if (!found.isEmpty()) {
-            throw new SemanticException(CANNOT_HAVE_AGGREGATIONS_OR_WINDOWS, predicate, "%s cannot contain aggregations or window functions: %s", clause, found);
+            throw new SemanticException(CANNOT_HAVE_AGGREGATIONS_WINDOWS_OR_GROUPING, predicate, "%s cannot contain aggregations, window functions or grouping operations: %s", clause, found);
         }
     }
 }
