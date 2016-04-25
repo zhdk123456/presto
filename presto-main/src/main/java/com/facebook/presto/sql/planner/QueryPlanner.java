@@ -113,10 +113,10 @@ class QueryPlanner
         builder = handleSubqueries(builder, query, orderBy);
         List<Expression> outputs = analysis.getOutputExpressions(query);
         builder = handleSubqueries(builder, query, outputs);
-        builder = project(builder, Iterables.concat(orderBy, outputs));
+        builder = project(builder, Iterables.concat(orderBy, outputs), query);
 
         builder = sort(builder, query);
-        builder = project(builder, analysis.getOutputExpressions(query));
+        builder = project(builder, analysis.getOutputExpressions(query), query);
         builder = limit(builder, query);
 
         return new RelationPlan(
@@ -139,11 +139,11 @@ class QueryPlanner
         builder = handleSubqueries(builder, node, orderBy);
         List<Expression> outputs = analysis.getOutputExpressions(node);
         builder = handleSubqueries(builder, node, outputs);
-        builder = project(builder, Iterables.concat(orderBy, outputs));
+        builder = project(builder, Iterables.concat(orderBy, outputs), node);
 
         builder = distinct(builder, node, outputs, orderBy);
         builder = sort(builder, node);
-        builder = project(builder, analysis.getOutputExpressions(node));
+        builder = project(builder, analysis.getOutputExpressions(node), node);
         builder = limit(builder, node);
 
         return new RelationPlan(
@@ -262,6 +262,9 @@ class QueryPlanner
 
         // rewrite expressions which contain already handled subqueries
         predicate = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), predicate);
+        if (node instanceof QuerySpecification) {
+            predicate = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), predicate);
+        }
         Expression rewrittenBeforeSubqueries = subPlan.rewrite(predicate);
         subPlan = subqueryPlanner.handleSubqueries(subPlan, rewrittenBeforeSubqueries, node);
         predicate = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), predicate);
@@ -270,13 +273,16 @@ class QueryPlanner
         return subPlan.withNewRoot(new FilterNode(idAllocator.getNextId(), subPlan.getRoot(), rewrittenAfterSubqueries));
     }
 
-    private PlanBuilder project(PlanBuilder subPlan, Iterable<Expression> expressions)
+    private PlanBuilder project(PlanBuilder subPlan, Iterable<Expression> expressions, Node node)
     {
         TranslationMap outputTranslations = new TranslationMap(subPlan.getRelationPlan(), analysis);
 
         ImmutableMap.Builder<Symbol, Expression> projections = ImmutableMap.builder();
         for (Expression expression : expressions) {
             Expression rewritten = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), expression);
+            if (node instanceof QuerySpecification) {
+                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), rewritten);
+            }
             Symbol symbol = symbolAllocator.newSymbol(rewritten, analysis.getTypeWithCoercions(expression));
             projections.put(symbol, subPlan.rewrite(rewritten));
             outputTranslations.addIntermediateMapping(expression, rewritten);
@@ -385,7 +391,7 @@ class QueryPlanner
         subPlan = handleSubqueries(subPlan, node, inputs);
 
         if (!Iterables.isEmpty(inputs)) { // avoid an empty projection if the only aggregation is COUNT (which has no arguments)
-            subPlan = project(subPlan, inputs);
+            subPlan = project(subPlan, inputs, node);
         }
 
         // 2. Aggregate
@@ -551,6 +557,14 @@ class QueryPlanner
         if (windowFunctions.isEmpty()) {
             return subPlan;
         }
+
+        // Rewrite any GROUPING() expressions in the window function
+        ImmutableList.Builder<FunctionCall> rewrittenWindowFunctionsBuilder = ImmutableList.builder();
+        for (FunctionCall windowFunction : windowFunctions) {
+            FunctionCall rewrittenFunctionCall = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(node, analysis, metadata), windowFunction);
+            rewrittenWindowFunctionsBuilder.add(rewrittenFunctionCall);
+        }
+        windowFunctions = rewrittenWindowFunctionsBuilder.build();
 
         for (FunctionCall windowFunction : windowFunctions) {
             Window window = windowFunction.getWindow().get();
