@@ -435,6 +435,11 @@ public class Analysis
         functionSignature.putAll(infos);
     }
 
+    public void addFunctionSignature(FunctionCall functionCall, Signature signature)
+    {
+        this.functionSignature.put(functionCall, signature);
+    }
+
     public Set<Expression> getColumnReferences()
     {
         return ImmutableSet.copyOf(columnReferences);
@@ -443,6 +448,11 @@ public class Analysis
     public void addTypes(IdentityHashMap<Expression, Type> types)
     {
         this.types.putAll(types);
+    }
+
+    public void addType(Expression expression, Type type)
+    {
+        this.types.put(expression, type);
     }
 
     public void addCoercion(Expression expression, Type type, boolean isTypeOnlyCoercion)
