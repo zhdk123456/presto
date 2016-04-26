@@ -255,9 +255,9 @@ public final class JsonOperators
     }
 
     @ScalarOperator(CAST)
-    @LiteralParameters("x")
     @SqlType(JSON)
-    public static Slice castFromVarchar(@SqlType(VARCHAR) Slice slice)
+    @LiteralParameters("x")
+    public static Slice castFromVarchar(@SqlType("varchar(x)") Slice slice)
             throws IOException
     {
         try {
