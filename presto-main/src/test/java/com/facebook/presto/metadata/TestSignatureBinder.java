@@ -361,7 +361,7 @@ public class TestSignatureBinder
     }
 
     @Test
-    public void testBindToUnparametrizedVarchar()
+    public void testBindToUnparametrizedVarcharIsImpossible()
             throws Exception
     {
         Signature function = functionSignature()
@@ -371,12 +371,7 @@ public class TestSignatureBinder
 
         assertThat(function)
                 .boundTo("varchar(3)")
-                .succeeds();
-
-        assertThat(function)
-                .boundTo("unknown")
-                .withCoercion()
-                .succeeds();
+                .fails();
     }
 
     @Test
