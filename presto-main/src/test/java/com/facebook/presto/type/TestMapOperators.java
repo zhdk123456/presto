@@ -17,6 +17,7 @@ import com.facebook.presto.operator.scalar.AbstractTestFunctions;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.BlockBuilderStatus;
 import com.facebook.presto.spi.block.InterleavedBlockBuilder;
+import com.facebook.presto.spi.function.LiteralParameters;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.SqlTimestamp;
@@ -60,8 +61,9 @@ public class TestMapOperators
     }
 
     @ScalarFunction
+    @LiteralParameters("x")
     @SqlType(StandardTypes.JSON)
-    public static Slice uncheckedToJson(@SqlType(StandardTypes.VARCHAR) Slice slice)
+    public static Slice uncheckedToJson(@SqlType("varchar(x)") Slice slice)
     {
         return slice;
     }
