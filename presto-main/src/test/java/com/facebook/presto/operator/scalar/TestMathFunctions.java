@@ -13,13 +13,14 @@
  */
 package com.facebook.presto.operator.scalar;
 
-import com.facebook.presto.spi.type.VarcharType;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.type.DecimalType;
 import com.facebook.presto.spi.type.SqlDecimal;
+import com.facebook.presto.spi.type.VarcharType;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.facebook.presto.spi.StandardErrorCode.DIVISION_BY_ZERO;
-import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
 import static com.facebook.presto.spi.StandardErrorCode.NUMERIC_VALUE_OUT_OF_RANGE;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
@@ -615,7 +616,7 @@ public class TestMathFunctions
         assertFunction("round(REAL '3.5')", REAL, 4.0f);
         assertFunction("round(REAL '-3.5')", REAL, -4.0f);
         assertFunction("round(REAL '-3.5001')", REAL, -4.0f);
-        assertFunction("round(REAL '-3.99')", REAL,  -4.0f);
+        assertFunction("round(REAL '-3.99')", REAL, -4.0f);
         assertFunction("round(CAST(NULL as DOUBLE))", DOUBLE, null);
         assertFunction("round(DOUBLE '" + GREATEST_DOUBLE_LESS_THAN_HALF + "')", DOUBLE, 0.0);
         assertFunction("round(DOUBLE '-" + 0x1p-1 + "')", DOUBLE, -1.0); // -0.5
@@ -768,12 +769,16 @@ public class TestMathFunctions
     @Test
     public void testSign()
     {
+        DecimalType expectedDecimalReturnType = createDecimalType(1, 0);
+
         //retains type for NULL values
         assertFunction("sign(CAST(NULL as TINYINT))", TINYINT, null);
         assertFunction("sign(CAST(NULL as SMALLINT))", SMALLINT, null);
         assertFunction("sign(CAST(NULL as INTEGER))", INTEGER, null);
         assertFunction("sign(CAST(NULL as BIGINT))", BIGINT, null);
         assertFunction("sign(CAST(NULL as DOUBLE))", DOUBLE, null);
+        assertFunction("sign(CAST(NULL as DECIMAL(2,1)))", expectedDecimalReturnType, null);
+        assertFunction("sign(CAST(NULL as DECIMAL(38,0)))", expectedDecimalReturnType, null);
 
         //tinyint
         for (int intValue : intLefts) {
@@ -811,6 +816,16 @@ public class TestMathFunctions
         //returns proper sign for +/-Infinity input
         assertFunction("sign(DOUBLE '+Infinity')", DOUBLE, 1.0);
         assertFunction("sign(DOUBLE '-Infinity')", DOUBLE, -1.0);
+
+        //short decimal
+        assertFunction("sign(DECIMAL '0')", expectedDecimalReturnType, SqlDecimal.of("0"));
+        assertFunction("sign(DECIMAL '123')", expectedDecimalReturnType, SqlDecimal.of("1"));
+        assertFunction("sign(DECIMAL '-123')", expectedDecimalReturnType, SqlDecimal.of("-1"));
+
+        //long decimal
+        assertFunction("sign(DECIMAL '0.000000000000000000')", expectedDecimalReturnType, SqlDecimal.of("0"));
+        assertFunction("sign(DECIMAL '123.000000000000000')", expectedDecimalReturnType, SqlDecimal.of("1"));
+        assertFunction("sign(DECIMAL '-123.000000000000000')", expectedDecimalReturnType, SqlDecimal.of("-1"));
     }
 
     @Test
