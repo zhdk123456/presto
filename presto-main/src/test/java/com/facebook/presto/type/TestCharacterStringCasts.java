@@ -16,9 +16,12 @@ package com.facebook.presto.type;
 import com.facebook.presto.operator.scalar.AbstractTestFunctions;
 import org.testng.annotations.Test;
 
+import static com.facebook.presto.operator.scalar.CharacterStringCasts.varcharToCharSaturatedFloorCast;
 import static com.facebook.presto.spi.type.CharType.createCharType;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
+import static io.airlift.slice.Slices.utf8Slice;
+import static org.testng.Assert.assertEquals;
 
 public class TestCharacterStringCasts
         extends AbstractTestFunctions
@@ -50,5 +53,14 @@ public class TestCharacterStringCasts
         assertFunction("cast(cast('bar' as char(5)) as varchar(10))", createVarcharType(10), "bar       ");
         assertFunction("cast(cast('bar' as char(5)) as varchar(1))", createVarcharType(1), "b");
         assertFunction("cast(cast('bar' as char(3)) as varchar(3))", createVarcharType(3), "bar");
+    }
+
+    @Test
+    public void testVarcharToCharSaturatedFloorCast()
+    {
+        assertEquals(varcharToCharSaturatedFloorCast(10L, utf8Slice("1234567890")), utf8Slice("1234567890"));
+        assertEquals(varcharToCharSaturatedFloorCast(10L, utf8Slice("123456789")), utf8Slice("12345678"));
+        assertEquals(varcharToCharSaturatedFloorCast(10L, utf8Slice("12345678901")), utf8Slice("1234567890"));
+        assertEquals(varcharToCharSaturatedFloorCast(10L, utf8Slice("")), utf8Slice(""));
     }
 }

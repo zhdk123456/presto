@@ -25,6 +25,7 @@ import com.facebook.presto.spi.type.SqlDecimal;
 import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.type.JsonPathType;
+import com.facebook.presto.type.LiteralParameter;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -43,6 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
+import static com.facebook.presto.spi.type.Chars.padSpacesAndTruncateToLength;
 import static com.fasterxml.jackson.core.JsonFactory.Feature.CANONICALIZE_FIELD_NAMES;
 import static com.fasterxml.jackson.core.JsonParser.NumberType;
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
@@ -72,9 +74,17 @@ public final class JsonFunctions
     @ScalarOperator(OperatorType.CAST)
     @LiteralParameters("x")
     @SqlType(JsonPathType.NAME)
-    public static JsonPath castToJsonPath(@SqlType("varchar(x)") Slice pattern)
+    public static JsonPath castVarcharToJsonPath(@SqlType("varchar(x)") Slice pattern)
     {
         return new JsonPath(pattern.toStringUtf8());
+    }
+
+    @ScalarOperator(OperatorType.CAST)
+    @LiteralParameters("x")
+    @SqlType(JsonPathType.NAME)
+    public static JsonPath castCharToJsonPath(@LiteralParameter("x") Long charLength, @SqlType("char(x)") Slice pattern)
+    {
+        return new JsonPath(padSpacesAndTruncateToLength(pattern, charLength.intValue()).toStringUtf8());
     }
 
     @ScalarFunction
