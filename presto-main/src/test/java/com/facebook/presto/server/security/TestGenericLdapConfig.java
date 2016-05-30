@@ -19,27 +19,24 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.LDAP;
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.NONE;
-
-public class TestSecurityConfig
+public class TestGenericLdapConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(SecurityConfig.class)
-                .setAuthenticationType(NONE));
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(GenericLdapConfig.class)
+                .setUserBindSearchPattern(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.authentication.type", "LDAP")
+                .put("authentication.ldap.generic.user-bind-pattern", "uid=${USER},ou=org,dc=test,dc=com")
                 .build();
 
-        SecurityConfig expected = new SecurityConfig()
-                .setAuthenticationType(LDAP);
+        GenericLdapConfig expected = new GenericLdapConfig()
+                .setUserBindSearchPattern("uid=${USER},ou=org,dc=test,dc=com");
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 }
