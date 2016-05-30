@@ -17,29 +17,39 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+
 import java.util.Map;
 
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.LDAP;
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.NONE;
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertValidates;
 
-public class TestSecurityConfig
+public class TestOpenLdapConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(SecurityConfig.class)
-                .setAuthenticationType(NONE));
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(OpenLdapConfig.class)
+                .setUserBaseDistinguishedName(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.authentication.type", "LDAP")
+                .put("authentication.ldap.user-base-dn", "dc=test,dc=com")
                 .build();
 
-        SecurityConfig expected = new SecurityConfig()
-                .setAuthenticationType(LDAP);
+        OpenLdapConfig expected = new OpenLdapConfig()
+                .setUserBaseDistinguishedName("dc=test,dc=com");
         ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testValidation()
+    {
+        assertValidates(new OpenLdapConfig()
+                .setUserBaseDistinguishedName("dc=test,dc=com"));
+        assertFailsValidation(new OpenLdapConfig(), "userBaseDistinguishedName", "may not be null", NotNull.class);
     }
 }

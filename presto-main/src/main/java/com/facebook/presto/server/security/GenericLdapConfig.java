@@ -15,32 +15,24 @@ package com.facebook.presto.server.security;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
-import io.airlift.configuration.DefunctConfig;
 
-@DefunctConfig({
-        "http.server.authentication.enabled"
-})
-public class SecurityConfig
+import javax.validation.constraints.NotNull;
+
+public class GenericLdapConfig
 {
-    private AuthenticationType authenticationType =  AuthenticationType.NONE;
+    private String userBindSearchPattern;
 
-    public enum AuthenticationType
+    @NotNull
+    public String getUserBindSearchPattern()
     {
-        NONE,
-        KERBEROS,
-        LDAP
+        return userBindSearchPattern;
     }
 
-    public AuthenticationType getAuthenticationType()
+    @Config("authentication.ldap.generic.user-bind-pattern")
+    @ConfigDescription("Custom user bind pattern")
+    public GenericLdapConfig setUserBindSearchPattern(String userBindSearchPattern)
     {
-        return authenticationType;
-    }
-
-    @Config("http-server.authentication.type")
-    @ConfigDescription("Authentication type (supported types: NONE, KERBEROS, LDAP)")
-    public SecurityConfig setAuthenticationType(AuthenticationType authenticationType)
-    {
-        this.authenticationType = authenticationType;
+        this.userBindSearchPattern = userBindSearchPattern;
         return this;
     }
 }

@@ -17,29 +17,39 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.NotNull;
+
 import java.util.Map;
 
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.LDAP;
-import static com.facebook.presto.server.security.SecurityConfig.AuthenticationType.NONE;
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertValidates;
 
-public class TestSecurityConfig
+public class TestActiveDirectoryConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(SecurityConfig.class)
-                .setAuthenticationType(NONE));
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ActiveDirectoryConfig.class)
+                .setActiveDirectoryDomain(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.authentication.type", "LDAP")
+                .put("authentication.ldap.ad-domain", "test.com")
                 .build();
 
-        SecurityConfig expected = new SecurityConfig()
-                .setAuthenticationType(LDAP);
+        ActiveDirectoryConfig expected = new ActiveDirectoryConfig()
+                .setActiveDirectoryDomain("test.com");
         ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testValidation()
+    {
+        assertValidates(new ActiveDirectoryConfig()
+                .setActiveDirectoryDomain("dc=test,dc=com"));
+        assertFailsValidation(new ActiveDirectoryConfig(), "activeDirectoryDomain", "may not be null", NotNull.class);
     }
 }
