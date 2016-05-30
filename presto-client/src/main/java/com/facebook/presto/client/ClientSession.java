@@ -32,6 +32,7 @@ public class ClientSession
 {
     private final URI server;
     private final String user;
+    private final String password;
     private final String source;
     private final String catalog;
     private final String schema;
@@ -48,6 +49,7 @@ public class ClientSession
         return new ClientSession(
                 session.getServer(),
                 session.getUser(),
+                session.getPassword(),
                 session.getSource(),
                 catalog,
                 schema,
@@ -65,6 +67,7 @@ public class ClientSession
         return new ClientSession(
                 session.getServer(),
                 session.getUser(),
+                session.getPassword(),
                 session.getSource(),
                 session.getCatalog(),
                 session.getSchema(),
@@ -82,6 +85,7 @@ public class ClientSession
         return new ClientSession(
                 session.getServer(),
                 session.getUser(),
+                session.getPassword(),
                 session.getSource(),
                 session.getCatalog(),
                 session.getSchema(),
@@ -99,6 +103,7 @@ public class ClientSession
         return new ClientSession(
                 session.getServer(),
                 session.getUser(),
+                session.getPassword(),
                 session.getSource(),
                 session.getCatalog(),
                 session.getSchema(),
@@ -116,6 +121,7 @@ public class ClientSession
         return new ClientSession(
                 session.getServer(),
                 session.getUser(),
+                session.getPassword(),
                 session.getSource(),
                 session.getCatalog(),
                 session.getSchema(),
@@ -128,15 +134,16 @@ public class ClientSession
                 session.getClientRequestTimeout());
     }
 
-    public ClientSession(URI server, String user, String source, String catalog, String schema, String timeZoneId, Locale locale, Map<String, String> properties, String transactionId, boolean debug, Duration clientRequestTimeout)
+    public ClientSession(URI server, String user, String password, String source, String catalog, String schema, String timeZoneId, Locale locale, Map<String, String> properties, String transactionId, boolean debug, Duration clientRequestTimeout)
     {
-        this(server, user, source, catalog, schema, timeZoneId, locale, properties, emptyMap(), transactionId, debug, clientRequestTimeout);
+        this(server, user, password, source, catalog, schema, timeZoneId, locale, properties, emptyMap(), transactionId, debug, clientRequestTimeout);
     }
 
-    public ClientSession(URI server, String user, String source, String catalog, String schema, String timeZoneId, Locale locale, Map<String, String> properties, Map<String, String> preparedStatements, String transactionId, boolean debug, Duration clientRequestTimeout)
+    public ClientSession(URI server, String user, String password, String source, String catalog, String schema, String timeZoneId, Locale locale, Map<String, String> properties, Map<String, String> preparedStatements, String transactionId, boolean debug, Duration clientRequestTimeout)
     {
         this.server = requireNonNull(server, "server is null");
         this.user = user;
+        this.password = password;
         this.source = source;
         this.catalog = catalog;
         this.schema = schema;
@@ -166,6 +173,11 @@ public class ClientSession
     public String getUser()
     {
         return user;
+    }
+
+    public String getPassword()
+    {
+        return password;
     }
 
     public String getSource()
