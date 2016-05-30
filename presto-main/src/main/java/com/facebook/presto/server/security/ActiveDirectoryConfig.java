@@ -15,32 +15,24 @@ package com.facebook.presto.server.security;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
-import io.airlift.configuration.DefunctConfig;
 
-@DefunctConfig({
-        "http.server.authentication.enabled"
-})
-public class SecurityConfig
+import javax.validation.constraints.NotNull;
+
+public class ActiveDirectoryConfig
 {
-    private AuthenticationType authenticationType =  AuthenticationType.NONE;
+    private String activeDirectoryDomain;
 
-    public enum AuthenticationType
+    @NotNull
+    public String getActiveDirectoryDomain()
     {
-        NONE,
-        KERBEROS,
-        LDAP
+        return activeDirectoryDomain;
     }
 
-    public AuthenticationType getAuthenticationType()
+    @Config("authentication.ldap.ad-domain")
+    @ConfigDescription("Domain name of the user in Active Directory")
+    public ActiveDirectoryConfig setActiveDirectoryDomain(String activeDirectoryDomain)
     {
-        return authenticationType;
-    }
-
-    @Config("http-server.authentication.type")
-    @ConfigDescription("Authentication type (supported types: NONE, KERBEROS, LDAP)")
-    public SecurityConfig setAuthenticationType(AuthenticationType authenticationType)
-    {
-        this.authenticationType = authenticationType;
+        this.activeDirectoryDomain = activeDirectoryDomain;
         return this;
     }
 }

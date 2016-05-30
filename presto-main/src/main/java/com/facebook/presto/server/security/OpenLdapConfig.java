@@ -15,32 +15,24 @@ package com.facebook.presto.server.security;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
-import io.airlift.configuration.DefunctConfig;
 
-@DefunctConfig({
-        "http.server.authentication.enabled"
-})
-public class SecurityConfig
+import javax.validation.constraints.NotNull;
+
+public class OpenLdapConfig
 {
-    private AuthenticationType authenticationType =  AuthenticationType.NONE;
+    private String userBaseDistinguishedName;
 
-    public enum AuthenticationType
+    @NotNull
+    public String getUserBaseDistinguishedName()
     {
-        NONE,
-        KERBEROS,
-        LDAP
+        return userBaseDistinguishedName;
     }
 
-    public AuthenticationType getAuthenticationType()
+    @Config("authentication.ldap.user-base-dn")
+    @ConfigDescription("Base distinguished name of the user")
+    public OpenLdapConfig setUserBaseDistinguishedName(String userBaseDistinguishedName)
     {
-        return authenticationType;
-    }
-
-    @Config("http-server.authentication.type")
-    @ConfigDescription("Authentication type (supported types: NONE, KERBEROS, LDAP)")
-    public SecurityConfig setAuthenticationType(AuthenticationType authenticationType)
-    {
-        this.authenticationType = authenticationType;
+        this.userBaseDistinguishedName = userBaseDistinguishedName;
         return this;
     }
 }
