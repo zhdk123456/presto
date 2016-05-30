@@ -20,8 +20,10 @@ import com.google.common.net.HostAndPort;
 import io.airlift.airline.Option;
 import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.units.Duration;
+import jline.console.ConsoleReader;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.CharsetEncoder;
@@ -34,6 +36,7 @@ import java.util.Optional;
 import java.util.TimeZone;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
@@ -74,6 +77,9 @@ public class ClientOptions
 
     @Option(name = "--user", title = "user", description = "Username")
     public String user = System.getProperty("user.name");
+
+    @Option(name = "--password", title = "password", description = "Password")
+    public boolean password;
 
     @Option(name = "--source", title = "source", description = "Name of source making query")
     public String source = "presto-cli";
@@ -124,6 +130,7 @@ public class ClientOptions
         return new ClientSession(
                 parseServer(server),
                 user,
+                promptFor(password),
                 source,
                 catalog,
                 schema,
@@ -134,6 +141,22 @@ public class ClientOptions
                 null,
                 debug,
                 clientRequestTimeout);
+    }
+
+    private String promptFor(boolean password)
+    {
+        if (password) {
+            checkState(user != null, "Username cannot be null");
+            try {
+                ConsoleReader consoleReader = new ConsoleReader();
+                consoleReader.setExpandEvents(false);
+                return consoleReader.readLine("Enter password: ", '*');
+            }
+            catch (IOException e) {
+                System.err.println("Console read error: " + e.getMessage());
+            }
+        }
+        return null;
     }
 
     public KerberosConfig toKerberosConfig()
