@@ -975,7 +975,10 @@ public class TestMathFunctions
         assertFunction("greatest(REAL '1.5', REAL '-1.0' / DOUBLE '0.0', 1.0 / REAL '0.0')", DOUBLE, (double) (1.0f / 0.0f));
         assertFunction("greatest(5, REAL '4', CAST(NULL as DOUBLE), 3)", DOUBLE, null);
 
-        // todo add decimal cases
+        // decimal
+        assertDecimalFunction("greatest(1.0, 2.0)", decimal("2.0"));
+        assertDecimalFunction("greatest(1.0, -2.0)", decimal("1.0"));
+        assertDecimalFunction("greatest(1.0, 1.1, 1.2, 1.3)", decimal("1.3"));
 
         // mixed
         assertFunction("greatest(1, 20000000000)", BIGINT, 20000000000L);
@@ -985,6 +988,8 @@ public class TestMathFunctions
         assertFunction("greatest(CAST(1.0 as DOUBLE), 2)", DOUBLE, 2.0);
         assertFunction("greatest(CAST(5.0 as DOUBLE), 4, CAST(NULL as DOUBLE), 3)", DOUBLE, null);
         assertFunction("greatest(CAST(5.0 as DOUBLE), 4, CAST(NULL as BIGINT), 3)", DOUBLE, null);
+        assertFunction("greatest(1.0, CAST(2.0 as DOUBLE))", DOUBLE, 2.0);
+        assertDecimalFunction("greatest(5, 4, 3.0, 2)", decimal("0000000005.0"));
 
         // invalid
         assertInvalidFunction("greatest(CAST(1.5 as DOUBLE), CAST(0.0 as DOUBLE) / CAST(0.0 as DOUBLE))", "Invalid argument to greatest(): NaN");
@@ -1036,7 +1041,10 @@ public class TestMathFunctions
         assertFunction("least(DOUBLE '1.5', REAL '-1.0' / 0.0, DOUBLE '1.0' / 0.0)", DOUBLE, (double) (-1.0f / 0.0f));
         assertFunction("least(REAL '5', 4, CAST(NULL as DOUBLE), 3)", DOUBLE, null);
 
-        // todo add decimal cases
+        // decimal
+        assertDecimalFunction("least(1.0, 2.0)", decimal("1.0"));
+        assertDecimalFunction("least(1.0, -2.0)", decimal("-2.0"));
+        assertDecimalFunction("least(1.0, 1.1, 1.2, 1.3)", decimal("1.0"));
 
         // mixed
         assertFunction("least(1, 20000000000)", BIGINT, 1L);
@@ -1046,6 +1054,8 @@ public class TestMathFunctions
         assertFunction("least(CAST(1.0 as DOUBLE), 2)", DOUBLE, 1.0);
         assertFunction("least(CAST(5.0 as DOUBLE), 4, CAST(NULL as DOUBLE), 3)", DOUBLE, null);
         assertFunction("least(CAST(5.0 as DOUBLE), 4, CAST(NULL as BIGINT), 3)", DOUBLE, null);
+        assertFunction("least(1.0, CAST(2.0 as DOUBLE))", DOUBLE, 1.0);
+        assertDecimalFunction("least(5, 4, 3.0, 2)", decimal("0000000002.0"));
 
         // invalid
         assertInvalidFunction("least(CAST(1.5 as DOUBLE), CAST(0.0 as DOUBLE) / CAST(0.0 as DOUBLE))", "Invalid argument to least(): NaN");
