@@ -60,6 +60,7 @@ public final class AllSimpleTypesTableDefinitions
                         "   c_date               DATE," +
                         "   c_string             STRING," +
                         "   c_varchar            VARCHAR(10)," +
+                        "   c_char               CHAR(10)," +
                         "   c_boolean            BOOLEAN," +
                         "   c_binary             BINARY" +
                         ") " +
@@ -86,6 +87,7 @@ public final class AllSimpleTypesTableDefinitions
                         "   c_timestamp          TIMESTAMP," +
                         "   c_string             STRING," +
                         "   c_varchar            VARCHAR(10)," +
+                        "   c_char               CHAR(10)," +
                         "   c_boolean            BOOLEAN," +
                         "   c_binary             BINARY" +
                         ") " +
