@@ -45,6 +45,7 @@ import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.common.type.HiveChar;
 import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.common.type.HiveVarchar;
 import org.apache.hadoop.hive.ql.exec.FileSinkOperator.RecordWriter;
@@ -55,7 +56,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.SettableStructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaHiveCharObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaHiveDecimalObjectInspector;
+import org.apache.hadoop.hive.serde2.typeinfo.CharTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.DecimalTypeInfo;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
@@ -91,6 +94,7 @@ import static com.facebook.presto.hive.HiveTestUtils.SESSION;
 import static com.facebook.presto.hive.HiveUtil.isStructuralType;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.CharType.createCharType;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.IntegerType.INTEGER;
 import static com.facebook.presto.spi.type.SmallintType.SMALLINT;
@@ -167,6 +171,9 @@ public abstract class AbstractTestHiveFileFormats
             new JavaHiveDecimalObjectInspector(new DecimalTypeInfo(18, 8));
     private static final JavaHiveDecimalObjectInspector DECIMAL_INSPECTOR_PRECISION_38 =
             new JavaHiveDecimalObjectInspector(new DecimalTypeInfo(38, 16));
+
+    private static final JavaHiveCharObjectInspector CHAR_INSPECTOR_LENGTH_10 =
+            new JavaHiveCharObjectInspector(new CharTypeInfo(10));
 
     private static final DecimalType DECIMAL_TYPE_PRECISION_2 = DecimalType.createDecimalType(2, 1);
     private static final DecimalType DECIMAL_TYPE_PRECISION_4 = DecimalType.createDecimalType(4, 2);
@@ -274,11 +281,16 @@ public abstract class AbstractTestHiveFileFormats
                     getStandardMapObjectInspector(javaHiveVarcharObjectInspector, javaHiveVarcharObjectInspector),
                     ImmutableMap.of(new HiveVarchar("test", HiveVarchar.MAX_VARCHAR_LENGTH), new HiveVarchar("test", HiveVarchar.MAX_VARCHAR_LENGTH)),
                     mapBlockOf(createUnboundedVarcharType(), createUnboundedVarcharType(), "test", "test")))
+            .add(new TestColumn("t_map_char",
+                    getStandardMapObjectInspector(CHAR_INSPECTOR_LENGTH_10, CHAR_INSPECTOR_LENGTH_10),
+                    ImmutableMap.of(new HiveChar("test", 10), new HiveChar("test", 10)),
+                    mapBlockOf(createCharType(10), createCharType(10), "test", "test")))
             .add(new TestColumn("t_map_smallint",
                     getStandardMapObjectInspector(javaShortObjectInspector, javaShortObjectInspector),
                     ImmutableMap.of((short) 2, (short) 2),
                     mapBlockOf(SMALLINT, SMALLINT, (short) 2, (short) 2)))
-            .add(new TestColumn("t_map_null_key", getStandardMapObjectInspector(javaLongObjectInspector, javaLongObjectInspector), asMap(new Long[] {null, 2L}, new Long[] {0L,  3L}), mapBlockOf(BIGINT, BIGINT, 2, 3)))
+            .add(new TestColumn("t_map_null_key", getStandardMapObjectInspector(javaLongObjectInspector, javaLongObjectInspector), asMap(new Long[] {null, 2L}, new Long[] {0L,
+                                                                                                                                                                            3L}), mapBlockOf(BIGINT, BIGINT, 2, 3)))
             .add(new TestColumn("t_map_int", getStandardMapObjectInspector(javaIntObjectInspector, javaIntObjectInspector), ImmutableMap.of(3, 3), mapBlockOf(INTEGER, INTEGER, 3, 3)))
             .add(new TestColumn("t_map_bigint", getStandardMapObjectInspector(javaLongObjectInspector, javaLongObjectInspector), ImmutableMap.of(4L, 4L), mapBlockOf(BIGINT, BIGINT, 4L, 4L)))
             .add(new TestColumn("t_map_float", getStandardMapObjectInspector(javaFloatObjectInspector, javaFloatObjectInspector), ImmutableMap.of(5.0f, 5.0f), mapBlockOf(DOUBLE, DOUBLE, 5.0f, 5.0f)))
@@ -499,7 +511,8 @@ public abstract class AbstractTestHiveFileFormats
                 Text.class,
                 compressionCodec != null,
                 tableProperties,
-                () -> { }
+                () -> {
+                }
         );
 
         try {
