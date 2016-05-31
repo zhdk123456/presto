@@ -73,6 +73,7 @@ public class TestInsertIntoHiveTable
                 "date '2015-05-10', " +
                 "'ala ma kota', " +
                 "'ala ma kot', " +
+                "CAST('ala ma    ' as CHAR(10)), " +
                 "true, " +
                 "from_base64('a290IGJpbmFybnk=')" +
                 ")");
@@ -91,6 +92,7 @@ public class TestInsertIntoHiveTable
                         Date.valueOf("2015-05-10"),
                         "ala ma kota",
                         "ala ma kot",
+                        "ala ma    ",
                         true,
                         "kot binarny".getBytes()));
     }
@@ -116,6 +118,7 @@ public class TestInsertIntoHiveTable
                         Date.valueOf("2015-05-10"),
                         "ala ma kota",
                         "ala ma kot",
+                        "ala ma    ",
                         true,
                         "kot binarny".getBytes()));
     }
