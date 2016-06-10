@@ -15,7 +15,6 @@ package com.facebook.presto.metadata;
 
 import com.facebook.presto.spi.type.NamedTypeSignature;
 import com.facebook.presto.spi.type.ParameterKind;
-import com.facebook.presto.spi.type.StandardTypes;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
 import com.facebook.presto.spi.type.TypeSignature;
@@ -147,12 +146,6 @@ public class SignatureBinder
         if (isTypeVariable(expectedSignature)) {
             String variable = expectedSignature.getBase();
             return matchAndBindTypeVariable(variable, actualType, variableBinder);
-        }
-
-        // TODO: Refactor VARCHAR function to accept parametrized VARCHAR(X) instead of VARCHAR and remove this hack
-        if (expectedSignature.getBase().equals(StandardTypes.VARCHAR) && expectedSignature.getParameters().isEmpty()) {
-            return actualType.getTypeSignature().getBase().equals(StandardTypes.VARCHAR) ||
-                    (allowCoercion && typeManager.coerceTypeBase(actualType, StandardTypes.VARCHAR).isPresent());
         }
 
         // If the expected signature is a signature of the concrete type no variables are need to be bound

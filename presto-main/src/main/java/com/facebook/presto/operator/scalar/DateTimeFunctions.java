@@ -20,6 +20,7 @@ import com.facebook.presto.spi.function.LiteralParameters;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.VarcharType;
 import com.facebook.presto.util.ThreadLocalCache;
 import com.google.common.primitives.Ints;
 import io.airlift.slice.Slice;
