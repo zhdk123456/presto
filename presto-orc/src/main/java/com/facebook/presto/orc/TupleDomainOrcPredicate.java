@@ -136,6 +136,9 @@ public class TupleDomainOrcPredicate<C>
         else if (REAL.equals(type) && columnStatistics.getDoubleStatistics() != null) {
             return createDomain(type, hasNullValue, columnStatistics.getDoubleStatistics(), value -> (long) floatToRawIntBits(value.floatValue()));
         }
+        else if (REAL.equals(type) && columnStatistics.getDoubleStatistics() != null) {
+            return createDomain(type, hasNullValue, columnStatistics.getDoubleStatistics(), value -> (long) floatToRawIntBits(value.floatValue()));
+        }
         return Domain.create(ValueSet.all(type), hasNullValue);
     }
 
