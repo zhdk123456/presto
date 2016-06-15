@@ -51,6 +51,7 @@ import static java.sql.JDBCType.DOUBLE;
 import static java.sql.JDBCType.INTEGER;
 import static java.sql.JDBCType.LONGNVARCHAR;
 import static java.sql.JDBCType.LONGVARBINARY;
+import static java.sql.JDBCType.REAL;
 import static java.sql.JDBCType.SMALLINT;
 import static java.sql.JDBCType.TIMESTAMP;
 import static java.sql.JDBCType.TINYINT;
@@ -116,6 +117,7 @@ public class TestAllDatatypesFromHiveConnector
                         32767,
                         2147483647,
                         9223372036854775807L,
+                        123.345f,
                         234.567,
                         new BigDecimal("346"),
                         new BigDecimal("345.67800"),
@@ -145,6 +147,7 @@ public class TestAllDatatypesFromHiveConnector
                         32767,
                         2147483647,
                         9223372036854775807L,
+                        123.345f,
                         234.567,
                         new BigDecimal("346"),
                         new BigDecimal("345.67800"),
@@ -172,6 +175,7 @@ public class TestAllDatatypesFromHiveConnector
                         32767,
                         2147483647,
                         9223372036854775807L,
+                        123.345f,
                         234.567,
                         new BigDecimal("346"),
                         new BigDecimal("345.67800"),
@@ -190,6 +194,7 @@ public class TestAllDatatypesFromHiveConnector
                 row("c_smallint", "smallint"),
                 row("c_int", "integer"),
                 row("c_bigint", "bigint"),
+                row("c_float", "real"),
                 row("c_double", "double"),
                 row("c_decimal", "decimal(10,0)"),
                 row("c_decimal_w_params", "decimal(10,5)"),
@@ -228,6 +233,7 @@ public class TestAllDatatypesFromHiveConnector
                     SMALLINT,
                     INTEGER,
                     BIGINT,
+                    REAL,
                     DOUBLE,
                     DECIMAL,
                     DECIMAL,
@@ -254,6 +260,7 @@ public class TestAllDatatypesFromHiveConnector
                 row("c_smallint", "smallint"),
                 row("c_int", "integer"),
                 row("c_bigint", "bigint"),
+                row("c_float", "real"),
                 row("c_double", "double"),
                 row("c_decimal", "decimal(10,0)"),
                 row("c_decimal_w_params", "decimal(10,5)"),
@@ -264,12 +271,30 @@ public class TestAllDatatypesFromHiveConnector
                 row("c_binary", "varbinary")
         );
 
-        assertThat(query("SELECT * FROM parquet_all_types")).containsOnly(
+        QueryResult queryResult = query("SELECT * FROM parquet_all_types");
+        assertThat(queryResult).hasColumns(
+                TINYINT,
+                SMALLINT,
+                INTEGER,
+                BIGINT,
+                REAL,
+                DOUBLE,
+                DECIMAL,
+                DECIMAL,
+                TIMESTAMP,
+                LONGNVARCHAR,
+                LONGNVARCHAR,
+                BOOLEAN,
+                LONGVARBINARY
+        );
+
+        assertThat(queryResult).containsOnly(
                 row(
                         127,
                         32767,
                         2147483647,
                         9223372036854775807L,
+                        123.345f,
                         234.567,
                         new BigDecimal("346"),
                         new BigDecimal("345.67800"),
