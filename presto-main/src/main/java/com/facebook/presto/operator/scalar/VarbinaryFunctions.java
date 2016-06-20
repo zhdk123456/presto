@@ -42,7 +42,7 @@ public final class VarbinaryFunctions
 
     @Description("encode binary data as base64")
     @ScalarFunction
-    @SqlType(VarcharType.VARCHAR_UNBOUNDED)
+    @SqlType(StandardTypes.VARCHAR)
     public static Slice toBase64(@SqlType(StandardTypes.VARBINARY) Slice slice)
     {
         return Slices.wrappedBuffer(Base64.getEncoder().encode(slice.getBytes()));
@@ -77,7 +77,7 @@ public final class VarbinaryFunctions
 
     @Description("encode binary data as base64 using the URL safe alphabet")
     @ScalarFunction("to_base64url")
-    @SqlType(VarcharType.VARCHAR_UNBOUNDED)
+    @SqlType(StandardTypes.VARCHAR)
     public static Slice toBase64Url(@SqlType(StandardTypes.VARBINARY) Slice slice)
     {
         return Slices.wrappedBuffer(Base64.getUrlEncoder().encode(slice.getBytes()));
@@ -112,7 +112,7 @@ public final class VarbinaryFunctions
 
     @Description("encode binary data as hex")
     @ScalarFunction
-    @SqlType(VarcharType.VARCHAR_UNBOUNDED)
+    @SqlType(StandardTypes.VARCHAR)
     public static Slice toHex(@SqlType(StandardTypes.VARBINARY) Slice slice)
     {
         return Slices.utf8Slice(BaseEncoding.base16().encode(slice.getBytes()));
