@@ -20,7 +20,16 @@ public class LdapServerConfig
     private String ldapUrl;
     private String baseDistinguishedName;
     private boolean authenticationEnabled;
+    private String serverType = ServerType.ACTIVE_DIRECTORY.name();
     private String activeDirectoryDomain;
+    private String groupDistinguishedName;
+    private String userObjectClass = "person";
+
+    public static enum ServerType
+    {
+        ACTIVE_DIRECTORY,
+        OPENLDAP
+    }
 
     public String getLdapUrl()
     {
@@ -67,6 +76,42 @@ public class LdapServerConfig
     public LdapServerConfig setAuthenticationEnabled(boolean enabled)
     {
         this.authenticationEnabled = enabled;
+        return this;
+    }
+
+    public String getGroupDistinguishedName()
+    {
+        return groupDistinguishedName;
+    }
+
+    @Config("authentication.ldap.group-dn")
+    public LdapServerConfig setGroupDistinguishedName(String groupDistinguishedName)
+    {
+        this.groupDistinguishedName = groupDistinguishedName;
+        return this;
+    }
+
+    public String getUserObjectClass()
+    {
+        return userObjectClass;
+    }
+
+    @Config("authentication.ldap.user-object-class")
+    public LdapServerConfig setUserObjectClass(String userObjectClass)
+    {
+        this.userObjectClass = userObjectClass;
+        return this;
+    }
+
+    public String getServerType()
+    {
+        return serverType;
+    }
+
+    @Config("authentication.ldap.server-type")
+    public LdapServerConfig setServerType(String serverType)
+    {
+        this.serverType = serverType;
         return this;
     }
 }
