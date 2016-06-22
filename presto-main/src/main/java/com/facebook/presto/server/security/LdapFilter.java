@@ -39,6 +39,7 @@ import java.util.Base64;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -57,12 +58,14 @@ public class LdapFilter
     public static final String LDAP_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
     private final String ldapUrl;
     private final LdapBinder ldapBinder;
+    private final Optional<String> groupDistinguishedName;
 
     @Inject
     public LdapFilter(LdapServerConfig config, LdapBinder ldapBinder)
     {
         this.ldapUrl = requireNonNull(config.getLdapUrl(), "ldapUrl is null");
         this.ldapBinder = requireNonNull(ldapBinder, "ldapBinder is null");
+        this.groupDistinguishedName = Optional.ofNullable(config.getGroupDistinguishedName());
 
         try {
             authenticate(getBasicEnvironment());
@@ -118,7 +121,12 @@ public class LdapFilter
                 environment.put(SECURITY_CREDENTIALS, password);
                 context = authenticate(environment);
 
-                //TODO: Use the context to do the group membership search
+                if (groupDistinguishedName.isPresent()) {
+                    if (!ldapBinder.checkForGroupMembership(user, groupDistinguishedName.get(), context)) {
+                        throw new RuntimeException(format("Unauthorized User: User %s not a member of the group %s", user, groupDistinguishedName));
+                    }
+                    LOG.debug("Group membership check succeeded for user %s in group %s", user, groupDistinguishedName);
+                }
 
                 LOG.debug("User %s successfully authenticated", user);
 

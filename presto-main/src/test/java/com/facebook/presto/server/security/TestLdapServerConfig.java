@@ -31,7 +31,10 @@ public class TestLdapServerConfig
                 .setLdapUrl(null)
                 .setBaseDistinguishedName(null)
                 .setActiveDirectoryDomain(null)
-                .setAuthenticationEnabled(false));
+                .setAuthenticationEnabled(false)
+                .setServerType("ACTIVE_DIRECTORY")
+                .setUserObjectClass("person")
+                .setGroupDistinguishedName(null));
     }
 
     @Test
@@ -42,13 +45,19 @@ public class TestLdapServerConfig
                 .put("authentication.ldap.base-dn", "DC=corp,DC=root,DC=mycompany,DC=com")
                 .put("authentication.ldap.ad-domain", "mycompany.com")
                 .put("authentication.ldap.enabled", "true")
+                .put("authentication.ldap.server-type", "openldap")
+                .put("authentication.ldap.user-object-class", "user")
+                .put("authentication.ldap.group-dn", "CN=mygroup,OU=Org,DC=corp,DC=root,DC=mycompany,DC=com")
                 .build();
 
         LdapServerConfig expected = new LdapServerConfig()
                 .setLdapUrl("ldaps://localhost:636")
                 .setBaseDistinguishedName("DC=corp,DC=root,DC=mycompany,DC=com")
                 .setActiveDirectoryDomain("mycompany.com")
-                .setAuthenticationEnabled(true);
+                .setAuthenticationEnabled(true)
+                .setServerType("openldap")
+                .setUserObjectClass("user")
+                .setGroupDistinguishedName("CN=mygroup,OU=Org,DC=corp,DC=root,DC=mycompany,DC=com");
 
         assertFullMapping(properties, expected);
     }
