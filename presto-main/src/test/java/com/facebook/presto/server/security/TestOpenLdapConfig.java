@@ -30,7 +30,9 @@ public class TestOpenLdapConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(OpenLdapConfig.class)
-                .setUserBaseDistinguishedName(null));
+                .setUserBaseDistinguishedName(null)
+                .setGroupDistinguishedName(null)
+                .setUserObjectClass(null));
     }
 
     @Test
@@ -38,10 +40,14 @@ public class TestOpenLdapConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("authentication.ldap.user-base-dn", "dc=test,dc=com")
+                .put("authentication.ldap.group-dn", "cn=group,dc=test,dc=com")
+                .put("authentication.ldap.user-object-class", "person")
                 .build();
 
         OpenLdapConfig expected = new OpenLdapConfig()
-                .setUserBaseDistinguishedName("dc=test,dc=com");
+                .setUserBaseDistinguishedName("dc=test,dc=com")
+                .setGroupDistinguishedName("cn=group,dc=test,dc=com")
+                .setUserObjectClass("person");
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 

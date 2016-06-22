@@ -23,6 +23,9 @@ public class LdapServerConfig
 {
     private String ldapUrl;
     private ServerType ldapServerType;
+    private String userBaseDistinguishedName;
+    private String groupDistinguishedName;
+    private String userObjectClass;
 
     public enum ServerType{
         ACTIVE_DIRECTORY,
@@ -56,6 +59,45 @@ public class LdapServerConfig
     public LdapServerConfig setLdapServerType(ServerType ldapServerType)
     {
         this.ldapServerType = ldapServerType;
+        return this;
+    }
+
+    public String getUserBaseDistinguishedName()
+    {
+        return userBaseDistinguishedName;
+    }
+
+    @Config("authentication.ldap.user-base-dn")
+    @ConfigDescription("Base distinguished name of the user")
+    public LdapServerConfig setUserBaseDistinguishedName(String userBaseDistinguishedName)
+    {
+        this.userBaseDistinguishedName = userBaseDistinguishedName;
+        return this;
+    }
+
+    public String getGroupDistinguishedName()
+    {
+        return groupDistinguishedName;
+    }
+
+    @Config("authentication.ldap.group-dn")
+    @ConfigDescription("Entire distinguished name of the group")
+    public LdapServerConfig setGroupDistinguishedName(String groupDistinguishedName)
+    {
+        this.groupDistinguishedName = groupDistinguishedName;
+        return this;
+    }
+
+    public String getUserObjectClass()
+    {
+        return userObjectClass;
+    }
+
+    @Config("authentication.ldap.user-object-class")
+    @ConfigDescription("LDAP object class the user implements")
+    public LdapServerConfig setUserObjectClass(String userObjectClass)
+    {
+        this.userObjectClass = userObjectClass;
         return this;
     }
 }

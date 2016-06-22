@@ -23,6 +23,11 @@ public class ActiveDirectoryBinder
     @Inject
     public ActiveDirectoryBinder(ActiveDirectoryConfig config)
     {
-        super(format("%s@%s", "${USER}", config.getActiveDirectoryDomain()));
+        super(format("%s@%s", "${USER}", config.getActiveDirectoryDomain()),
+                config.getGroupDistinguishedName() == null || config.getUserObjectClass() == null ? null :
+                        format("(&(objectClass=%s)(sAMAccountName=%s)(memberof=%s))",
+                                config.getUserObjectClass(),
+                                "${USER}",
+                                config.getGroupDistinguishedName()));
     }
 }
