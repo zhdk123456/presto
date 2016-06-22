@@ -21,8 +21,11 @@ import io.airlift.http.server.TheServlet;
 
 import javax.servlet.Filter;
 
+import static com.facebook.presto.server.security.LdapServerConfig.ServerType.ACTIVE_DIRECTORY;
+import static com.facebook.presto.server.security.LdapServerConfig.ServerType.OPENLDAP;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.lang.String.format;
 
 public class ServerSecurityModule
         extends AbstractConfigurationAwareModule
@@ -39,18 +42,26 @@ public class ServerSecurityModule
         checkState(!(ldapServerConfig.getAuthenticationEnabled() && config.getAuthenticationEnabled()), "Enabling both Kerberos and LDAP authentication not supported");
 
         if (ldapServerConfig.getAuthenticationEnabled()) {
-            checkState((ldapServerConfig.getBaseDistinguishedName() != null) != (ldapServerConfig.getActiveDirectoryDomain() != null),
-                    "Set either authentication.ldap.base-dn or authentication.ldap.ad-domain server property");
-
             Multibinder.newSetBinder(binder, Filter.class, TheServlet.class)
                     .addBinding()
                     .to(LdapFilter.class)
                     .in(Scopes.SINGLETON);
-            if (ldapServerConfig.getBaseDistinguishedName() != null) {
+            if (ldapServerConfig.getServerType().equalsIgnoreCase(OPENLDAP.name())) {
+                checkState(ldapServerConfig.getBaseDistinguishedName() != null, "Missing property 'authentication.ldap.base-dn'");
+                checkState(ldapServerConfig.getGroupDistinguishedName() == null, "Group membership based authorization not yet supported");
+
                 binder.bind(LdapBinder.class).to(OpenLdapBinder.class).in(Scopes.SINGLETON);
             }
-            else if (ldapServerConfig.getActiveDirectoryDomain() != null) {
+            else if (ldapServerConfig.getServerType().equalsIgnoreCase(ACTIVE_DIRECTORY.name())) {
+                checkState(ldapServerConfig.getActiveDirectoryDomain() != null, "Missing property 'authentication.ldap.ad-domain'");
+                if (ldapServerConfig.getGroupDistinguishedName() != null) {
+                    checkState(ldapServerConfig.getBaseDistinguishedName() != null, "Missing property 'authentication.ldap.base-dn'");
+                }
+
                 binder.bind(LdapBinder.class).to(ActiveDirectoryBinder.class).in(Scopes.SINGLETON);
+            }
+            else {
+                throw new IllegalStateException(format("Invalid value '%s' for the property 'authentication.ldap.server-type'", ldapServerConfig.getServerType()));
             }
         }
 
