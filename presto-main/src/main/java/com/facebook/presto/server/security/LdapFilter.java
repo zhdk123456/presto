@@ -23,6 +23,7 @@ import javax.naming.AuthenticationException;
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
+import javax.naming.directory.SearchControls;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -40,7 +41,11 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Objects;
 
+import static com.facebook.presto.server.security.LdapServerConfig.ServerType.GENERIC;
 import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static javax.naming.Context.INITIAL_CONTEXT_FACTORY;
@@ -134,9 +139,11 @@ public class LdapFilter
             environment.put(SECURITY_CREDENTIALS, password);
             context = authenticate(environment);
 
-            // TODO: Use the context to do the group membership search
-
             log.debug("Authentication successful for user %s.", user);
+
+            if (genericLdapBinder.getGroupAuthorizationSearchPattern().isPresent()) {
+                checkForGroupMembership(genericLdapBinder.getGroupAuthorizationSearchPattern().get(), user, context);
+            }
 
             // ldap authentication ok, continue
             nextFilter.doFilter(new HttpServletRequestWrapper(request)
@@ -165,6 +172,27 @@ public class LdapFilter
             catch (NamingException ignored) {
             }
         }
+    }
+
+    private void checkForGroupMembership(String searchFilterPattern, String user, DirContext context)
+    {
+            checkState(serverConfig.getUserBaseDistinguishedName() != null, "Base distinguished name (DN) for user %s is null", user);
+
+            try {
+                String searchFilter = searchFilterPattern.replaceAll("\\$\\{USER\\}", user);
+                GroupAuthorizationFilter groupFilter = new GroupAuthorizationFilter(serverConfig.getUserBaseDistinguishedName(), searchFilter);
+
+                String groupNameIfPresent = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
+                if (!groupFilter.authorize(context)) {
+                    String errorMessage = format("User %s not a member of the group %s", user, groupNameIfPresent);
+                    log.debug("Authorization failed for user. " + errorMessage);
+                    throw new RuntimeException("Unauthorized user: " + errorMessage);
+                }
+                log.debug("Authorization succeeded for user %s in group %s", user, groupNameIfPresent);
+            }
+            catch (NamingException e) {
+                throw Throwables.propagate(e);
+            }
     }
 
     private Hashtable<String, String> getBasicEnvironment()
@@ -237,6 +265,55 @@ public class LdapFilter
         public String toString()
         {
             return name;
+        }
+    }
+
+    private final class GroupAuthorizationFilter
+    {
+        private final String userBaseDistinguishedName;
+        private final String searchFilter;
+
+        public GroupAuthorizationFilter(String userBaseDistinguishedName, String searchFilter)
+        {
+            this.userBaseDistinguishedName = requireNonNull(userBaseDistinguishedName, "userBaseDistinguishedName is null");
+            this.searchFilter = requireNonNull(searchFilter, "searchFilter is null");
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            GroupAuthorizationFilter that = (GroupAuthorizationFilter) o;
+            return Objects.equals(userBaseDistinguishedName, that.userBaseDistinguishedName)
+                    && Objects.equals(searchFilter, that.searchFilter);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(this.userBaseDistinguishedName, this.searchFilter);
+        }
+
+        @Override
+        public String toString()
+        {
+            return toStringHelper(this)
+            .add("userBaseDistinguishedName", userBaseDistinguishedName)
+            .add("searchFilter", searchFilter)
+            .toString();
+        }
+
+        public boolean authorize(DirContext context) throws NamingException
+        {
+            SearchControls searchControls = new SearchControls();
+            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+            return context.search(userBaseDistinguishedName, searchFilter, searchControls).hasMoreElements();
         }
     }
 }
