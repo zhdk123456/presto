@@ -21,6 +21,7 @@ import javax.validation.constraints.NotNull;
 public class GenericLdapConfig
 {
     private String userBindSearchPattern;
+    private String groupAuthorizationSearchPattern;
 
     @NotNull
     public String getUserBindSearchPattern()
@@ -33,6 +34,19 @@ public class GenericLdapConfig
     public GenericLdapConfig setUserBindSearchPattern(String userBindSearchPattern)
     {
         this.userBindSearchPattern = userBindSearchPattern;
+        return this;
+    }
+
+    public String getGroupAuthorizationSearchPattern()
+    {
+        return groupAuthorizationSearchPattern;
+    }
+
+    @Config("authentication.ldap.generic.group-auth-pattern")
+    @ConfigDescription("Custom group authorization check query")
+    public GenericLdapConfig setGroupAuthorizationSearchPattern(String groupAuthorizationSearchPattern)
+    {
+        this.groupAuthorizationSearchPattern = groupAuthorizationSearchPattern;
         return this;
     }
 }
