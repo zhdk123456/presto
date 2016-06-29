@@ -35,7 +35,7 @@ public class TestTableNameCompleter
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Optional.empty(),
+                Optional.empty(),r
                 Optional.empty(),
                 false,
                 null);
