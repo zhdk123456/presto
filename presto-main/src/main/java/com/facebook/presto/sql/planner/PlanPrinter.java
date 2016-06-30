@@ -402,13 +402,13 @@ public class PlanPrinter
         PlanNodeStats nodeStats = stats.get().get(planNodeId);
         if (nodeStats == null) {
             output.append(indentString(indent));
-            output.append("Cost: unknown");
+            output.append("Cost: ?");
             if (printInput) {
-                output.append(", Input: unknown");
+                output.append(", Input: ? lines (?B)");
             }
-            output.append(", Output: unknown");
+            output.append(", Output: ? lines (?B)");
             if (printFiltered) {
-                output.append(", Filtered: unknown");
+                output.append(", Filtered: ?%");
             }
             output.append('\n');
             return;
@@ -420,7 +420,7 @@ public class PlanPrinter
             fractionString = format(Locale.US, "%.2f%%", 100.0 * fraction);
         }
         else {
-            fractionString = "unknown";
+            fractionString = "?";
         }
 
         output.append(indentString(indent));
@@ -440,7 +440,7 @@ public class PlanPrinter
                 filteredString = format(Locale.US, "%.2f%%", filtered);
             }
             else {
-                filteredString = "unknown";
+                filteredString = "?";
             }
 
             output.append(", Filtered: " + filteredString);
