@@ -20,11 +20,13 @@ import com.facebook.presto.execution.QueryExecution.QueryExecutionFactory;
 import com.facebook.presto.execution.SqlQueryExecution.SqlQueryExecutionFactory;
 import com.facebook.presto.memory.ClusterMemoryManager;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.sql.analyzer.SemanticException;
 import com.facebook.presto.sql.parser.ParsingException;
 import com.facebook.presto.sql.parser.ParsingOptions;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.Execute;
 import com.facebook.presto.sql.tree.Explain;
+import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
 import io.airlift.concurrent.ThreadPoolExecutorMBean;
@@ -57,15 +59,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.facebook.presto.SystemSessionProperties.isParseDecimalLiteralsAsDouble;
+import static com.facebook.presto.execution.ParameterExtractor.getParameterCount;
 import static com.facebook.presto.execution.QueryState.RUNNING;
 import static com.facebook.presto.spi.StandardErrorCode.ABANDONED_QUERY;
 import static com.facebook.presto.spi.StandardErrorCode.EXCEEDED_TIME_LIMIT;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.spi.StandardErrorCode.SERVER_SHUTTING_DOWN;
+import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_PARAMETER_USAGE;
+import static com.facebook.presto.sql.planner.ExpressionInterpreter.verifyExpressionIsConstant;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
@@ -281,7 +288,10 @@ public class SqlQueryManager
         Statement statement;
         try {
             ParsingOptions parsingOptions = new ParsingOptions().setParseDecimalLiteralsAsDouble(isParseDecimalLiteralsAsDouble(session));
-            statement = unwrapExecuteStatement(sqlParser.createStatement(query, parsingOptions), sqlParser, session);
+            Statement wrappedStatement = sqlParser.createStatement(query, parsingOptions);
+            statement = unwrapExecuteStatement(wrappedStatement, sqlParser, session);
+            List<Expression> parameters = wrappedStatement instanceof Execute ? ((Execute) wrappedStatement).getParameters() : emptyList();
+            validateParameters(statement, parameters);
             QueryExecutionFactory<?> queryExecutionFactory = executionFactories.get(statement.getClass());
             if (queryExecutionFactory == null) {
                 throw new PrestoException(NOT_SUPPORTED, "Unsupported statement type: " + statement.getClass().getSimpleName());
@@ -292,9 +302,9 @@ public class SqlQueryManager
                     throw new PrestoException(NOT_SUPPORTED, "EXPLAIN ANALYZE only supported for statements that are queries");
                 }
             }
-            queryExecution = queryExecutionFactory.createQueryExecution(queryId, query, session, statement);
+            queryExecution = queryExecutionFactory.createQueryExecution(queryId, query, session, statement, parameters);
         }
-        catch (ParsingException | PrestoException e) {
+        catch (ParsingException | PrestoException | SemanticException e) {
             // This is intentionally not a method, since after the state change listener is registered
             // it's not safe to do any of this, and we had bugs before where people reused this code in a method
             URI self = locationFactory.createQueryLocation(queryId);
@@ -353,6 +363,17 @@ public class SqlQueryManager
         String sql = session.getPreparedStatementFromExecute((Execute) statement);
         ParsingOptions parsingOptions = new ParsingOptions().setParseDecimalLiteralsAsDouble(isParseDecimalLiteralsAsDouble(session));
         return sqlParser.createStatement(sql, parsingOptions);
+    }
+
+    public static void validateParameters(Statement node, List<Expression> parameterValues)
+    {
+        int parameterCount = getParameterCount(node);
+        if (parameterValues.size() != parameterCount) {
+            throw new SemanticException(INVALID_PARAMETER_USAGE, node, "Incorrect number of parameters: expected %s but found %s", parameterCount, parameterValues.size());
+        }
+        for (Expression expression : parameterValues) {
+            verifyExpressionIsConstant(emptySet(), expression);
+        }
     }
 
     @Override

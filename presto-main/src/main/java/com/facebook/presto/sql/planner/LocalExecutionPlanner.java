@@ -212,6 +212,7 @@ import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.IntStream.range;
@@ -1009,7 +1010,8 @@ public class LocalExecutionPlanner
                     metadata,
                     sqlParser,
                     sourceTypes,
-                    concat(singleton(rewrittenFilter), rewrittenProjections));
+                    concat(singleton(rewrittenFilter), rewrittenProjections),
+                    emptyList());
 
             RowExpression translatedFilter = toRowExpression(rewrittenFilter, expressionTypes);
             List<RowExpression> translatedProjections = rewrittenProjections.stream()
@@ -1163,7 +1165,8 @@ public class LocalExecutionPlanner
                         metadata,
                         sqlParser,
                         ImmutableMap.<Symbol, Type>of(),
-                        ImmutableList.copyOf(row));
+                        ImmutableList.copyOf(row),
+                        emptyList());
                 for (int i = 0; i < row.size(); i++) {
                     // evaluate the literal value
                     Object result = ExpressionInterpreter.expressionInterpreter(row.get(i), metadata, context.getSession(), expressionTypes).evaluate(0);

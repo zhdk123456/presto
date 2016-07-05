@@ -36,7 +36,6 @@ import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.DependencyExtractor;
 import com.facebook.presto.sql.planner.ExpressionInterpreter;
 import com.facebook.presto.sql.planner.NoOpSymbolResolver;
-import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.optimizations.CanonicalizeExpressions;
 import com.facebook.presto.sql.tree.AliasedRelation;
 import com.facebook.presto.sql.tree.AllColumns;
@@ -324,7 +323,7 @@ class StatementAnalyzer
 
         for (Expression expression : node.getProperties().values()) {
             // analyze table property value expressions which must be constant
-            createConstantAnalyzer(metadata, session)
+            createConstantAnalyzer(metadata, session, analysis.getParameters())
                     .analyze(expression, scope);
         }
         analysis.setCreateTableProperties(node.getProperties());
@@ -599,7 +598,13 @@ class StatementAnalyzer
             throw new SemanticException(NON_NUMERIC_SAMPLE_PERCENTAGE, relation.getSamplePercentage(), "Sample percentage cannot contain column references");
         }
 
-        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypes(session, metadata, sqlParser, ImmutableMap.<Symbol, Type>of(), relation.getSamplePercentage());
+        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypes(
+                session,
+                metadata,
+                sqlParser,
+                ImmutableMap.of(),
+                relation.getSamplePercentage(),
+                analysis.getParameters());
         ExpressionInterpreter samplePercentageEval = expressionOptimizer(relation.getSamplePercentage(), metadata, session, expressionTypes);
 
         Object samplePercentageObject = samplePercentageEval.optimize(symbol -> {
@@ -1431,7 +1436,7 @@ class StatementAnalyzer
             Expression expression,
             Set<Expression> columnReferences)
     {
-        AggregationAnalyzer analyzer = new AggregationAnalyzer(groupByExpressions, metadata, scope, columnReferences);
+        AggregationAnalyzer analyzer = new AggregationAnalyzer(groupByExpressions, metadata, scope, columnReferences, analysis.getParameters());
         analyzer.analyze(expression);
     }
 
