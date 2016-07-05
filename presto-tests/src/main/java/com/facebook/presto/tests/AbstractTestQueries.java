@@ -7044,4 +7044,10 @@ public abstract class AbstractTestQueries
         assertEquals(doubleColumnResult.getTypes().get(0), DOUBLE);
         assertEquals(doubleColumnResult.getMaterializedRows().get(0).getField(0), 1.0);
     }
+
+    @Test
+    public void testParametersNonPreparedStatement()
+    {
+        assertQueryFails("SELECT ?, 1", "line 1:8: Parameters are only allowed in prepared statements");
+    }
 }
