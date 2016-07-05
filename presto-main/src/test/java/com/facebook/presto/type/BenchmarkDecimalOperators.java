@@ -70,6 +70,7 @@ import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.getExpressionTypesFromInput;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.openjdk.jmh.annotations.Scope.Thread;
@@ -386,7 +387,7 @@ public class BenchmarkDecimalOperators
             }
             RelationType tupleDescriptor = new RelationType(fields.build());
 
-            ExpressionAnalysis expressionAnalysis = ExpressionAnalyzer.analyzeExpressions(session, metadata, sqlParser, tupleDescriptor, symbolTypes, ImmutableList.of(parsedExpression));
+            ExpressionAnalysis expressionAnalysis = ExpressionAnalyzer.analyzeExpressions(session, metadata, sqlParser, tupleDescriptor, symbolTypes, ImmutableList.of(parsedExpression), emptyList());
             Type resultType = expressionAnalysis.getType(parsedExpression);
 
             pageBuilder = new PageBuilder(ImmutableList.of(resultType));
@@ -410,7 +411,7 @@ public class BenchmarkDecimalOperators
             Map<Integer, Type> types = sourceLayout.entrySet().stream()
                     .collect(toMap(Map.Entry::getValue, entry -> symbolTypes.get(entry.getKey())));
 
-            IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata, SQL_PARSER, types, inputReferenceExpression);
+            IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata, SQL_PARSER, types, inputReferenceExpression, emptyList());
             return SqlToRowExpressionTranslator.translate(inputReferenceExpression, SCALAR, expressionTypes, metadata.getFunctionRegistry(), metadata.getTypeManager(), TEST_SESSION, true);
         }
 
