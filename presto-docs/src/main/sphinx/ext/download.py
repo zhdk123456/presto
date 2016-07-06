@@ -33,11 +33,11 @@ def maven_filename(artifact, version, packaging, classifier):
 
 
 def maven_download(group, artifact, version, packaging, classifier):
-    base = 'https://repo1.maven.org/maven2/'
-    group_path = group.replace('.', '/')
-    filename = maven_filename(artifact, version, packaging, classifier)
-    return base + '/'.join((group_path, artifact, version, filename))
-
+    #base = 'https://repo1.maven.org/maven2/'
+    #group_path = group.replace('.', '/')
+    #filename = maven_filename(artifact, version, packaging, classifier)
+    #return base + '/'.join((group_path, artifact, version, filename))
+    return 'http://www.teradata.com/presto'
 
 def setup(app):
     # noinspection PyDefaultArgument,PyUnusedLocal
