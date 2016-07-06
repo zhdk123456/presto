@@ -69,6 +69,13 @@ DECIMAL
             - System wide property: ``parse-decimal-literals-as-double=true``
             - Session wide property: ``parse_decimal_literals_as_double=true``
 
+Decimal Limitations
+^^^^^^^^^^^^^^^^^^^
+ 
+    Currently only Hive connector supports exposing ``DECIMAL`` columns.
+
+    Performance of decimal types longer than 17 digits may be not satisfactory.
+
 
 VARCHAR
 -------
