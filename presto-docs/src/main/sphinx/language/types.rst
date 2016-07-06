@@ -61,6 +61,13 @@ DECIMAL
 
     Example literals: ``DECIMAL '10.3'``, ``DECIMAL '1234567890'``
 
+Decimal Limitations
+^^^^^^^^^^^^^^^^^^^
+ 
+    Currently only Hive connector supports exposing ``DECIMAL`` columns.
+
+    Performance of decimal types longer than 17 digits may be not satisfactory.
+
 
 VARCHAR
 -------
