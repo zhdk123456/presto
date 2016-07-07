@@ -33,7 +33,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static com.facebook.presto.tests.TestGroups.JDBC;
-import static com.facebook.presto.tests.TestGroups.QUARANTINE;
 import static com.facebook.presto.tests.TestGroups.SIMBA_JDBC;
 import static com.facebook.presto.tests.TpchTableResults.PRESTO_NATION_RESULT;
 import static com.facebook.presto.tests.utils.JdbcDriverUtils.getSessionProperty;
@@ -93,7 +92,7 @@ public class JdbcTests
         }
     }
 
-    @Test(groups = {JDBC, QUARANTINE})
+    @Test(groups = JDBC)
     @Requires(ImmutableAndMutableNationTable.class)
     public void shouldInsertSelectQuery()
             throws SQLException
@@ -102,7 +101,6 @@ public class JdbcTests
         assertThat(query("SELECT * FROM " + tableNameInDatabase)).hasNoRows();
 
         try (Statement statement = connection.createStatement()) {
-            // TODO: fix, should return proper number of inserted rows
             assertThat(statement.executeUpdate("insert into " + tableNameInDatabase + " select * from nation"))
                     .isEqualTo(25);
         }
