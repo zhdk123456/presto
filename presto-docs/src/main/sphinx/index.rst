@@ -18,6 +18,7 @@ Presto Documentation
     getting-started
     sandbox-vms
     server-installation-cluster-automated
+    Presto Admin <installation/presto-admin/user-guide>
     security
     aws
     admin
@@ -28,6 +29,6 @@ Presto Documentation
     migration
     release
 
-.. Presto Admin <installation/presto-admin/user-guide>
+
     
 .. Note: If "release" is not the last item, the CSS must be updated.
