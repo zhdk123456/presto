@@ -19,9 +19,9 @@ Presto Documentation
     sandbox-vms
     server-installation-cluster-automated
     server-installation-cluster-manual
+    server-installation-aws-emr-manual
     Presto Admin <installation/presto-admin/user-guide>
     security
-    aws
     admin
     connector
     functions
