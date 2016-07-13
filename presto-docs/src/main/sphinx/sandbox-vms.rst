@@ -1,12 +1,14 @@
-************************************
-Getting started with the Sandbox VMs
-************************************
+***********************************
+Presto Installation on a Sandbox VM
+***********************************
 
-This chapter describes how to get started with Presto on the CDH and HDP
-sandbox VMs.
+You can get started with Presto on a CDH or HDP sandbox VM.The 
+sandbox VMs are provided as a demo for a single node and should not 
+be used for real workloads.
 
 .. toctree::
     :maxdepth: 1
 
-    sandbox-readmes/readme-cdh
-    sandbox-readmes/readme-hdp
+    sandboxes/system-requirements-sandboxes
+    sandboxes/presto-sandbox-cdh
+    sandboxes/presto-sandbox-hdp
