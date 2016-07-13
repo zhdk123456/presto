@@ -1,7 +1,7 @@
 .. toctree::
    :hidden:
 
-   installation/installation-yarn-automated.rst
+   server-installation-cluster-automated
    installation/installation-yarn-manual.rst
 
 ===============
@@ -25,7 +25,7 @@ your environment.
 * CDH or HDP on a sandbox VM:
   :doc:`Presto Installation on a Sandbox VM <sandbox-vms>`
 * Automated installation on a server (cluster or YARN-based cluster):
-  `Presto Server Installation for a Cluster (Ambari) <server-installation-cluster-automated>`
+  :doc:`Presto Server Installation for a Cluster (Ambari) <server-installation-cluster-automated>`
 * Manual installation on a server (cluster or YARN-based cluster):
   `Presto Server Installation for a Cluster (Presto Admin and RPMs) <server-installation-cluster-manual>`
 * Manual installation on AWS Cloud:

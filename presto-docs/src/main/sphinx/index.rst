@@ -17,6 +17,7 @@ Presto Documentation
     installation
     getting-started
     sandbox-vms
+    server-installation-cluster-automated
     security
     aws
     admin
