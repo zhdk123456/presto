@@ -1,3 +1,9 @@
+.. toctree::
+   :hidden:
+
+   installation/installation-yarn-automated.rst
+   installation/installation-yarn-manual.rst
+
 ===============
 Getting Started
 ===============
@@ -32,9 +38,11 @@ Presto Client Software Installation
 | `installation/odbc`
 | :doc:`installation/jdbc`
 | :doc:`installation/cli`
-
+|
 
 Presto Documentation
 ====================
 
 This documentation is available for download as HTML from :maven_download:`teradata-presto`.
+
+
