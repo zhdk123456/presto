@@ -24,6 +24,8 @@ ARTIFACTS = {
     'jdbc': ('presto-jdbc', 'jar', None),
     'verifier': ('presto-verifier', 'jar', 'executable'),
     'benchmark-driver': ('presto-benchmark-driver', 'jar', 'executable'),
+
+    'teradata-presto' : ('teradata-presto', '', ''),
 }
 
 
