@@ -2,7 +2,7 @@
    :hidden:
 
    server-installation-cluster-automated
-   installation/installation-yarn-manual.rst
+   server-installation-cluster-manual
 
 ===============
 Getting Started
@@ -27,7 +27,7 @@ your environment.
 * Automated installation on a server (cluster or YARN-based cluster):
   :doc:`Presto Server Installation for a Cluster (Ambari) <server-installation-cluster-automated>`
 * Manual installation on a server (cluster or YARN-based cluster):
-  `Presto Server Installation for a Cluster (Presto Admin and RPMs) <server-installation-cluster-manual>`
+  :doc:`Presto Server Installation for a Cluster (Presto Admin and RPMs) <server-installation-cluster-manual>`
 * Manual installation on AWS Cloud:
   `Presto Server Installation for AWS EMR (Presto Admin and RPMs) <server-installation-aws-emr-manual>`
 

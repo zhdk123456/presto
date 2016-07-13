@@ -18,6 +18,7 @@ Presto Documentation
     getting-started
     sandbox-vms
     server-installation-cluster-automated
+    server-installation-cluster-manual
     Presto Admin <installation/presto-admin/user-guide>
     security
     aws
