@@ -3,6 +3,7 @@
 
    server-installation-cluster-automated
    server-installation-cluster-manual
+   server-installation-aws-emr-manual
 
 ===============
 Getting Started
@@ -29,7 +30,7 @@ your environment.
 * Manual installation on a server (cluster or YARN-based cluster):
   :doc:`Presto Server Installation for a Cluster (Presto Admin and RPMs) <server-installation-cluster-manual>`
 * Manual installation on AWS Cloud:
-  `Presto Server Installation for AWS EMR (Presto Admin and RPMs) <server-installation-aws-emr-manual>`
+  :doc:`Presto Server Installation for AWS EMR (Presto Admin and RPMs) <server-installation-aws-emr-manual>`
 
 
 Presto Client Software Installation
