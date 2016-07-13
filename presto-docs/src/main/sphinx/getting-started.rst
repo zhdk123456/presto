@@ -17,7 +17,7 @@ The following links provide information for installing Presto in
 your environment.
 
 * CDH or HDP on a sandbox VM:
-  `Presto Installation on a Sandbox VM <sandbox-vms>`
+  :doc:`Presto Installation on a Sandbox VM <sandbox-vms>`
 * Automated installation on a server (cluster or YARN-based cluster):
   `Presto Server Installation for a Cluster (Ambari) <server-installation-cluster-automated>`
 * Manual installation on a server (cluster or YARN-based cluster):
