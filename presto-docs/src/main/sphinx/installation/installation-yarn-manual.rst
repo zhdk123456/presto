@@ -1,12 +1,4 @@
-﻿.. toctree::
-   :hidden:
-
-   installation-yarn-directory-structure.rst
-   installation-yarn-configuration-options.rst
-   installation-yarn-configuration-options-advanced.rst
-   installation-yarn-debugging-logging.rst
-
-===========================================
+﻿===========================================
 Manual Installation on a YARN-Based Cluster
 ===========================================
 
