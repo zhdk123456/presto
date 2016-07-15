@@ -1,10 +1,3 @@
-.. toctree::
-   :hidden:
-
-   server-installation-cluster-automated
-   server-installation-cluster-manual
-   server-installation-aws-emr-manual
-
 ===============
 Getting Started
 ===============
