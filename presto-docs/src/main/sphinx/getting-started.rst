@@ -37,6 +37,6 @@ Presto Client Software Installation
 Presto Documentation
 ====================
 
-This documentation is available for download as HTML from :maven_download:`teradata-presto`.
+This documentation is available for download as HTML from https://www.teradata.com/presto.
 
 
