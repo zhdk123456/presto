@@ -1,9 +1,3 @@
-.. toctree::
-    :hidden:
-  
-    installation/installation-ambari
-    installation/installation-yarn-automated
-    
 ================================================
 Presto Server Installation on a Cluster (Ambari)
 ================================================
