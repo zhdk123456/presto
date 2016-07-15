@@ -8,7 +8,7 @@ Software Requirements
 * CentOS equivalent to RHEL (Community ENTerprise Operating System)
 * SLES 11 SP3 (SUSE Linux Enterprise Server) **Teradata Support for SLES on Teradata Hadoop Appliances only**
   
-**Hadoop distributions**
+**Hadoop Distributions**
 
 * CDH (Cloudera Distribution Including Apache Hadoop) 5.x
 * HDP (Hortonworks Data Platform) 2.x
