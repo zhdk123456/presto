@@ -10,19 +10,19 @@ Debugging and Logging for a YARN-Based Cluster
    ``http://master:8088/cluster/app/application_<id>``) will show
    slider-appmaster, COORDINATOR and WORKER components and the
    associated containers running based on your configuration. You can
-   also use Slider cli script to check `status <#check-the-status>`__.
+   also use Slider cli script to :ref:`check-status-label`.
 
 -  Slider retries to launch Presto in case of failure in the same YARN application.
    The YARN application will be still in ``RUNNING`` state during this retry phase.
    It ultimately kills the job after 5 unsuccessful retrials. 
 
--  If you have used `labels <#using-yarn-label>`__ your COORDINATOR and WORKER
+-  If you have used :ref:`using-yarn-label` your COORDINATOR and WORKER
    components will be running on nodes which were 'labeled'.
 
 -  If you have not used labels, then you can check the status either at
    the YARN ResourceManager (eg:
    ``http://master:8088/cluster/app/application_<id>``) or you can use
-   `status <#check-the-status>`__ to get the "live" containers, and thus get the
+   :ref:`check-status-label` to get the "live" containers, and thus get the
    node hosting the Presto components.
 
 -  If Presto is up and running, then a ``pgrep`` of PrestoServer on your

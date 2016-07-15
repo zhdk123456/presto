@@ -42,4 +42,4 @@ Install and manage Presto integrated with YARN manually using `Apache Slider`_.
 
   .. _Apache Slider: https://slider.incubator.apache.org/
 
-----
+

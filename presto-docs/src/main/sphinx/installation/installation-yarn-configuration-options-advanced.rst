@@ -145,6 +145,8 @@ Take a look here:
 http://slider.incubator.apache.org/docs/configuration/resources.html#failurepolicy
 for more details on failure policy.
 
+.. _using-yarn-label:
+
 Using YARN label
 ~~~~~~~~~~~~~~~~
 
