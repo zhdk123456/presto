@@ -29,7 +29,7 @@ your environment.
 Presto Client Software Installation
 ===================================
 
-| `installation/odbc`
+| :doc:`installation/odbc`
 | :doc:`installation/jdbc`
 | :doc:`installation/cli`
 |
