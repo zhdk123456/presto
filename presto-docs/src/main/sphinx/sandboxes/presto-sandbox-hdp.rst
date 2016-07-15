@@ -4,7 +4,7 @@ Installing a Presto VM Sandbox for HDP
 
 The following link is to a VirtualBox sandbox image that can be used to experiment with the Presto distribution.
 
-| Download **presto-0.141t-demo-hdp.ova** from :maven_download:`teradata-presto`
+| Download **presto-0.141t-demo-hdp.ova** from https://www.teradata.com/presto
 
 The credentials for the VM are:
 
