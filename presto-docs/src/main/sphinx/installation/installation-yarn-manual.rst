@@ -46,8 +46,7 @@ Presto Installation Directory Structure
 When you use Slider to install Presto on a YARN-based cluster, the Presto 
 installation directory structure differs from the standard structure.
 
-For more information, see:
-| :doc:`Presto Installation Directory Structure for YARN-Based Clusters <installation-yarn-directory-structure>`
+For more information, see: :doc:`Presto Installation Directory Structure for YARN-Based Clusters <installation-yarn-directory-structure>`.
 
 -----
 
@@ -56,8 +55,7 @@ Presto Installation Configuration Options
 
 Before installation, you must configure the .json files required for running Presto.
 
-For more information, see:
-| :doc:`Presto Configuration Options for YARN-Based Clusters <installation-yarn-configuration-options>`
+For more information, see: :doc:`Presto Configuration Options for YARN-Based Clusters <installation-yarn-configuration-options>`.
 
 -----
 
@@ -66,7 +64,7 @@ Using Apache Slider to Manually Install Presto on a YARN-Based Cluster
 
 1. Download the slider 0.80.0 installation file from
    http://slider.incubator.apache.org/index.html to one of your nodes in
-   the cluster
+   the cluster.
 
 ::
 
@@ -102,7 +100,10 @@ Using Apache Slider to Manually Install Presto on a YARN-Based Cluster
 
 5. Make sure the user running slider, which should be same as
    ``site.global.app_user`` in ``appConfig.json``, has a home dir in
-   HDFS (See note `here <#appconfig-json>`__).
+   HDFS (See note here: :ref:`appconfig-json-label`).
+
+   For more details about :ref:`appconfig-json-label` and 
+   :ref:`resources-json-label`, see :doc:`Presto Configuration Options for YARN-Based Clusters <installation-yarn-configuration-options>`
 
 .. code-block:: none
 
@@ -110,11 +111,7 @@ Using Apache Slider to Manually Install Presto on a YARN-Based Cluster
     $ hdfs dfs -mkdir -p /user/<user>
     $ hdfs dfs -chown <user>:<user> -R /user/<user>
 
-6. Now run slider as
-
-For more details on `appConfig.json <#appconfig-json>`__ and
-`resources.json <#resources-json>`__ follow `configuration <#advanced-configuration>`__
-section.
+6. Now run Slider:
 
 ::
 
@@ -126,7 +123,7 @@ section.
 This should start your application, and you can see it under the Yarn
 ResourceManager webUI.If your application is successfully run, it should continuously be available in the 
 YARN resource manager as a "RUNNING" application. If the job fails, please be sure to check the job history's logs 
-along with the logs on the node's disk (more information `here <#debugging-and-logging>`__).
+along with the logs on the node's disk. See :doc:`Debugging and Logging for YARN-Based Clusters <installation-yarn-debugging-logging>`.
 
 -----
 
@@ -136,7 +133,9 @@ Additional Slider Commands
 You can use the following Slider commands to manage your existing Presto
 application.
 
-Check the status
+.. _check-status-label:
+
+Check the Status
 ^^^^^^^^^^^^^^^^
 
 If you want to check the status of running application you run the
@@ -157,7 +156,7 @@ reconfigure Presto (eg: add a new connector)
     bin/slider destroy presto1
     bin/slider create presto1 --template appConfig.json --resources resources.json
 
-Completely remove the app
+Completely Remove the App
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Delete the app including the app package.
@@ -167,7 +166,7 @@ Delete the app including the app package.
 
      bin/slider package --delete --name PRESTO
 
-'Flex'ible app
+'Flex'ible App
 ^^^^^^^^^^^^^^
 
 Flex the number of Presto workers to the new value. If greater than
@@ -205,16 +204,14 @@ The following advanced configuration options are available:
 + Failure policy
 + YARN label
 
-For more information, see:
-| :doc:`Advanced Configuration Options for YARN-Based Clusters <installation-yarn-configuration-options-advanced>`
+For more information, see :doc:`Advanced Configuration Options for YARN-Based Clusters <installation-yarn-configuration-options-advanced>`.
 
 -----
 
 Debugging and Logging
 =====================
 
-For more information, see:
-| :doc:`Debugging and Loggin for YARN-Based Clusters <installation-yarn-debugging-logging>`
+For more information, see: :doc:`Debugging and Logging for YARN-Based Clusters <installation-yarn-debugging-logging>`.
 
 -----
 
@@ -224,5 +221,3 @@ Links
 -  https://github.com/prestodb/presto-yarn/blob/master/README.md
 -  http://slider.incubator.apache.org/docs/getting\_started.html
 -  http://docs.hortonworks.com/HDPDocuments/Ambari-2.0.1.0/bk\_Installing\_HDP\_AMB/content/ch\_Installing\_Ambari.html
-
-

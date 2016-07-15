@@ -4,8 +4,9 @@ Automated Installation on a Cluster
 
 You can use Apache Ambari to install Presto. To install Presto using Ambari, you must have the `Presto Ambari Integration package <https:www.teradata.com/presto>`_.
 
-The following procedures **do not** describe how to use Ambari to install Presto on YARN-based clusters.
-For those procedures, see: :doc:`Automated Installation with Ambari 2.1 with YARN integration <installation-yarn-automated>`.
+Note:
+The following procedures **do not describe how to use Ambari to 
+install Presto on YARN-based clusters**. For those procedures, see :doc:`Automated Installation on a YARN-Based Cluster <installation-yarn-automated>`.
 
 .. contents:: Installing Presto with Ambari
 
@@ -13,13 +14,17 @@ Pre-Requisites
 --------------
 
 1. Red Hat Enterprise Linux 6.x (64-bit) or CentOS equivalent.
+
 2. You must have Ambari installed and thus transitively fulfill `Ambari's requirements <http://docs.hortonworks.com/HDPDocuments/Ambari-2.1.2.1/bk_Installing_HDP_AMB/content/_meet_minimum_system_requirements.html>`_.
+
 3. Oracle Java JDK 1.8 (64-bit). Note that when installing Ambari you will be prompted to 
    select a JDK. You can tell Ambari to download Oracle JDK 1.8 or point Ambari to an 
    existing installation. Presto picks up the JDK Ambari was installed with so it is 
    imperative that Ambari is running on Oracle JDK 1.8.
+
 4. Disable ``requiretty``. On RHEL 6.x this can be done by editing the ``/etc/sudoers`` 
    file and commenting out ``Defaults    requiretty``.
+
 5. Install ``wget`` on all nodes that will run a Presto component.
 
 -----
