@@ -1,9 +1,3 @@
-.. toctree::
-    :hidden:
-  
-    installation/installation-ambari
-    installation/installation-presto-admin
-    
 =================================================================
  Presto Server Installation on an AWS EMR (Presto Admin and RPMs)
 =================================================================

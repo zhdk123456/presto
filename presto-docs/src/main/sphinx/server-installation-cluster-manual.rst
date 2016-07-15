@@ -42,11 +42,4 @@ Install and manage Presto integrated with YARN manually using `Apache Slider`_.
 
   .. _Apache Slider: https://slider.incubator.apache.org/
 
-.. toctree::
-    :hidden:
-  
-    installation/installation-ambari
-    installation/installation-presto-admin
-    installation/installation-yarn-manual
-
 ----
