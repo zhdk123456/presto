@@ -19,18 +19,3 @@ from different data sources.
     connector/system
     connector/jmx
     connector/blackhole
-
-   
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   connector/cassandra
-   connector/kafka
-   connector/kafka-tutorial
-   connector/localfile
-   connector/mongodb
-   connector/redis
-   connector/tpch
-      
-
