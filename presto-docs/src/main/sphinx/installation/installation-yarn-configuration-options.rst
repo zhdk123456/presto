@@ -15,12 +15,12 @@ Presto App package are available in the repository in the following directory:
 ``presto-yarn-package/src/main/resources``
 
 The "default" values listed for the sections
-`appConfig.json <#appconfig-json>`__ and `resources.json <#resources-json>`__ are
-from ``presto-yarn-package/src/main/resources/appConfig.json`` and
+:ref:`appconfig-json-label` and :ref:`resources-json-label` are from
+``presto-yarn-package/src/main/resources/appConfig.json`` and
 ``presto-yarn-package/src/main/resources/resources-multinode.json``
-files respectively. These default values will be auto-populated on the Slider
-View UI for installation using `Ambari <#installation-using-ambari-slider-view>`__ Slider View.
-But you can modify the properties on the UI as per your requirements.
+files respectively. These default values will be auto-populated on the
+Slider View UI for installation using Ambari Slider View.  But you
+can modify the properties on the UI as per your requirements.
 
 For manual installation using Slider, copy the 
 ``presto-yarn-package/src/main/resources/appConfig.json`` and
@@ -34,6 +34,8 @@ them as-is.
 Follow the steps here and configure the presto-yarn configuration files
 to match your cluster requirements. Optional ones are marked (optional).
 Please do not change any variables other than the ones listed below.
+
+.. _appconfig-json-label:
 
 appConfig.json
 ~~~~~~~~~~~~~~
@@ -176,12 +178,16 @@ hostname.
     ``${AGENT_WORK_ROOT}`` etc. do not need any substitution and will be
     appropriately configured during runtime.
 
+ .. _resources-json-label:
+
 resources.json
 ~~~~~~~~~~~~~~
 
 The configuration here can be added either globally (for COORDINATOR and
-WORKER) or for each component. Refer `configuration <#advanced-configuration>`__
-section for further details.
+WORKER) or for each component. See:
+
+:doc:`Advanced Configuration Options <installation-yarn-configuration-options-advanced>`.
+
 
 1. ``yarn.vcores`` (default - ``1``): By default this is set globally.
 
@@ -213,8 +219,7 @@ section for further details.
    will be needed.
 
 4. ``yarn.label.expression`` (optional) (default - ``coordinator`` for
-   COORDINATOR and ``worker`` for WORKER\`\`): See `label <#using-yarn-label>`__
-   section for details.
+   COORDINATOR and ``worker`` for WORKER\`\`): See :ref:`configuring-presto-label`.
 
 Now you are ready to deploy Presto on YARN either manually or by using 
 Ambari.
