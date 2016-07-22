@@ -53,6 +53,7 @@ public final class TestGroups
     public static final String HIVE_COERCION = "hive_coercion";
     public static final String CASSANDRA = "cassandra";
     public static final String TLS = "tls";
+    public static final String LDAP = "ldap";
 
     private TestGroups() {}
 }
