@@ -95,6 +95,7 @@ import com.facebook.presto.sql.analyzer.Analyzer;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.analyzer.QueryExplainer;
 import com.facebook.presto.sql.gen.ExpressionCompiler;
+import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler;
 import com.facebook.presto.sql.parser.ParsingOptions;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.CompilerConfig;
@@ -198,7 +199,8 @@ public class LocalQueryRunner
     private final TransactionManager transactionManager;
     private final SpillerFactory spillerFactory;
 
-    private final ExpressionCompiler compiler;
+    private final ExpressionCompiler expressionCompiler;
+    private final JoinFilterFunctionCompiler joinFilterFunctionCompiler;
     private final ConnectorManager connectorManager;
     private final ImmutableMap<Class<? extends Statement>, DataDefinitionTask<?>> dataDefinitionTask;
 
@@ -255,7 +257,8 @@ public class LocalQueryRunner
         this.eventListener = new TestingEventListenerManager();
         this.pageSourceManager = new PageSourceManager();
 
-        this.compiler = new ExpressionCompiler(metadata);
+        this.expressionCompiler = new ExpressionCompiler(metadata);
+        this.joinFilterFunctionCompiler = new JoinFilterFunctionCompiler(metadata);
 
         this.connectorManager = new ConnectorManager(
                 metadata,
@@ -537,7 +540,8 @@ public class LocalQueryRunner
                 nodePartitioningManager,
                 pageSinkManager,
                 null,
-                compiler,
+                expressionCompiler,
+                joinFilterFunctionCompiler,
                 new IndexJoinLookupStats(),
                 new CompilerConfig().setInterpreterEnabled(false), // make sure tests fail if compiler breaks
                 new TaskManagerConfig().setTaskConcurrency(4),
