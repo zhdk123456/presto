@@ -40,6 +40,7 @@ import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ErrorCode;
 import com.facebook.presto.spi.Page;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.StandardTypes;
@@ -171,14 +172,20 @@ public class StatementResource
     {
         assertRequest(!isNullOrEmpty(statement), "SQL statement is empty");
 
-        QuerySubmission querySubmission = parseStringToQuerySubmission(servletRequest, statement, querySubmissionCodec);
-        Session session = createSessionForRequest(servletRequest, accessControl, sessionPropertyManager, queryIdGenerator.createNextQueryId(), querySubmission.getPreparedStatements());
+        try {
+            QuerySubmission querySubmission = parseStringToQuerySubmission(servletRequest, statement, querySubmissionCodec);
+            Session session = createSessionForRequest(servletRequest, accessControl, sessionPropertyManager, queryIdGenerator.createNextQueryId(), querySubmission.getPreparedStatements());
 
-        ExchangeClient exchangeClient = exchangeClientSupplier.get(deltaMemoryInBytes -> { });
-        Query query = new Query(session, querySubmission.getQuery(), queryManager, exchangeClient);
-        queries.put(query.getQueryId(), query);
+            ExchangeClient exchangeClient = exchangeClientSupplier.get(deltaMemoryInBytes -> {
+            });
+            Query query = new Query(session, querySubmission.getQuery(), queryManager, exchangeClient);
+            queries.put(query.getQueryId(), query);
 
-        return getQueryResults(query, Optional.empty(), uriInfo, new Duration(1, MILLISECONDS), servletRequest);
+            return getQueryResults(query, Optional.empty(), uriInfo, new Duration(1, MILLISECONDS), servletRequest);
+        }
+        catch (PrestoException e) {
+            return Response.serverError().entity(e.toSerialized()).build();
+        }
     }
 
     @GET
