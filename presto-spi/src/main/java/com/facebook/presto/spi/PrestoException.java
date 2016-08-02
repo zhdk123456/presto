@@ -13,6 +13,12 @@
  */
 package com.facebook.presto.spi;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 public class PrestoException
         extends RuntimeException
 {
@@ -40,6 +46,11 @@ public class PrestoException
         this.errorCode = errorCodeSupplier.toErrorCode();
     }
 
+    public PrestoExceptionSerialized toSerialized()
+    {
+        return new PrestoExceptionSerialized(errorCode, getMessage(), getStackTraceString());
+    }
+
     public ErrorCode getErrorCode()
     {
         return errorCode;
@@ -56,5 +67,48 @@ public class PrestoException
             message = errorCode.getName();
         }
         return message;
+    }
+
+    private String getStackTraceString()
+    {
+        StringWriter writer = new StringWriter();
+        printStackTrace(new PrintWriter(writer));
+        return writer.toString();
+    }
+
+    public static class PrestoExceptionSerialized
+    {
+        private final ErrorCode errorCode;
+        private final String message;
+        private final String stackTraceString;
+
+        @JsonCreator
+        public PrestoExceptionSerialized(
+                @JsonProperty("errorCode") ErrorCode errorCode,
+                @JsonProperty("message") String message,
+                @JsonProperty("stackTraceString") String stackTraceString)
+        {
+            this.errorCode = errorCode;
+            this.message = message;
+            this.stackTraceString = stackTraceString;
+        }
+
+        @JsonProperty
+        public ErrorCode getErrorCode()
+        {
+            return errorCode;
+        }
+
+        @JsonProperty
+        public String getMessage()
+        {
+            return message;
+        }
+
+        @JsonProperty
+        public String getStackTraceString()
+        {
+            return stackTraceString;
+        }
     }
 }
