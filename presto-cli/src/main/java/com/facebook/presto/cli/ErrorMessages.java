@@ -15,6 +15,8 @@ package com.facebook.presto.cli;
 
 import com.facebook.presto.client.ClientSession;
 import com.facebook.presto.client.PrestoClientException;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.StandardErrorCode;
 import io.airlift.http.client.HttpStatus;
 
 import java.io.EOFException;
@@ -27,6 +29,8 @@ public class ErrorMessages
 {
     private static final String PRESTO_COORDINATOR_NOT_FOUND = "There was a problem with a response from Presto Coordinator.\n";
     private static final String PRESTO_COORDINATOR_404 = "Presto HTTP interface returned 404 (file not found).\n";
+    private static final String PRESTO_STARTING_UP  = "Presto is still starting up.\n";
+    private static final String PRESTO_SHUTTING_DOWN  = "Presto is shutting down\n";
 
     private static final String TECHNICAL_DETAILS_HEADER = "\n=========   TECHNICAL DETAILS   =========\n";
     private static final String SESSION_INTRO = "[ Session information ]\n";
@@ -40,6 +44,9 @@ public class ErrorMessages
         DEFINE_SERVER_AS_CLI_PARAM("Use '--server' argument when starting Presto CLI to define server host and port."),
         CHECK_NETWORK("Check the network conditions between client and server."),
         USE_DEBUG_MODE("Use '--debug' argument to get more technical details."),
+        WAIT_FOR_INITIALIZATION("Wait for server to complete initialization."),
+        WAIT_FOR_SERVER_RESTART("Wait for server to restart as it may have restart scheduled."),
+        START_SERVER_AGAIN("Start server again manually."),
         CHECK_OTHER_HTTP_SERVICE("Make sure that none other HTTP service is running on %s."),
         CLIENT_IS_UP_TO_DATE_WITH_SERVER("Update CLI to match Presto server version.");
 
@@ -103,7 +110,18 @@ public class ErrorMessages
         StringBuilder builder = new StringBuilder();
         boolean wasErrorIdentified = false;
 
-        if (clientException.getResponse().getStatusCode() == HttpStatus.NOT_FOUND.code()) {
+        if (clientException.getServerException().isPresent()) {
+            PrestoException.PrestoExceptionSerialized exception = clientException.getServerException().get();
+            if (exception.getErrorCode().equals(StandardErrorCode.SERVER_STARTING_UP.toErrorCode())) {
+                serverStartingUpErrorMessage(builder, session);
+                wasErrorIdentified = true;
+            }
+            else if (exception.getErrorCode().equals(StandardErrorCode.SERVER_SHUTTING_DOWN.toErrorCode())) {
+                serverShuttingDownErrorMessage(builder, session);
+                wasErrorIdentified = true;
+            }
+        }
+        else if (clientException.getResponse().getStatusCode() == HttpStatus.NOT_FOUND.code()) {
             serverFileNotFoundErrorMessage(builder, session);
             wasErrorIdentified = true;
         }
@@ -162,6 +180,29 @@ public class ErrorMessages
         tipsBuilder.addTip(Tip.VERIFY_PRESTO_RUNNING, session.getServer())
                 .addTip(Tip.DEFINE_SERVER_AS_CLI_PARAM)
                 .addTip(Tip.CHECK_NETWORK).build();
+        if (!session.isDebug()) {
+            tipsBuilder.addTip(Tip.USE_DEBUG_MODE);
+        }
+        builder.append(tipsBuilder.build());
+    }
+
+    private static void serverStartingUpErrorMessage(StringBuilder builder, ClientSession session)
+    {
+        builder.append(PRESTO_STARTING_UP);
+        Tip.Builder tipsBuilder = Tip.builder();
+        tipsBuilder.addTip(Tip.WAIT_FOR_INITIALIZATION);
+        if (!session.isDebug()) {
+            tipsBuilder.addTip(Tip.USE_DEBUG_MODE);
+        }
+        builder.append(tipsBuilder.build());
+    }
+
+    private static void serverShuttingDownErrorMessage(StringBuilder builder, ClientSession session)
+    {
+        builder.append(PRESTO_SHUTTING_DOWN);
+        Tip.Builder tipsBuilder = Tip.builder();
+        tipsBuilder.addTip(Tip.WAIT_FOR_SERVER_RESTART)
+                .addTip(Tip.START_SERVER_AGAIN);
         if (!session.isDebug()) {
             tipsBuilder.addTip(Tip.USE_DEBUG_MODE);
         }
