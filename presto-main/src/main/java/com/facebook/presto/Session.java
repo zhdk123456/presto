@@ -349,7 +349,7 @@ public final class Session
                 sessionPropertyManager);
     }
 
-    public ClientSession toClientSession(URI server, boolean debug, Duration clientRequestTimeout)
+    public ClientSession toClientSession(URI server, boolean debug, boolean quiet, Duration clientRequestTimeout)
     {
         ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
         properties.putAll(systemProperties);
@@ -372,6 +372,7 @@ public final class Session
                 preparedStatements,
                 transactionId.map(TransactionId::toString).orElse(null),
                 debug,
+                quiet,
                 clientRequestTimeout);
     }
 
