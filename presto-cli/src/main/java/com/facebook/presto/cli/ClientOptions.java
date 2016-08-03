@@ -96,6 +96,9 @@ public class ClientOptions
     @Option(name = "--debug", title = "debug", description = "Enable debug information")
     public boolean debug;
 
+    @Option(name = {"--quiet", "-q"}, title = "quiet", description = "Enable quiet mode (less verbose error messages)")
+    public boolean quiet;
+
     @Option(name = "--log-levels-file", title = "log levels", description = "Configure log levels for debugging")
     public String logLevelsFile;
 
@@ -139,6 +142,7 @@ public class ClientOptions
                 emptyMap(),
                 null,
                 debug,
+                quiet,
                 clientRequestTimeout);
     }
 
