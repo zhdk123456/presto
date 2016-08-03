@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aliasPair;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.filter;
@@ -100,7 +102,7 @@ public class TestReorderJoins
                         "WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND p.partkey <> o.orderkey AND p.name < l.comment",
                 anyTree(join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
                                 anyTree(
-                                        join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
+                                        join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")), Optional.of("name < comment_4"),
                                                 anyTree(tableScan("part")),
                                                 anyTree(filter("partkey_3 <> orderkey_2", tableScan("lineitem"))))),
                                 anyTree(tableScan("orders")))));
