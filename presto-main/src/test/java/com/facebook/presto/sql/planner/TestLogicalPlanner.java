@@ -36,6 +36,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import static com.facebook.presto.spi.predicate.Domain.singleValue;
@@ -491,13 +492,11 @@ public class TestLogicalPlanner
     private void assertOrderedQuantifiedComparison(String query, String filter, String columnMapping, String function, String functionAlias)
     {
         assertPlan(query, anyTree(
-                project(
-                        filter(filter,
-                                join(INNER, ImmutableList.of(),
-                                        tableScan("orders").withSymbol("orderkey", columnMapping),
-                                        node(AggregationNode.class,
-                                                node(ValuesNode.class)).withSymbol(function, functionAlias)
-                                )))));
+                join(INNER, ImmutableList.of(), Optional.of(filter),
+                        tableScan("orders").withSymbol("orderkey", columnMapping),
+                                node(AggregationNode.class,
+                                        node(ValuesNode.class)).withSymbol(function, functionAlias)
+                        )));
     }
 
     private static final class PlanNodeExtractor
