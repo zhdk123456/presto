@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.client;
 
+import com.facebook.presto.spi.PrestoException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -24,11 +26,13 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.ObjectMapperProvider;
 import io.airlift.units.Duration;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -63,7 +67,6 @@ import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -336,12 +339,19 @@ public class StatementClient
     private RuntimeException requestFailedException(String task, Request request, JsonResponse<QueryResults> response)
     {
         gone.set(true);
-        if (!response.hasValue()) {
-            return new RuntimeException(
-                    format("Error %s at %s returned an invalid response: %s [Error: %s]", task, request.getUri(), response, response.getResponseBody()),
-                    response.getException());
+
+        ObjectMapper mapper = new ObjectMapperProvider().get();
+        try {
+            if (response.getJson() != null) {
+                PrestoException.PrestoExceptionSerialized serverException = mapper.readValue(response.getJson(), PrestoException.PrestoExceptionSerialized.class);
+                return new PrestoClientException(task, request, response, serverException);
+            }
         }
-        return new RuntimeException(format("Error %s at %s returned %s: %s", task, request.getUri(), response.getStatusCode(), response.getStatusMessage()));
+        catch (IOException e) {
+            // The response does not fit into PrestoException, continue with adding just request.
+        }
+
+        return new PrestoClientException(task, request, response);
     }
 
     public boolean cancelLeafStage(Duration timeout)
