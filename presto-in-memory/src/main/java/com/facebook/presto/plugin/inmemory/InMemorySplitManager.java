@@ -54,9 +54,6 @@ public final class InMemorySplitManager
         Set<Node> nodes = nodeManager.getRequiredWorkerNodes();
         checkState(!nodes.isEmpty(), "No InMemory nodes available");
 
-        int totalParts = nodes.size() * splitsPerNode;
-        int partNumber = 0;
-
         // Split the data using split and skew by the number of nodes available.
         ImmutableList.Builder<ConnectorSplit> splits = ImmutableList.builder();
         for (Node node : nodes) {
@@ -64,10 +61,9 @@ public final class InMemorySplitManager
                 splits.add(
                         new InMemorySplit(
                                 layout.getTable(),
-                                partNumber,
-                                totalParts,
+                                i,
+                                splitsPerNode,
                                 ImmutableList.of(node.getHostAndPort())));
-                partNumber++;
             }
         }
         return new FixedSplitSource(splits.build());
