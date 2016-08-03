@@ -98,6 +98,9 @@ public class PerfTest
     @Option(name = "--debug", title = "debug", description = "Enable debug information")
     public boolean debug;
 
+    @Option(name = "--quiet", title = "quiet", description = "Enable quiet mode (less verbose error messages)")
+    public boolean quiet;
+
     @Option(name = {"-r", "--runs"}, title = "number", description = "Number of runs until exit (default: 10)")
     public int runs = 10;
 
@@ -113,7 +116,7 @@ public class PerfTest
         initializeLogging(debug);
         List<String> queries = loadQueries();
 
-        try (ParallelQueryRunner parallelQueryRunner = new ParallelQueryRunner(16, parseServer(server), catalog, schema, debug, timeout, clientRequestTimeout)) {
+        try (ParallelQueryRunner parallelQueryRunner = new ParallelQueryRunner(16, parseServer(server), catalog, schema, debug, quiet, timeout, clientRequestTimeout)) {
             for (int loop = 0; loop < runs; loop++) {
                 executeQueries(queries, parallelQueryRunner, 1);
                 executeQueries(queries, parallelQueryRunner, 2);
@@ -149,7 +152,7 @@ public class PerfTest
         private final ListeningExecutorService executor;
         private final List<QueryRunner> runners;
 
-        public ParallelQueryRunner(int maxParallelism, URI server, String catalog, String schema, boolean debug, int timeout, Duration clientRequestTimeout)
+        public ParallelQueryRunner(int maxParallelism, URI server, String catalog, String schema, boolean debug, boolean quiet, int timeout, Duration clientRequestTimeout)
         {
             executor = listeningDecorator(newCachedThreadPool(daemonThreadsNamed("query-runner-%s")));
 
@@ -167,6 +170,7 @@ public class PerfTest
                         ImmutableMap.of(),
                         null,
                         debug,
+                        quiet,
                         clientRequestTimeout);
                 runners.add(new QueryRunner(session, executor, timeout));
             }

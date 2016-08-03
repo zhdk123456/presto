@@ -42,6 +42,7 @@ public class ClientSession
     private final Map<String, String> preparedStatements;
     private final String transactionId;
     private final boolean debug;
+    private final boolean quiet;
     private final Duration clientRequestTimeout;
 
     public static ClientSession withCatalogAndSchema(ClientSession session, String catalog, String schema)
@@ -59,6 +60,7 @@ public class ClientSession
                 session.getPreparedStatements(),
                 session.getTransactionId(),
                 session.isDebug(),
+                session.isQuiet(),
                 session.getClientRequestTimeout());
     }
 
@@ -77,6 +79,7 @@ public class ClientSession
                 session.getPreparedStatements(),
                 session.getTransactionId(),
                 session.isDebug(),
+                session.isQuiet(),
                 session.getClientRequestTimeout());
     }
 
@@ -95,6 +98,7 @@ public class ClientSession
                 preparedStatements,
                 session.getTransactionId(),
                 session.isDebug(),
+                session.isQuiet(),
                 session.getClientRequestTimeout());
     }
 
@@ -113,6 +117,7 @@ public class ClientSession
                 session.getPreparedStatements(),
                 transactionId,
                 session.isDebug(),
+                session.isQuiet(),
                 session.getClientRequestTimeout());
     }
 
@@ -131,6 +136,7 @@ public class ClientSession
                 session.getPreparedStatements(),
                 null,
                 session.isDebug(),
+                session.isQuiet(),
                 session.getClientRequestTimeout());
     }
 
@@ -146,9 +152,10 @@ public class ClientSession
             Map<String, String> properties,
             String transactionId,
             boolean debug,
+            boolean quiet,
             Duration clientRequestTimeout)
     {
-        this(server, user, source, clientInfo, catalog, schema, timeZoneId, locale, properties, emptyMap(), transactionId, debug, clientRequestTimeout);
+        this(server, user, source, clientInfo, catalog, schema, timeZoneId, locale, properties, emptyMap(), transactionId, debug, quiet, clientRequestTimeout);
     }
 
     public ClientSession(
@@ -164,6 +171,7 @@ public class ClientSession
             Map<String, String> preparedStatements,
             String transactionId,
             boolean debug,
+            boolean quiet,
             Duration clientRequestTimeout)
     {
         this.server = requireNonNull(server, "server is null");
@@ -176,6 +184,7 @@ public class ClientSession
         this.timeZoneId = requireNonNull(timeZoneId, "timeZoneId is null");
         this.transactionId = transactionId;
         this.debug = debug;
+        this.quiet = quiet;
         this.properties = ImmutableMap.copyOf(requireNonNull(properties, "properties is null"));
         this.preparedStatements = ImmutableMap.copyOf(requireNonNull(preparedStatements, "preparedStatements is null"));
         this.clientRequestTimeout = clientRequestTimeout;
@@ -250,6 +259,11 @@ public class ClientSession
         return debug;
     }
 
+    public boolean isQuiet()
+    {
+        return quiet;
+    }
+
     public Duration getClientRequestTimeout()
     {
         return clientRequestTimeout;
@@ -269,6 +283,7 @@ public class ClientSession
                 .add("properties", properties)
                 .add("transactionId", transactionId)
                 .add("debug", debug)
+                .add("quiet", quiet)
                 .toString();
     }
 }
