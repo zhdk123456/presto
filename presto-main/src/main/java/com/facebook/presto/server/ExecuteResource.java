@@ -88,7 +88,7 @@ public class ExecuteResource
         assertRequest(!isNullOrEmpty(query), "SQL query is empty");
 
         Session session = createSessionForRequest(servletRequest, accessControl, sessionPropertyManager, queryIdGenerator.createNextQueryId());
-        ClientSession clientSession = session.toClientSession(serverUri(), false, new Duration(2, MINUTES));
+        ClientSession clientSession = session.toClientSession(serverUri(), false, false, new Duration(2, MINUTES));
 
         StatementClient client = new StatementClient(httpClient, queryResultsCodec, clientSession, query);
 

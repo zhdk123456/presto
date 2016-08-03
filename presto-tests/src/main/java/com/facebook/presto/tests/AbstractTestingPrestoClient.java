@@ -82,7 +82,7 @@ public abstract class AbstractTestingPrestoClient<T>
     {
         ResultsSession<T> resultsSession = getResultSession(session);
 
-        ClientSession clientSession = session.toClientSession(prestoServer.getBaseUrl(), true, new Duration(2, TimeUnit.MINUTES));
+        ClientSession clientSession = session.toClientSession(prestoServer.getBaseUrl(), true, false, new Duration(2, TimeUnit.MINUTES));
 
         try (StatementClient client = new StatementClient(httpClient, QUERY_RESULTS_CODEC, clientSession, sql)) {
             while (client.isValid()) {
