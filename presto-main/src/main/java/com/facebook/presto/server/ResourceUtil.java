@@ -16,6 +16,7 @@ package com.facebook.presto.server;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.Session.SessionBuilder;
+import com.facebook.presto.client.QuerySubmission;
 import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.spi.QueryId;
@@ -28,6 +29,8 @@ import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.transaction.TransactionId;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
+import io.airlift.json.JsonCodec;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
@@ -53,6 +56,7 @@ import static com.facebook.presto.client.PrestoHeaders.PRESTO_CATALOG;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_CLIENT_INFO;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_LANGUAGE;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_PREPARED_STATEMENT;
+import static com.facebook.presto.client.PrestoHeaders.PRESTO_PREPARED_STATEMENT_IN_BODY;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_SCHEMA;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_SESSION;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_SOURCE;
@@ -77,6 +81,17 @@ final class ResourceUtil
             AccessControl accessControl,
             SessionPropertyManager sessionPropertyManager,
             QueryId queryId)
+    {
+        return createSessionForRequest(servletRequest, transactionManager, accessControl, sessionPropertyManager, queryId, ImmutableMap.of());
+    }
+
+    public static Session createSessionForRequest(
+            HttpServletRequest servletRequest,
+            TransactionManager transactionManager,
+            AccessControl accessControl,
+            SessionPropertyManager sessionPropertyManager,
+            QueryId queryId,
+            Map<String, String> preparedStatements)
     {
         String catalog = trimEmptyToNull(servletRequest.getHeader(PRESTO_CATALOG));
         String schema = trimEmptyToNull(servletRequest.getHeader(PRESTO_SCHEMA));
@@ -153,6 +168,10 @@ final class ResourceUtil
         String transactionIdHeader = servletRequest.getHeader(PRESTO_TRANSACTION_ID);
         if (transactionIdHeader != null) {
             sessionBuilder.setClientTransactionSupport();
+        }
+
+        for (Entry<String, String> preparedStatementsFromBody : preparedStatements.entrySet()) {
+            sessionBuilder.addPreparedStatement(preparedStatementsFromBody.getKey(), preparedStatementsFromBody.getValue());
         }
 
         Session session = sessionBuilder.build();
@@ -277,6 +296,21 @@ final class ResourceUtil
         }
         catch (UnsupportedEncodingException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * The query can be sent from the client either in plaintext or via a Jackson-serialized JSON representation of
+     * a QuerySubmission object, which includes prepared statements in the body of the HTTP request as well as
+     * the query.
+     */
+    public static QuerySubmission parseStringToQuerySubmission(HttpServletRequest servletRequest, String statement, JsonCodec<QuerySubmission> querySubmissionCodec)
+    {
+        if (servletRequest.getHeader(PRESTO_PREPARED_STATEMENT_IN_BODY) != null) {
+            return querySubmissionCodec.fromJson(statement);
+        }
+        else {
+            return new QuerySubmission(statement, ImmutableMap.of());
         }
     }
 }
