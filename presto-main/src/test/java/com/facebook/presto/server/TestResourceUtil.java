@@ -103,11 +103,13 @@ public class TestResourceUtil
                         .put(PRESTO_PREPARED_STATEMENT, "query1=abcdefg")
                         .build(),
                 "testRemote");
+
         createSessionForRequest(
                 request,
                 createTestTransactionManager(),
                 new AllowAllAccessControl(),
                 new SessionPropertyManager(),
-                new QueryId("test_query_id"));
+                new QueryId("test_query_id"),
+                ImmutableMap.of());
     }
 }

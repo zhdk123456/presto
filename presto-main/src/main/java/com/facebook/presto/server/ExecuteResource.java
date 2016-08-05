@@ -16,6 +16,7 @@ package com.facebook.presto.server;
 import com.facebook.presto.client.ClientSession;
 import com.facebook.presto.client.Column;
 import com.facebook.presto.client.QueryResults;
+import com.facebook.presto.client.QuerySubmission;
 import com.facebook.presto.client.StatementClient;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.AbstractIterator;
