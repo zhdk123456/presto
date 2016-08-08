@@ -3,7 +3,7 @@ JDBC Driver
 ===========
 
 Presto can be accessed from Java using the JDBC driver.
-Download jdbc driver can be downloaded from https://www.teradata.com/presto. Download it and add it to the class path of your Java application.
+The JDBC driver can be downloaded from https://www.teradata.com/presto. Download it and add it to the class path of your Java application.
 The following JDBC URL formats are supported:
 
 .. code-block:: none
