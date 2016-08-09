@@ -2,11 +2,15 @@
 ODBC Drivers
 ============
 
-Presto can be accessed from using one of the Teradata ODBC drivers. The ODBC
-driver is available for Windows, Mac, and Linux. The drivers are available for
-free download from Teradata.
+Presto can be accessed using one of the Teradata ODBC
+drivers. The ODBC drivers are available for Windows, Mac, and Linux. The
+drivers are available for free download from
+https://www.teradata.com/presto.
 
-The drivers and detailed driver documentation can be downloaded from https://www.teradata.com/presto.
+For detailed Presto ODBC documentation, please see the `Teradata
+Presto ODBC Driver Install Guide
+<http://teradata-presto.s3.amazonaws.com/odbc-1.1.3.1007/TeradataODBCDriverPrestoInstallGuide_1_1_3.pdf>`_
+
 
 ODBC for Mac
 ************
