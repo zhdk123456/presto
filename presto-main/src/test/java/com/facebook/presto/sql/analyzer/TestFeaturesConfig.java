@@ -15,6 +15,7 @@ package com.facebook.presto.sql.analyzer;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.units.DataSize;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -51,7 +52,8 @@ public class TestFeaturesConfig
                 .setRe2JDfaStatesLimit(Integer.MAX_VALUE)
                 .setRe2JDfaRetries(5)
                 .setResourceGroupManager(FILE_BASED_RESOURCE_GROUP_MANAGER)
-                .setParseDecimalLiteralsAsDouble(false));
+                .setParseDecimalLiteralsAsDouble(false)
+                .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("0MB")));
     }
 
     @Test
@@ -76,6 +78,7 @@ public class TestFeaturesConfig
                 .put("re2j.dfa-retries", "42")
                 .put("resource-group-manager", "test")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("experimental.operator-memory-limit-before-spill", "100MB")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental-syntax-enabled", "true")
@@ -96,6 +99,7 @@ public class TestFeaturesConfig
                 .put("re2j.dfa-retries", "42")
                 .put("resource-group-manager", "test")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("experimental.operator-memory-limit-before-spill", "100MB")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -116,7 +120,8 @@ public class TestFeaturesConfig
                 .setRe2JDfaStatesLimit(42)
                 .setRe2JDfaRetries(42)
                 .setResourceGroupManager("test")
-                .setParseDecimalLiteralsAsDouble(true);
+                .setParseDecimalLiteralsAsDouble(true)
+                .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"));
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
