@@ -2,20 +2,10 @@
 JDBC Driver
 ===========
 
-Presto can be accessed from Java using the JDBC driver.
-The JDBC driver can be downloaded from https://www.teradata.com/presto. Download it and add it to the class path of your Java application.
-The following JDBC URL formats are supported:
+Presto can be accessed from Java using one of the Teradata Presto JDBC
+drivers. The drivers are available for free download from
+https://www.teradata.com/presto.
 
-.. code-block:: none
-
-    jdbc:presto://host:port
-    jdbc:presto://host:port/catalog
-    jdbc:presto://host:port/catalog/schema
-
-For example, use the following URL to connect to Presto
-running on ``example.net`` port ``8080`` with the catalog ``hive``
-and the schema ``sales``:
-
-.. code-block:: none
-
-    jdbc:presto://example.net:8080/hive/sales
+For detailed Presto JDBC documentation, please see the `Teradata
+Presto JDBC Driver Install Guide
+<http://teradata-presto.s3.amazonaws.com/jdbc-1.0.4.1010/TeradataJDBCDriverPrestoInstallGuide_1_0_4.pdf>`_
