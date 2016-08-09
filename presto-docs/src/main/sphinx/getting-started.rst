@@ -34,9 +34,4 @@ Presto Client Software Installation
 | :doc:`installation/cli`
 |
 
-Presto Documentation
-====================
-
-This documentation is available for download as HTML from https://www.teradata.com/presto.
-
 
