@@ -91,7 +91,7 @@ When not using Kerberos with HDFS, Presto will access HDFS using the
 OS user of the Presto process. For example, if Presto is running as
 ``nobody``, it will access HDFS as ``nobody``. You can override this
 username by setting the ``HADOOP_USER_NAME`` system property in the
-Presto :ref:`presto_jvm_config`, replacing ``hdfs_user`` with the
+Presto ``presto_jvm_config``, replacing ``hdfs_user`` with the
 appropriate username:
 
 .. code-block:: none

@@ -1,3 +1,4 @@
+.. highlight:: bash
 .. _presto-cli-installation-label:
 
 ======================
