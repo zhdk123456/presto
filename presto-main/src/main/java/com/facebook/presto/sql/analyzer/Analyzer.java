@@ -64,8 +64,9 @@ public class Analyzer
 
     public Analysis analyze(Statement statement, boolean isDescribe)
     {
-        Statement rewrittenStatement = StatementRewrite.rewrite(session, metadata, sqlParser, queryExplainer, statement, parameters);
+        Statement rewrittenStatement = StatementRewrite.rewrite(session, metadata, sqlParser, queryExplainer, statement, parameters, accessControl, experimentalSyntaxEnabled);
         Analysis analysis = new Analysis(rewrittenStatement, parameters);
+        analysis.setIsDescribe(isDescribe);
         StatementAnalyzer analyzer = new StatementAnalyzer(analysis, metadata, sqlParser, accessControl, session, experimentalSyntaxEnabled);
         analyzer.process(rewrittenStatement, Scope.builder().markQueryBoundary().build());
         return analysis;
