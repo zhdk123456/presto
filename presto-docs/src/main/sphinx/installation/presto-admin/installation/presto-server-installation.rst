@@ -1,3 +1,4 @@
+.. highlight:: bash
 .. _presto-server-installation-label:
 
 ============================
