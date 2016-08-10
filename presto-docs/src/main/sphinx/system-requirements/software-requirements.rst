@@ -16,7 +16,7 @@ Software Requirements
 
 **Java**
 
-* Oracle Java 1.8 JRE (64-bit)
+* Oracle Java JRE 1.8 Update 60+ (64-bit)
 
 **Python**
 
