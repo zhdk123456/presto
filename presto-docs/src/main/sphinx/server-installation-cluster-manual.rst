@@ -27,6 +27,7 @@ Manual Installation on a Cluster
 Install and manage Presto manually using Presto Admin.
 
 | Download Presto from https://www.teradata.com/presto
+|
 | :doc:`Installation Procedures <installation/installation-presto-admin>`
 
 ----
@@ -38,6 +39,7 @@ Install and manage Presto integrated with YARN manually using `Apache Slider`_.
 
 | Download Presto from https://www.teradata.com/presto
 | Download `apache-slider 0.8` from http://slider.incubator.apache.org/index.html
+|
 | :doc:`Installation Procedures <installation/installation-yarn-manual>`
 
   .. _Apache Slider: https://slider.incubator.apache.org/
