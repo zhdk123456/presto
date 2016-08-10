@@ -2,17 +2,6 @@
 Release 0.76
 ============
 
-Kafka Connector
----------------
-
-This release adds a connector that allows querying of `Apache Kafka`_ topic data
-from Presto. Topics can be live and repeated queries will pick up new data.
-
-Apache Kafka 0.8+ is supported although Apache Kafka 0.8.1+ is recommended.
-There is extensive :doc:`documentation </connector/kafka>` about configuring
-the connector and a :doc:`tutorial </connector/kafka-tutorial>` to get started.
-
-.. _Apache Kafka: https://kafka.apache.org/
 
 MySQL and PostgreSQL Connectors
 -------------------------------
@@ -21,19 +10,6 @@ This release adds the :doc:`/connector/mysql` and :doc:`/connector/postgresql`
 for querying and creating tables in external relational databases. These can
 be used to join or copy data between different systems like MySQL and Hive,
 or between two different MySQL or PostgreSQL instances, or any combination.
-
-Cassandra Changes
------------------
-
-The :doc:`/connector/cassandra` configuration properties
-``cassandra.client.read-timeout`` and ``cassandra.client.connect-timeout``
-are now specified using a duration rather than milliseconds (this makes
-them consistent with all other such properties in Presto). If you were
-previously specifying a value such as ``25``, change it to ``25ms``.
-
-The retry policy for the Cassandra client is now configurable via the
-``cassandra.retry-policy`` property. In particular, the custom ``BACKOFF``
-retry policy may be useful.
 
 Hive Changes
 ------------
