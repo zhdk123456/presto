@@ -24,7 +24,6 @@ Hadoop 2.x
 ----------
 
 Use the ``hive-hadoop2`` connector to read Hive data from Hadoop 2.x.
-See :doc:`/installation/deployment` for details.
 
 Amazon S3
 ---------
