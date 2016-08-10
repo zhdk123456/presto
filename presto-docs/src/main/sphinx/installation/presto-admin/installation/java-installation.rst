@@ -1,3 +1,4 @@
+.. highlight:: bash
 .. _java-installation-label:
 
 =================

@@ -83,7 +83,7 @@ When not using Kerberos with HDFS, Presto will access HDFS using the
 OS user of the Presto process. For example, if Presto is running as
 ``nobody``, it will access HDFS as ``nobody``. You can override this
 username by setting the ``HADOOP_USER_NAME`` system property in the
-Presto :ref:`presto_jvm_config`, replacing ``hdfs_user`` with the
+Presto ``presto_jvm_config``, replacing ``hdfs_user`` with the
 appropriate username:
 
 .. code-block:: none
@@ -331,7 +331,7 @@ The following configuration properties may have an impact on connector performan
 
  * **Type:** ``Boolean``
  * **Default value:** ``false``
- * **Description:** Force splits to be scheduled on the same node (ignoring normal node selection procedures) as the Hadoop DataNode process serving the split data. This is useful for installations where Presto is collocated with every DataNode and may increase queries time significantly. The drawback may be that if some data are accessed more often, the utilization of some nodes may be low even if the whole system is heavy loaded. See also :ref:`node-scheduler.network-topology<node-scheduler-network-topology>` if less strict constrain is preferred - especially if some nodes are overloaded and other are not fully utilized.
+ * **Description:** Force splits to be scheduled on the same node (ignoring normal node selection procedures) as the Hadoop DataNode process serving the split data. This is useful for installations where Presto is collocated with every DataNode and may increase queries time significantly. The drawback may be that if some data are accessed more often, the utilization of some nodes may be low even if the whole system is heavy loaded. See also :doc:`node-scheduler.network-topology <../admin/tuning>` if less strict constrain is preferred - especially if some nodes are overloaded and other are not fully utilized.
 
 
 ``hive.max-initial-split-size``
