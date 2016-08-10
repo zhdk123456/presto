@@ -80,6 +80,7 @@ statement
     | DEALLOCATE PREPARE identifier                                    #deallocate
     | EXECUTE identifier (USING expression (',' expression)*)?         #execute
     | DESCRIBE INPUT identifier                                        #describeInput
+    | DESCRIBE OUTPUT identifier                                       #describeOutput
     ;
 
 query
@@ -599,6 +600,7 @@ PREPARE: 'PREPARE';
 DEALLOCATE: 'DEALLOCATE';
 EXECUTE: 'EXECUTE';
 INPUT: 'INPUT';
+OUTPUT: 'OUTPUT';
 
 NORMALIZE: 'NORMALIZE';
 NFD : 'NFD';
