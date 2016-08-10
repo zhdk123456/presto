@@ -15,6 +15,7 @@ Presto Documentation
     server-installation-aws-emr-manual
     client
     Presto Admin <installation/presto-admin/user-guide>
+    yarn
     security
     admin
     connector
@@ -23,10 +24,5 @@ Presto Documentation
     sql
     migration
     release
-
-.. toctree::
-   :hidden:
-
-   hidden
     
 .. Note: If "release" is not the last item, the CSS must be updated.

@@ -31,6 +31,7 @@ Install and manage Presto using `Apache Ambari`_ 2.1.
   .. _Apache Ambari: https://ambari.apache.org/
 
 | Download Presto from https://www.teradata.com/presto
+|
 | :doc:`Installation Procedures <installation/installation-ambari>`
 
 -----
@@ -42,6 +43,7 @@ Install and manage Presto integrated with YARN using
 the `Apache Slider`_ view for `Apache Ambari`_ 2.1.
 
 | Download Presto from https://www.teradata.com/presto
+|
 | :doc:`Installation Procedures <installation/installation-yarn-automated>`
 
   .. _Apache Slider: https://slider.incubator.apache.org/
