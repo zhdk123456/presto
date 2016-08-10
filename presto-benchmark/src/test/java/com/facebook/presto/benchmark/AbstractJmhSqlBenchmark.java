@@ -18,9 +18,9 @@ import com.facebook.presto.execution.TaskId;
 import com.facebook.presto.execution.TaskStateMachine;
 import com.facebook.presto.memory.MemoryPool;
 import com.facebook.presto.memory.QueryContext;
-import com.facebook.presto.metadata.InMemoryNodeManager;
 import com.facebook.presto.operator.Driver;
 import com.facebook.presto.operator.TaskContext;
+import com.facebook.presto.plugin.memory.MemoryConnectorFactory;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.memory.MemoryPoolId;
 import com.facebook.presto.testing.LocalQueryRunner;
@@ -58,7 +58,7 @@ public class AbstractJmhSqlBenchmark
     @State(Thread)
     public static class AbstractContext
     {
-        protected LocalQueryRunner localQueryRunner = createInMemoryLocalQueryRunner();
+        protected LocalQueryRunner localQueryRunner = createMemoryLocalQueryRunner();
 
         public void runQuery(String query)
         {
@@ -91,10 +91,10 @@ public class AbstractJmhSqlBenchmark
             }
         }
 
-        private static LocalQueryRunner createInMemoryLocalQueryRunner()
+        private static LocalQueryRunner createMemoryLocalQueryRunner()
         {
             Session.SessionBuilder sessionBuilder = testSessionBuilder()
-                    .setCatalog("inmemory")
+                    .setCatalog("memory")
                     .setSchema("default");
 
             Session session = sessionBuilder.build();
@@ -102,8 +102,7 @@ public class AbstractJmhSqlBenchmark
 
             // add tpch
             localQueryRunner.createCatalog("tpch", new TpchConnectorFactory(1), ImmutableMap.<String, String>of());
-            localQueryRunner.createCatalog("inmemory", new InMemoryConnectorFactory(1), ImmutableMap.<String, String>of());
-
+            localQueryRunner.createCatalog("inmemory", new MemoryConnectorFactory(1), ImmutableMap.<String, String>of());
             return localQueryRunner;
         }
     }
