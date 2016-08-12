@@ -20,6 +20,7 @@ import com.facebook.presto.metadata.SqlScalarFunctionBuilder;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.type.DecimalType;
 import com.facebook.presto.spi.type.Decimals;
+import com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.common.collect.ImmutableList;
@@ -507,6 +508,7 @@ public final class DecimalCasts
     @UsedByGeneratedCode
     public static long doubleToShortDecimal(double value, long precision, long scale, long tenToScale)
     {
+        // TODO: optimize
         BigDecimal decimal = new BigDecimal(value);
         decimal = decimal.setScale((int) scale, ROUND_HALF_UP);
         if (overflows(decimal, precision)) {
@@ -518,14 +520,11 @@ public final class DecimalCasts
     @UsedByGeneratedCode
     public static Slice doubleToLongDecimal(double value, long precision, long scale, BigInteger tenToScale)
     {
-        // TODO: optimize
-        BigDecimal decimal = new BigDecimal(value);
-        decimal = decimal.setScale((int) scale, ROUND_HALF_UP);
-        if (overflows(decimal, precision)) {
+        Slice decimal = UnscaledDecimal128Arithmetic.doubleToLongDecimal(value, precision, (int) scale);
+        if (overflows(decimal, (int) precision)) {
             throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast DOUBLE '%s' to DECIMAL(%s, %s)", value, precision, scale));
         }
-        BigInteger decimalBigInteger = decimal.unscaledValue();
-        return encodeUnscaledValue(decimalBigInteger);
+        return decimal;
     }
 
     @UsedByGeneratedCode
@@ -543,6 +542,7 @@ public final class DecimalCasts
     @UsedByGeneratedCode
     public static Slice realToLongDecimal(long value, long precision, long scale, BigInteger tenToScale)
     {
+        // TODO: optimize
         BigDecimal decimal = new BigDecimal(intBitsToFloat((int) value));
         decimal = decimal.setScale((int) scale, ROUND_HALF_UP);
         if (overflows(decimal, precision)) {
