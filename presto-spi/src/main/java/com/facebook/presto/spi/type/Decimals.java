@@ -39,7 +39,7 @@ public class Decimals
     private Decimals() {}
 
     public static final int MAX_PRECISION = 38;
-    public static final int MAX_SHORT_PRECISION = 17;
+    public static final int MAX_SHORT_PRECISION = 18;
 
     public static final BigInteger MAX_DECIMAL_UNSCALED_VALUE = new BigInteger(
             // repeat digit '9' MAX_PRECISION times
@@ -48,7 +48,7 @@ public class Decimals
 
     private static final Pattern DECIMAL_PATTERN = Pattern.compile("(\\+?|-?)((0*)(\\d*))(\\.(\\d+))?");
 
-    private static final int LONG_POWERS_OF_TEN_TABLE_LENGTH = 18;
+    private static final int LONG_POWERS_OF_TEN_TABLE_LENGTH = 19;
     private static final int BIG_INTEGER_POWERS_OF_TEN_TABLE_LENGTH = 100;
     private static final long[] LONG_POWERS_OF_TEN = new long[LONG_POWERS_OF_TEN_TABLE_LENGTH];
     private static final BigInteger[] BIG_INTEGER_POWERS_OF_TEN = new BigInteger[BIG_INTEGER_POWERS_OF_TEN_TABLE_LENGTH];
