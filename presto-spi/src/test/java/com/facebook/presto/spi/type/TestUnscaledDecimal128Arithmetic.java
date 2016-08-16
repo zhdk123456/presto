@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.spi.type;
 
+import com.facebook.presto.spi.PrestoException;
 import io.airlift.slice.Slice;
 import org.testng.annotations.Test;
 
@@ -270,7 +271,7 @@ public class TestUnscaledDecimal128Arithmetic
             unscaledDecimal(value);
             fail();
         }
-        catch (ArithmeticException ignored) {
+        catch (PrestoException ignored) {
         }
     }
 
@@ -281,7 +282,7 @@ public class TestUnscaledDecimal128Arithmetic
             unscaledDecimalToUnscaledLong(decimal);
             fail();
         }
-        catch (ArithmeticException ignored) {
+        catch (PrestoException exception) {
         }
     }
 
@@ -291,7 +292,7 @@ public class TestUnscaledDecimal128Arithmetic
             multiply(left, right);
             fail();
         }
-        catch (ArithmeticException ignored) {
+        catch (PrestoException ignored) {
         }
     }
 
@@ -301,7 +302,7 @@ public class TestUnscaledDecimal128Arithmetic
             rescale(decimal, rescaleFactor);
             fail();
         }
-        catch (ArithmeticException ignored) {
+        catch (PrestoException ignored) {
         }
     }
 
