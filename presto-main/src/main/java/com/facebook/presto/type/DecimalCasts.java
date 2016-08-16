@@ -43,6 +43,7 @@ import static com.facebook.presto.metadata.OperatorType.CAST;
 import static com.facebook.presto.metadata.Signature.withVariadicBound;
 import static com.facebook.presto.operator.scalar.JsonOperators.JSON_FACTORY;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_CAST_ARGUMENT;
+import static com.facebook.presto.spi.StandardErrorCode.NUMERIC_VALUE_OUT_OF_RANGE;
 import static com.facebook.presto.spi.type.Decimals.bigIntegerTenToNth;
 import static com.facebook.presto.spi.type.Decimals.decodeUnscaledValue;
 import static com.facebook.presto.spi.type.Decimals.encodeUnscaledValue;
@@ -224,8 +225,11 @@ public final class DecimalCasts
         try {
             return unscaledDecimalToUnscaledLong(rescale(decimal, (int) -scale));
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to BIGINT", Decimals.toString(decimal, (int) scale)));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to BIGINT", Decimals.toString(decimal, (int) scale)));
+            }
+            throw e;
         }
     }
 
@@ -239,8 +243,11 @@ public final class DecimalCasts
             }
             return decimal;
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast BIGINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast BIGINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+            }
+            throw e;
         }
     }
 
@@ -282,8 +289,11 @@ public final class DecimalCasts
         try {
             return Math.toIntExact(unscaledDecimalToUnscaledLong(rescale(decimal, (int) -scale)));
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to INTEGER", Decimals.toString(decimal, (int) scale)));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to INTEGER", Decimals.toString(decimal, (int) scale)));
+            }
+            throw e;
         }
     }
 
@@ -297,8 +307,11 @@ public final class DecimalCasts
             }
             return decimal;
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast INTEGER '%s' to DECIMAL(%s, %s)", value, precision, scale));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast INTEGER '%s' to DECIMAL(%s, %s)", value, precision, scale));
+            }
+            throw e;
         }
     }
 
@@ -340,8 +353,11 @@ public final class DecimalCasts
         try {
             return Shorts.checkedCast(unscaledDecimalToUnscaledLong(rescale(decimal, (int) -scale)));
         }
-        catch (ArithmeticException | IllegalArgumentException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to SMALLINT", Decimals.toString(decimal, (int) scale)));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to SMALLINT", Decimals.toString(decimal, (int) scale)));
+            }
+            throw e;
         }
     }
 
@@ -355,8 +371,11 @@ public final class DecimalCasts
             }
             return decimal;
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast SMALLINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast SMALLINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+            }
+            throw e;
         }
     }
 
@@ -398,8 +417,11 @@ public final class DecimalCasts
         try {
             return SignedBytes.checkedCast(unscaledDecimalToUnscaledLong(rescale(decimal, (int) -scale)));
         }
-        catch (ArithmeticException | IllegalArgumentException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to TINYINT", Decimals.toString(decimal, (int) scale)));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to TINYINT", Decimals.toString(decimal, (int) scale)));
+            }
+            throw e;
         }
     }
 
@@ -413,8 +435,11 @@ public final class DecimalCasts
             }
             return decimal;
         }
-        catch (ArithmeticException e) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast TINYINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+        catch (PrestoException e) {
+            if (isOutOfRange(e)) {
+                throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast TINYINT '%s' to DECIMAL(%s, %s)", value, precision, scale));
+            }
+            throw e;
         }
     }
 
@@ -639,5 +664,10 @@ public final class DecimalCasts
         catch (IOException | NumberFormatException e) {
             throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast '%s' to DECIMAL(%s,%s)", json.toStringUtf8(), precision, scale));
         }
+    }
+
+    private static boolean isOutOfRange(PrestoException e)
+    {
+        return e.getErrorCode().equals(NUMERIC_VALUE_OUT_OF_RANGE.toErrorCode());
     }
 }
