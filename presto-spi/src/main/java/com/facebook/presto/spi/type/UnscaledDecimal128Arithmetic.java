@@ -1441,6 +1441,24 @@ public final class UnscaledDecimal128Arithmetic
         throw new PrestoException(NUMERIC_VALUE_OUT_OF_RANGE, "Decimal overflow");
     }
 
+    public static int getInt(Slice decimal, int index)
+    {
+        int value = getRawInt(decimal, index);
+        if (index == SIGN_INT_INDEX) {
+            value &= ~SIGN_INT_MASK;
+        }
+        return value;
+    }
+
+    public static long getLong(Slice decimal, int index)
+    {
+        long value = getRawLong(decimal, index);
+        if (index == SIGN_LONG_INDEX) {
+            return unpackUnsignedLong(value);
+        }
+        return value;
+    }
+
     private static boolean exceedsOrEqualTenToThirtyEight(int v0, int v1, int v2, int v3)
     {
         // 10**38=
@@ -1496,24 +1514,6 @@ public final class UnscaledDecimal128Arithmetic
         for (int i = 0; i < NUMBER_OF_LONGS; i++) {
             setRawLong(decimal, i, 0);
         }
-    }
-
-    private static int getInt(Slice decimal, int index)
-    {
-        int value = getRawInt(decimal, index);
-        if (index == SIGN_INT_INDEX) {
-            value &= ~SIGN_INT_MASK;
-        }
-        return value;
-    }
-
-    private static long getLong(Slice decimal, int index)
-    {
-        long value = getRawLong(decimal, index);
-        if (index == SIGN_LONG_INDEX) {
-            return unpackUnsignedLong(value);
-        }
-        return value;
     }
 
     private static long unpackUnsignedLong(long value)
