@@ -126,6 +126,8 @@ import com.facebook.presto.sql.tree.Rollback;
 import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.StartTransaction;
 import com.facebook.presto.sql.tree.Statement;
+import com.facebook.presto.statistics.CoefficientBasedStatisticsCalculator;
+import com.facebook.presto.statistics.StatisticsCalculator;
 import com.facebook.presto.testing.PageConsumerOperator.PageConsumerOutputFactory;
 import com.facebook.presto.transaction.TransactionManager;
 import com.facebook.presto.transaction.TransactionManagerConfig;
@@ -187,6 +189,7 @@ public class LocalQueryRunner
     private final InMemoryNodeManager nodeManager;
     private final TypeRegistry typeRegistry;
     private final MetadataManager metadata;
+    private final StatisticsCalculator statisticsCalculator;
     private final TestingAccessControlManager accessControl;
     private final SplitManager splitManager;
     private final BlockEncodingSerde blockEncodingSerde;
@@ -250,6 +253,7 @@ public class LocalQueryRunner
                 new SessionPropertyManager(),
                 new TablePropertyManager(),
                 transactionManager);
+        this.statisticsCalculator = new CoefficientBasedStatisticsCalculator(metadata);
         this.accessControl = new TestingAccessControlManager(transactionManager);
         this.pageSourceManager = new PageSourceManager();
 
@@ -617,7 +621,7 @@ public class LocalQueryRunner
                 .setExperimentalSyntaxEnabled(true)
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
-        PlanOptimizersFactory planOptimizersFactory = new PlanOptimizersFactory(metadata, sqlParser, featuresConfig, true);
+        PlanOptimizersFactory planOptimizersFactory = new PlanOptimizersFactory(metadata, sqlParser, featuresConfig, statisticsCalculator, true);
         return createPlan(session, sql, featuresConfig, planOptimizersFactory, stage);
     }
 
