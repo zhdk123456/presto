@@ -451,6 +451,10 @@ public final class UnscaledDecimal128Arithmetic
 
     public static void multiply(Slice left, Slice right, Slice result)
     {
+        boolean fourIntsResultExpected = result.length() == NUMBER_OF_LONGS * Long.BYTES;
+        boolean eightIntsResultExpected = result.length() >= NUMBER_OF_LONGS * Long.BYTES * 2;
+        checkArgument(fourIntsResultExpected ^ eightIntsResultExpected);
+
         long l0 = getInt(left, 0) & LONG_MASK;
         long l1 = getInt(left, 1) & LONG_MASK;
         long l2 = getInt(left, 2) & LONG_MASK;
@@ -462,7 +466,7 @@ public final class UnscaledDecimal128Arithmetic
         long r3 = getInt(right, 3) & LONG_MASK;
 
         // the combinations below definitely result in an overflow
-        if (((r3 != 0 && (l3 | l2 | l1) != 0) || (r2 != 0 && (l3 | l2) != 0) || (r1 != 0 && l3 != 0))) {
+        if (fourIntsResultExpected && ((r3 != 0 && (l3 | l2 | l1) != 0) || (r2 != 0 && (l3 | l2) != 0) || (r1 != 0 && l3 != 0))) {
             throwOverflowException();
         }
 
@@ -535,12 +539,24 @@ public final class UnscaledDecimal128Arithmetic
             z7 = (accumulator >>> 32) & LONG_MASK;
         }
 
-        if (z7 == 0 && z6 == 0 && z5 == 0 && z4 == 0) {
-            pack(result, (int) z0, (int) z1, (int) z2, (int) z3, isNegative(left) ^ isNegative(right));
+        if (fourIntsResultExpected) {
+            if (z7 == 0 && z6 == 0 && z5 == 0 && z4 == 0) {
+                pack(result, (int) z0, (int) z1, (int) z2, (int) z3, isNegative(left) ^ isNegative(right));
+                return;
+            }
+            else {
+                throwOverflowException();
+            }
         }
-        else {
-            throwOverflowException();
-        }
+
+        setRawInt(result, 0, (int) z0);
+        setRawInt(result, 1, (int) z1);
+        setRawInt(result, 2, (int) z2);
+        setRawInt(result, 3, (int) z3);
+        setRawInt(result, 4, (int) z4);
+        setRawInt(result, 5, (int) z5);
+        setRawInt(result, 6, (int) z6);
+        setRawInt(result, 7, (int) z7);
     }
 
     public static int compare(Slice left, Slice right)
