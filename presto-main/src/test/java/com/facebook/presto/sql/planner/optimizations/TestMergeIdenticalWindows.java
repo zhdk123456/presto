@@ -257,7 +257,7 @@ public class TestMergeIdenticalWindows
     }
 
     @Test
-    public void testNotMergeDifferentFrames()
+    public void testMergeDifferentFrames()
     {
         Optional<WindowFrame> frameC = Optional.of(new WindowFrame(
                 WindowFrame.Type.ROWS,
@@ -289,16 +289,14 @@ public class TestMergeIdenticalWindows
                 anyTree(
                         window(specificationD,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, quantityReference)),
-                                window(specificationC,
-                                        ImmutableList.of(
-                                        functionCall("sum", frameC, discountReference),
-                                        functionCall("sum", frameC, quantityReference)),
-                                        any()))));
+                                functionCall("avg", frameD, quantityReference),
+                                functionCall("sum", frameC, discountReference),
+                                functionCall("sum", frameC, quantityReference)),
+                                any())));
     }
 
     @Test
-    public void testNotMergeDifferentFramesWithDefault()
+    public void testMergeDifferentFramesWithDefault()
     {
         WindowNode.Specification specificationC = new WindowNode.Specification(
                 ImmutableList.of(suppkey),
@@ -323,14 +321,12 @@ public class TestMergeIdenticalWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationD,
+                        window(specificationC,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, quantityReference)),
-                                window(specificationC,
-                                        ImmutableList.of(
-                                        functionCall("sum", defaultFrame, discountReference),
-                                        functionCall("sum", defaultFrame, quantityReference)),
-                                        any()))));
+                                functionCall("avg", frameD, quantityReference),
+                                functionCall("sum", defaultFrame, discountReference),
+                                functionCall("sum", defaultFrame, quantityReference)),
+                                any())));
     }
 
     @Test
