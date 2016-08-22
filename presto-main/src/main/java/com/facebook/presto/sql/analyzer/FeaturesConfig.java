@@ -55,6 +55,7 @@ public class FeaturesConfig
     private boolean pushTableWriteThroughUnion = true;
     private boolean legacyArrayAgg;
     private boolean optimizeMixedDistinctAggregations;
+    private boolean joinReorderingEnabled = false;
 
     private String processingOptimization = ProcessingOptimization.DISABLED;
     private boolean dictionaryAggregation;
