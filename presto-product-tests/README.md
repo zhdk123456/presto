@@ -154,6 +154,8 @@ Please keep in mind that if you run tests on Hive <1.1.0, you should exclude tes
 For more information on the various ways in which Presto can be configured to
 interact with Kerberized Hive and Hadoop, please refer to the [Hive connector documentation](https://prestodb.io/docs/current/connector/hive.html).
 
+### Running a single test
+
 The `run_on_docker.sh` script can also run individual product tests. Presto
 product tests are either [Java based](https://github.com/prestodb/tempto#java-based-tests)
 or [convention based](https://github.com/prestodb/tempto#convention-based-sql-query-tests)
@@ -165,6 +167,8 @@ presto-product-tests/bin/run_on_docker.sh <profile> -t com.facebook.presto.tests
 # Run single convention based test
 presto-product-tests/bin/run_on_docker.sh <profile> -t sql_tests.testcases.system.selectInformationSchemaTables
 ```
+
+### Running groups of tests
 
 Tests belong to a single or possibly multiple groups. Java based tests are
 tagged with groups in the `@Test` annotation and convention based tests have
@@ -202,8 +206,12 @@ presto-product-tests/bin/run_on_docker.sh <profile> -x quarantine,big_query,prof
 where <profile> can be any one of the available profiles
 ```
 
+### Running from IntelliJ
+
 For running Java based tests from IntelliJ see the section on
 [Debugging Java based tests](#debugging-java-based-tests).
+
+### Interrupting a test run
 
 To interrupt a product test run, send a single `Ctrl-C` signal. The scripts
 running the tests will gracefully shutdown all containers. Any follow up
