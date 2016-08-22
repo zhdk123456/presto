@@ -59,7 +59,8 @@ public class TestFeaturesConfig
                 .setSpillerSpillPath(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
                 .setCharPadSpaces(false)
-                .setParseDecimalLiteralsAsDouble(false));
+                .setParseDecimalLiteralsAsDouble(false)
+                .setJoinsReorderingEnabled(false));
     }
 
     @Test
@@ -89,6 +90,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("joins-reordering-enabled", "true")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental-syntax-enabled", "true")
@@ -114,6 +116,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("joins-reordering-enabled", "true")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -139,7 +142,8 @@ public class TestFeaturesConfig
                 .setSpillerSpillPath("/tmp/custom/spill/path")
                 .setSpillerThreads(42)
                 .setCharPadSpaces(true)
-                .setParseDecimalLiteralsAsDouble(true);
+                .setParseDecimalLiteralsAsDouble(true)
+                .setJoinsReorderingEnabled(true);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);

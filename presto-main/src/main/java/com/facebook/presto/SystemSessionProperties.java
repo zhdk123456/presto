@@ -65,6 +65,7 @@ public final class SystemSessionProperties
     public static final String OPERATOR_MEMORY_LIMIT_BEFORE_SPILL = "operator_memory_limit_before_spill";
     public static final String MAX_ENTRIES_BEFORE_SPILL = "max_entries_before_spill";
     public static final String PARSE_DECIMAL_LITERALS_AS_DOUBLE = "parse_decimal_literals_as_double";
+    public static final String JOIN_REORDERING = "join_reordering";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -242,6 +243,11 @@ public final class SystemSessionProperties
                         PARSE_DECIMAL_LITERALS_AS_DOUBLE,
                         "Parse decimal literals as DOUBLE instead of DECIMAL",
                         featuresConfig.isParseDecimalLiteralsAsDouble(),
+                        false),
+                booleanSessionProperty(
+                        JOIN_REORDERING,
+                        "Use statistics based join reordering",
+                        featuresConfig.isJoinsReorderingEnabled(),
                         false));
     }
 
@@ -343,6 +349,11 @@ public final class SystemSessionProperties
     public static boolean isColocatedJoinEnabled(Session session)
     {
         return session.getProperty(COLOCATED_JOIN, Boolean.class);
+    }
+
+    public static boolean isJoinsReorderingEnabled(Session session)
+    {
+        return session.getProperty(JOIN_REORDERING, Boolean.class);
     }
 
     public static int getInitialSplitsPerNode(Session session)
