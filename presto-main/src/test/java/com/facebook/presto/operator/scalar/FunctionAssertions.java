@@ -435,7 +435,15 @@ public final class FunctionAssertions
 
         parsedExpression = rewriteQualifiedNamesToSymbolReferences(parsedExpression);
 
-        final ExpressionAnalysis analysis = analyzeExpressionsWithSymbols(TEST_SESSION, metadata, SQL_PARSER, symbolTypes, ImmutableList.of(parsedExpression), emptyList());
+        final ExpressionAnalysis analysis = analyzeExpressionsWithSymbols(
+                TEST_SESSION,
+                metadata,
+                SQL_PARSER,
+                symbolTypes,
+                ImmutableList.of(parsedExpression),
+                emptyList(),
+                false /* is describe */);
+
         Expression rewrittenExpression = ExpressionTreeRewriter.rewriteWith(new ExpressionRewriter<Void>()
         {
             @Override

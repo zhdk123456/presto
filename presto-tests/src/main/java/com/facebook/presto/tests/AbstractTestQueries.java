@@ -7137,4 +7137,34 @@ public abstract class AbstractTestQueries
             assertEquals(e.getMessage(), "line 1:1: Incorrect number of parameters: expected 1 but found 0");
         }
     }
+
+    @Test
+    public void testDescribeInput()
+    {
+        Session session = getSession().withPreparedStatement("my_query", "select ? from nation where nationkey = ? and name < ?");
+        MaterializedResult actual = computeActual(session, "DESCRIBE INPUT my_query");
+        MaterializedResult expected = resultBuilder(session, BIGINT, VARCHAR)
+                .row(0, "unknown")
+                .row(1, "bigint")
+                .row(2, "varchar(0)")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+    }
+
+    @Test
+    public void testDescribeInputNoParameters()
+    {
+        Session session = getSession().withPreparedStatement("my_query", "select * from nation");
+        MaterializedResult actual = computeActual(session, "DESCRIBE INPUT my_query");
+        MaterializedResult expected = resultBuilder(session, BIGINT, VARCHAR)
+                .row(null, null)
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+    }
+
+    @Test
+    public void testDescribeInputNoSuchQuery()
+    {
+        assertQueryFails("DESCRIBE INPUT my_query", "Prepared statement not found: my_query");
+    }
 }
