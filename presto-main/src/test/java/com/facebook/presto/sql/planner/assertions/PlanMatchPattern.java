@@ -26,6 +26,7 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.SymbolReference;
+import com.facebook.presto.sql.tree.Window;
 import com.facebook.presto.sql.tree.WindowFrame;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -101,7 +102,7 @@ public final class PlanMatchPattern
 
     public static PlanMatchPattern join(JoinNode.Type joinType, List<AliasPair> expectedEquiCriteria, PlanMatchPattern... sources)
     {
-        return any(sources).with(new JoinMatcher(joinType,  expectedEquiCriteria));
+        return any(sources).with(new JoinMatcher(joinType, expectedEquiCriteria));
     }
 
     public static AliasPair aliasPair(String left, String right)
@@ -203,6 +204,26 @@ public final class PlanMatchPattern
         return sourcePatterns.isEmpty();
     }
 
+    private static List<Expression> toExpressionList(String... args)
+    {
+        ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+        for (String arg : args) {
+            if (arg.equals("*")) {
+                builder.add(new PlanMatchPattern.AnySymbolReference());
+            }
+            else {
+                builder.add(new SymbolReference(arg));
+            }
+        }
+
+        return builder.build();
+    }
+
+    public static FunctionCall functionCall(String name, Window window, boolean distinct, String... args)
+    {
+        return new FunctionCall(QualifiedName.of(name), Optional.of(window), distinct, toExpressionList(args));
+    }
+
     /*
      * Caveat Emptor: FunctionCall's come from the parser, and represent what
      * the user has typed. As such, they don't contain a WindowFrame if one
@@ -297,6 +318,7 @@ public final class PlanMatchPattern
     private interface Stem<T>
     {
         String getStem();
+
         String getOtherName(T other);
 
         default boolean stemEquals(Object o, Class<T> clazz, Function<T, String> getName)
@@ -321,8 +343,9 @@ public final class PlanMatchPattern
         }
     }
 
-    private static class SymbolStem extends Symbol
-        implements Stem<Symbol>
+    private static class SymbolStem
+            extends Symbol
+            implements Stem<Symbol>
     {
         private final String stem;
 
@@ -387,7 +410,8 @@ public final class PlanMatchPattern
         return new SymbolReferenceStem(stem);
     }
 
-    private static class AnySymbolReference extends SymbolReference
+    private static class AnySymbolReference
+            extends SymbolReference
     {
         private AnySymbolReference()
         {
@@ -415,7 +439,8 @@ public final class PlanMatchPattern
         }
     }
 
-    private static class SymbolReferenceStem extends SymbolReference
+    private static class SymbolReferenceStem
+            extends SymbolReference
             implements Stem<SymbolReference>
     {
         private final String stem;
@@ -451,7 +476,8 @@ public final class PlanMatchPattern
         }
     }
 
-    private static class RelaxedEqualityFunctionCall extends FunctionCall
+    private static class RelaxedEqualityFunctionCall
+            extends FunctionCall
     {
         /*
          * FunctionCalls for window functions must have a Window. By the time
