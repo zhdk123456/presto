@@ -96,6 +96,9 @@ public class Analysis
 
     private Optional<Insert> insert = Optional.empty();
 
+    // for describe input and describe output
+    private boolean isDescribe = false;
+
     public Analysis(Statement root, List<Expression> parameters)
     {
         requireNonNull(parameters);
@@ -495,6 +498,16 @@ public class Analysis
     public List<Expression> getParameters()
     {
         return parameters;
+    }
+
+    public boolean isDescribe()
+    {
+        return isDescribe;
+    }
+
+    public void setIsDescribe(boolean isDescribe)
+    {
+        this.isDescribe = isDescribe;
     }
 
     @Immutable
