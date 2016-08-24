@@ -324,6 +324,7 @@ public class TestUnscaledDecimal128Arithmetic
     {
         assertCompare(unscaledDecimal(0), unscaledDecimal(0), 0);
         assertCompare(negateConstructive(unscaledDecimal(0)), unscaledDecimal(0), 0);
+        assertCompare(unscaledDecimal(0), negateConstructive(unscaledDecimal(0)), 0);
 
         assertCompare(unscaledDecimal(0), unscaledDecimal(10), -1);
         assertCompare(unscaledDecimal(10), unscaledDecimal(0), 1);

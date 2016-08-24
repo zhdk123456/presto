@@ -399,7 +399,7 @@ public final class UnscaledDecimal128Arithmetic
     {
         boolean fourIntsResultExpected = result.length() == NUMBER_OF_LONGS * Long.BYTES;
         boolean eightIntsResultExpected = result.length() >= NUMBER_OF_LONGS * Long.BYTES * 2;
-        checkArgument(fourIntsResultExpected || eightIntsResultExpected);
+        checkArgument(fourIntsResultExpected ^ eightIntsResultExpected);
 
         int l0 = getInt(left, 0);
         int l1 = getInt(left, 1);
@@ -811,11 +811,11 @@ public final class UnscaledDecimal128Arithmetic
                 getRawLong(divisor, 0), getRawLong(divisor, 1));
     }
 
-    private static Slice divideRoundUp(long dividendLow, long dividendHi, int dividendScaleFactor, long divisorLow, long divisorHi)
+    private static Slice divideRoundUp(long dividendLow, long dividendHigh, int dividendScaleFactor, long divisorLow, long divisorHigh)
     {
         Slice quotient = unscaledDecimal();
         Slice remainder = unscaledDecimal();
-        divide(dividendLow, dividendHi, dividendScaleFactor, divisorLow, divisorHi, 0, quotient, remainder);
+        divide(dividendLow, dividendHigh, dividendScaleFactor, divisorLow, divisorHigh, 0, quotient, remainder);
 
         // round
         boolean quotientIsNegative = isNegative(quotient);
@@ -825,7 +825,7 @@ public final class UnscaledDecimal128Arithmetic
         shiftLeft(remainder, 1);
         long remainderLow = getRawInt(remainder, 0);
         long remainderHi = getRawInt(remainder, 1);
-        long divisorHiUnsigned = (divisorHi & (~SIGN_LONG_INDEX));
+        long divisorHiUnsigned = (divisorHigh & (~SIGN_LONG_INDEX));
         if (compareUnsigned(remainderLow, remainderHi, divisorLow, divisorHiUnsigned) >= 0) {
             incrementUnsafe(quotient);
             throwIfOverflows(quotient);
