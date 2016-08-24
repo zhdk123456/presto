@@ -28,9 +28,11 @@ import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.instruction.LabelNode;
 import com.facebook.presto.operator.InMemoryJoinHash;
+import com.facebook.presto.operator.JoinFilterFunction;
 import com.facebook.presto.operator.JoinFilterFunctionVerifier;
 import com.facebook.presto.operator.LookupSource;
 import com.facebook.presto.operator.PagesHashStrategy;
+import com.facebook.presto.operator.StandardJoinFilterFunctionVerifier;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
@@ -47,6 +49,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -67,6 +70,7 @@ import static com.facebook.presto.bytecode.expression.BytecodeExpressions.consta
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantNull;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantTrue;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.notEqual;
+import static com.facebook.presto.operator.EmptyJoinFilterFunctionVerifier.EMPTY_JOIN_FILTER_FUNCTION_VERIFIER;
 import static com.facebook.presto.sql.gen.SqlTypeBytecodeExpression.constantType;
 import static java.util.Objects.requireNonNull;
 
@@ -93,6 +97,20 @@ public class JoinCompiler
                 }
             });
 
+    private final LoadingCache<Class<? extends JoinFilterFunction>, Class<? extends JoinFilterFunctionVerifier>> joinFilterFunctionVerifierClasses = CacheBuilder.newBuilder().maximumSize(1000).build(
+            new CacheLoader<Class<? extends JoinFilterFunction>, Class<? extends JoinFilterFunctionVerifier>>() {
+                @Override
+                public Class<? extends JoinFilterFunctionVerifier> load(Class<? extends JoinFilterFunction> key)
+                        throws Exception
+                {
+                    return IsolatedClass.isolateClass(
+                            new DynamicClassLoader(getClass().getClassLoader()),
+                            JoinFilterFunctionVerifier.class,
+                            StandardJoinFilterFunctionVerifier.class
+                    );
+                }
+            });
+
     public LookupSourceFactory compileLookupSourceFactory(List<? extends Type> types, List<Integer> joinChannels)
     {
         try {
@@ -100,6 +118,26 @@ public class JoinCompiler
         }
         catch (ExecutionException | UncheckedExecutionException | ExecutionError e) {
             throw Throwables.propagate(e.getCause());
+        }
+    }
+
+    public JoinFilterFunctionVerifierFactory compileJoinFilterFunctionVerifierFactory(Optional<JoinFilterFunction> joinFilterFunction)
+    {
+        if (!joinFilterFunction.isPresent()) {
+            return (filterFunction, channels) -> EMPTY_JOIN_FILTER_FUNCTION_VERIFIER;
+        }
+        else {
+            return ((filterFunction, channels) -> {
+                try {
+                    return joinFilterFunctionVerifierClasses
+                            .get(joinFilterFunction.get().getClass())
+                            .getConstructor(JoinFilterFunction.class, List.class)
+                            .newInstance(filterFunction.get(), channels);
+                }
+                catch (ExecutionException | UncheckedExecutionException | ExecutionError | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw Throwables.propagate(e.getCause());
+                }
+            });
         }
     }
 
@@ -717,6 +755,11 @@ public class JoinCompiler
                 throw Throwables.propagate(e);
             }
         }
+    }
+
+    public interface JoinFilterFunctionVerifierFactory
+    {
+        JoinFilterFunctionVerifier createJoinFilterFunctionVerifier(Optional<JoinFilterFunction> filterFunction, List<List<Block>> channels);
     }
 
     private static final class CacheKey

@@ -32,7 +32,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.facebook.presto.operator.EmptyJoinFilterFunctionVerifier.EMPTY_JOIN_FILTER_FUNCTION_VERIFIER;
 import static com.facebook.presto.operator.SyntheticAddress.decodePosition;
 import static com.facebook.presto.operator.SyntheticAddress.decodeSliceIndex;
 import static com.facebook.presto.operator.SyntheticAddress.encodeSyntheticAddress;
@@ -324,12 +323,7 @@ public class PagesIndex
 
     private JoinFilterFunctionVerifier createJoinFilterFunctionVerifier(Optional<JoinFilterFunction> filterFunction, List<List<Block>> channels)
     {
-        if (filterFunction.isPresent()) {
-            return new StandardJoinFilterFunctionVerifier(filterFunction.get(), channels);
-        }
-        else {
-            return EMPTY_JOIN_FILTER_FUNCTION_VERIFIER;
-        }
+        return joinCompiler.compileJoinFilterFunctionVerifierFactory(filterFunction).createJoinFilterFunctionVerifier(filterFunction, channels);
     }
 
     public LookupSource createLookupSource(List<Integer> joinChannels, Optional<Integer> hashChannel, Optional<JoinFilterFunction> filterFunction)
