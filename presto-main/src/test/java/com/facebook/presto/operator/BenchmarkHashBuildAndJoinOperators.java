@@ -62,8 +62,8 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
 @Fork(3)
-@Warmup(iterations = 5)
-@Measurement(iterations = 20)
+@Warmup(iterations = 10)
+@Measurement(iterations = 10)
 public class BenchmarkHashBuildAndJoinOperators
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;
@@ -190,7 +190,7 @@ public class BenchmarkHashBuildAndJoinOperators
                     throw new UnsupportedOperationException(format("Unknown outputColumns value [%s]", hashColumns));
             }
 
-            lookupSourceFactory = new BenchmarkHashBuildAndJoinOperators().benchmarkBuildHash(this, outputChannels);
+            lookupSourceFactory = new BenchmarkHashBuildAndJoinOperators().buildJoinUBenchto(this, outputChannels);
             initializeProbePages();
         }
 
@@ -258,12 +258,12 @@ public class BenchmarkHashBuildAndJoinOperators
     }
 
     @Benchmark
-    public LookupSourceFactory benchmarkBuildHash(BuildContext buildContext)
+    public LookupSourceFactory buildJoinUBenchto(BuildContext buildContext)
     {
-        return benchmarkBuildHash(buildContext, ImmutableList.of(0, 1, 2));
+        return buildJoinUBenchto(buildContext, ImmutableList.of(0, 1, 2));
     }
 
-    private LookupSourceFactory benchmarkBuildHash(BuildContext buildContext, List<Integer> outputChannels)
+    private LookupSourceFactory buildJoinUBenchto(BuildContext buildContext, List<Integer> outputChannels)
     {
         DriverContext driverContext = buildContext.createTaskContext().addPipelineContext(0, true, true).addDriverContext();
 
@@ -295,7 +295,7 @@ public class BenchmarkHashBuildAndJoinOperators
     }
 
     @Benchmark
-    public List<Page> benchmarkJoinHash(JoinContext joinContext)
+    public List<Page> joinUBenchto(JoinContext joinContext)
     {
         LookupSourceFactory lookupSourceFactory = joinContext.getLookupSourceFactory();
 
