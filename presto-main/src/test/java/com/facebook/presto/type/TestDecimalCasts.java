@@ -317,7 +317,6 @@ public class TestDecimalCasts
         assertDecimalFunction("CAST(REAL '123456790519087104' AS DECIMAL(18,0))", decimal("123456790519087104"));
         assertDecimalFunction("CAST(REAL '1456213.432632456' AS DECIMAL(18,9))", decimal("001456213.375000000"));
 
-
         assertInvalidCast("CAST(REAL '234.0' AS DECIMAL(2,0))", "Cannot cast REAL '234.0' to DECIMAL(2, 0)");
         assertInvalidCast("CAST(REAL '1000.01' AS DECIMAL(5,2))", "Cannot cast REAL '1000.01' to DECIMAL(5, 2)");
         assertInvalidCast("CAST(REAL '-234.0' AS DECIMAL(2,0))", "Cannot cast REAL '-234.0' to DECIMAL(2, 0)");
