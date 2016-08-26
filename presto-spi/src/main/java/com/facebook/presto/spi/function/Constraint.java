@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.facebook.presto.type;
+package com.facebook.presto.spi.function;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
