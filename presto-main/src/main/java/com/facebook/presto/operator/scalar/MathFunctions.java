@@ -25,6 +25,7 @@ import com.facebook.presto.spi.function.LiteralParameters;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.StandardTypes;
+import com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
@@ -48,6 +49,7 @@ import static com.facebook.presto.spi.type.Decimals.longTenToNth;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.isNegative;
+import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.isZero;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.negate;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.unscaledDecimal;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
@@ -134,7 +136,7 @@ public final class MathFunctions
         @SqlType("decimal(p, s)")
         public static Slice absLong(@SqlType("decimal(p, s)") Slice arg)
         {
-            if(isNegative(arg)) {
+            if (isNegative(arg)) {
                 Slice ret = unscaledDecimal(arg);
                 negate(ret);
                 return ret;
@@ -981,7 +983,15 @@ public final class MathFunctions
         @SqlType("decimal(1,0)")
         public static long signDecimalLong(@SqlType("decimal(p, s)") Slice num)
         {
-            return decodeUnscaledValue(num).signum();
+            if (isZero(num)) {
+                return 0;
+            }
+            else if (isNegative(num)) {
+                return -1;
+            }
+            else {
+                return 1;
+            }
         }
     }
 
