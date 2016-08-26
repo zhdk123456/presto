@@ -75,8 +75,7 @@ project = 'Teradata Distribution of Presto'
 version = get_version()
 release = version
 
-teradata_exclude = ['develop*',
-                    'connector/cassandra.rst',
+teradata_exclude = ['connector/cassandra.rst',
                     'connector/kafka.rst',
                     'connector/kafka-tutorial.rst',
                     'connector/localfile.rst',
