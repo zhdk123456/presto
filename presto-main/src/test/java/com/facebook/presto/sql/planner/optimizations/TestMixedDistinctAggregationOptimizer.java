@@ -21,6 +21,7 @@ import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.assertions.PlanAssert;
 import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
 import com.facebook.presto.sql.tree.FunctionCall;
+import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableList;
@@ -32,10 +33,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aggregation;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anySymbolReference;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
-import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.functionCall;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.groupingSet;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.project;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.symbolReferenceStem;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
@@ -71,12 +73,12 @@ public class TestMixedDistinctAggregationOptimizer
         // Second Aggregation data
         List<Symbol> groupByKeysSecond = ImmutableList.of(groupBy);
         List<FunctionCall> aggregationsSecond = ImmutableList.of(
-                functionCall("arbitrary", "*"),
-                functionCall("count", "*"));
+                new FunctionCall(QualifiedName.of("arbitrary"), ImmutableList.of(anySymbolReference())),
+                new FunctionCall(QualifiedName.of("count"), ImmutableList.of(anySymbolReference())));
 
         // First Aggregation data
         List<Symbol> groupByKeysFirst = ImmutableList.of(groupBy, distinctAggregation, group);
-        List<FunctionCall> aggregationsFirst = ImmutableList.of(functionCall("max", "totalprice"));
+        List<FunctionCall> aggregationsFirst = ImmutableList.of(new FunctionCall(QualifiedName.of("max"), ImmutableList.of(symbolReferenceStem("totalprice"))));
 
         // GroupingSet symbols
         ImmutableList.Builder<List<Symbol>> groups = ImmutableList.builder();
