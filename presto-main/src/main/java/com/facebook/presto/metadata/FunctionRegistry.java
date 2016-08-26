@@ -426,6 +426,7 @@ public class FunctionRegistry
                 .scalars(MathFunctions.class)
                 .scalar(MathFunctions.Abs.class)
                 .scalar(MathFunctions.Sign.class)
+                .scalar(MathFunctions.Round.class)
                 .scalars(BitwiseFunctions.class)
                 .scalars(DateTimeFunctions.class)
                 .scalars(JsonFunctions.class)
