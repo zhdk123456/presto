@@ -32,10 +32,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aggregation;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anySymbolReference;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.functionCall;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.groupingSet;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.project;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.symbolReferenceStem;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
@@ -71,12 +73,12 @@ public class TestMixedDistinctAggregationOptimizer
         // Second Aggregation data
         List<Symbol> groupByKeysSecond = ImmutableList.of(groupBy);
         List<FunctionCall> aggregationsSecond = ImmutableList.of(
-                functionCall("arbitrary", "*"),
-                functionCall("count", "*"));
+                functionCall("arbitrary", anySymbolReference()),
+                functionCall("count", anySymbolReference()));
 
         // First Aggregation data
         List<Symbol> groupByKeysFirst = ImmutableList.of(groupBy, distinctAggregation, group);
-        List<FunctionCall> aggregationsFirst = ImmutableList.of(functionCall("max", "totalprice"));
+        List<FunctionCall> aggregationsFirst = ImmutableList.of(functionCall("max", symbolReferenceStem("totalprice")));
 
         // GroupingSet symbols
         ImmutableList.Builder<List<Symbol>> groups = ImmutableList.builder();
