@@ -109,15 +109,15 @@ public class LdapFilter
             checkState(parts.size() == 2, "Invalid value for authorization header");
             checkState(parts.get(0).equalsIgnoreCase(AUTHENTICATION_TYPE), "Incorrect authentication type (expected basic): %s", AUTHENTICATION_TYPE);
 
-            List<String> credentials = Splitter.on(":").splitToList(new String(Base64.getDecoder().decode(parts.get(1))));
-            checkState(credentials.size() == 2, "Username/password missing in the request header");
+            String[] credentials = new String(Base64.getDecoder().decode(parts.get(1))).split(":", 2);
+            checkState(credentials.length == 2, "Username/password missing in the request header");
 
             DirContext context = null;
             try {
-                String user = credentials.get(0);
-                String password = credentials.get(1);
+                String user = credentials[0];
+                String password = credentials[1];
                 if (user.isEmpty() || password.isEmpty()) {
-                    throw new AuthenticationException("Authentication failed. Username or Password is empty");
+                    throw new AuthenticationException("Username or Password is empty");
                 }
 
                 Hashtable<String, String> environment = getBasicEnvironment();
@@ -131,6 +131,7 @@ public class LdapFilter
                 if (groupDistinguishedName.isPresent()) {
                     checkForGroupMembership(user, groupDistinguishedName.get(), context);
                 }
+                LOG.debug("User %s successfully authenticated", user);
 
                 // ldap authentication ok, continue
                 nextFilter.doFilter(new HttpServletRequestWrapper(request)
@@ -144,9 +145,7 @@ public class LdapFilter
                 return;
             }
             catch (AuthenticationException e) {
-                // Log exception since the error message from LDAP server is not very friendly to be returned to the user
-                LOG.debug("LDAP Authentication failed with exception: %s", e);
-                throw new RuntimeException("Authentication failed. Invalid credentials.");
+                throw new RuntimeException("Invalid credentials: " + e.getMessage());
             }
             catch (NamingException e) {
                 throw Throwables.propagate(e);
@@ -202,8 +201,9 @@ public class LdapFilter
             LOG.debug("Group membership check for user '%s' using query: %s and base distinguished name: %s", user, searchFilter, searchBase);
             NamingEnumeration<SearchResult> results = context.search(searchBase, searchFilter, searchControls);
             if (!results.hasMoreElements()) {
-                throw new AuthenticationException(format("Authentication failed: User %s not a member of the group %s", user, groupDistinguishedName));
+                throw new RuntimeException(format("Unauthorized User: User %s not a member of the group %s", user, groupDistinguishedName));
             }
+            LOG.debug("Group membership check succeeded for user %s in group %s", user, groupDistinguishedName);
         }
         catch (NamingException e) {
             throw Throwables.propagate(e);
