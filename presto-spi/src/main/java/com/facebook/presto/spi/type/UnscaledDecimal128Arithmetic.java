@@ -686,6 +686,13 @@ public final class UnscaledDecimal128Arithmetic
         }
     }
 
+    public static void throwIfOverflows(Slice value, int precision)
+    {
+        if (overflows(value, precision)) {
+            throwOverflowException();
+        }
+    }
+
     private static void throwIfOverflows(int v0, int v1, int v2, int v3)
     {
         if (exceedsOrEqualTenToThirtyEight(v0, v1, v2, v3)) {
