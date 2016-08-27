@@ -66,6 +66,10 @@ public class ServerSecurityModule
             checkState(ldapServerConfig.getUserObjectClass() != null, "Missing property 'authentication.ldap.user-object-class'");
         }
 
+        if (ldapServerConfig.getLdapUrl().startsWith("ldap://")) {
+            throw new IllegalArgumentException("Expected \"ldaps://\" but found \"ldap://\" in the property authentication.ldap.url");
+        }
+
         if (ldapServerConfig.getServerType().equalsIgnoreCase(OPENLDAP.name())) {
             checkState(ldapServerConfig.getBaseDistinguishedName() != null, "Missing property 'authentication.ldap.base-dn'");
 
