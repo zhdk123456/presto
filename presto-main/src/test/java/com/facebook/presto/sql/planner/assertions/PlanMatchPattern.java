@@ -147,6 +147,11 @@ public final class PlanMatchPattern
         return states.build();
     }
 
+    public PlanMatchPattern withAssignment(String pattern)
+    {
+        return with(new AssignmentMatcher(pattern));
+    }
+
     public PlanMatchPattern withSymbol(String pattern, String alias)
     {
         return with(new SymbolMatcher(pattern, alias));

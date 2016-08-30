@@ -16,15 +16,23 @@ package com.facebook.presto.sql.planner.optimizations;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.DependencyExtractor;
+import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
+import com.facebook.presto.sql.planner.assertions.PlanAssert;
+import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
 import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.LogicalBinaryExpression;
+import com.facebook.presto.testing.LocalQueryRunner;
+import com.facebook.presto.tpch.TpchConnectorFactory;
+import com.google.common.collect.ImmutableMap;
+import org.intellij.lang.annotations.Language;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -37,6 +45,9 @@ import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.sql.ExpressionUtils.binaryExpression;
 import static com.facebook.presto.sql.ExpressionUtils.extractPredicates;
 import static com.facebook.presto.sql.ExpressionUtils.rewriteQualifiedNamesToSymbolReferences;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.project;
+import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
@@ -45,6 +56,20 @@ public class TestSimplifyExpressions
 {
     private static final SqlParser SQL_PARSER = new SqlParser();
     private static final SimplifyExpressions SIMPLIFIER = new SimplifyExpressions(createTestMetadataManager(), SQL_PARSER);
+    private LocalQueryRunner queryRunner;
+
+    @BeforeTest
+    public void setUp()
+    {
+        this.queryRunner = new LocalQueryRunner(testSessionBuilder()
+                .setCatalog("local")
+                .setSchema("tiny")
+                .build());
+
+        queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
+                new TpchConnectorFactory(queryRunner.getNodeManager(), 1),
+                ImmutableMap.<String, String>of());
+    }
 
     @Test
     public void testPushesDownNegations()
@@ -86,6 +111,67 @@ public class TestSimplifyExpressions
         assertSimplifies("((X OR V) AND Z) OR ((X OR V) AND V)", "(((X OR V) AND Z) OR V)");
         assertSimplifies("X AND ((Y AND Z) OR (Y AND V) OR (Y AND X))", "X AND Y AND (Z OR V OR X)");
         assertSimplifies("(A AND B AND C AND D) OR (A AND B AND E) OR (A AND F)", "A AND ((B AND C AND D) OR (B AND E) OR F)");
+    }
+
+    @Test
+    public void testRemoveIdentityCasts()
+    {
+        assertCastNotInPlan("SELECT CAST(BIGINT '5' as BIGINT)");
+        assertCastNotInPlan("SELECT 3 * CAST(BIGINT '5' as BIGINT)");
+        assertCastNotInPlan("SELECT CAST(nationkey AS BIGINT) FROM nation");
+        assertCastNotInPlan("SELECT 3 * CAST(nationkey AS BIGINT) FROM nation");
+        assertCastNotInPlan("SELECT CAST(nationkey AS BIGINT) FROM nation WHERE nationkey > 10 " +
+                "AND nationkey < 20");
+        assertCastNotInPlan("SELECT CAST(COUNT(*) AS BIGINT) FROM nation WHERE nationkey > 10 " +
+                "AND nationkey < 20");
+        assertCastNotInPlan("SELECT CAST(COUNT(*) AS BIGINT) FROM nation WHERE nationkey > 10 " +
+                "AND nationkey < 20");
+        assertCastNotInPlan("SELECT CAST(COUNT(*) AS BIGINT) AS count FROM nation WHERE nationkey > 10 " +
+                "AND nationkey < 20 GROUP BY regionkey HAVING COUNT(*) > 1 ORDER BY count ASC");
+        assertCastNotInPlan("SELECT CAST(name AS VARCHAR(25)) FROM nation");
+
+        assertCastInPlan("SELECT CAST(nationkey AS SMALLINT) FROM nation");
+        assertCastInPlan("SELECT CAST(name AS VARCHAR(30)) FROM nation");
+        assertCastInPlan("SELECT CAST(name AS VARCHAR) FROM nation");
+    }
+
+    public void assertPlanDoesNotMatch(@Language("SQL") String sql, PlanMatchPattern pattern)
+    {
+        Plan actualPlan = plan(sql);
+        queryRunner.inTransaction(transactionSession -> {
+            PlanAssert.assertPlanDoesNotMatch(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            return null;
+        });
+    }
+
+    private void assertPlanMatches(@Language("SQL") String sql, PlanMatchPattern pattern)
+    {
+        Plan actualPlan = plan(sql);
+        queryRunner.inTransaction(transactionSession -> {
+            PlanAssert.assertPlanMatches(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            return null;
+        });
+    }
+
+    private Plan plan(@Language("SQL") String sql)
+    {
+        return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
+    }
+
+    private void assertCastNotInPlan(@Language("SQL") String sql)
+    {
+        PlanMatchPattern pattern = anyTree(
+                project(anyTree()).withAssignment("Cast")
+        );
+        assertPlanDoesNotMatch(sql, pattern);
+    }
+
+    private void assertCastInPlan(@Language("SQL") String sql)
+    {
+        PlanMatchPattern pattern = anyTree(
+                project(anyTree()).withAssignment("Cast")
+        );
+        assertPlanMatches(sql, pattern);
     }
 
     private static void assertSimplifies(String expression, String expected)
