@@ -821,8 +821,9 @@ public final class UnscaledDecimal128Arithmetic
         boolean quotientIsNegative = isNegative(quotient);
         setNegative(quotient, false);
         setNegative(remainder, false);
+
         // if (2 * remainder >= divisor) - increment quotient by one
-        shiftLeft(remainder, 1);
+        shiftLeftDestructive(remainder, 1);
         long remainderLow = getRawInt(remainder, 0);
         long remainderHi = getRawInt(remainder, 1);
         long divisorHiUnsigned = (divisorHigh & (~SIGN_LONG_INDEX));
@@ -830,32 +831,67 @@ public final class UnscaledDecimal128Arithmetic
             incrementUnsafe(quotient);
             throwIfOverflows(quotient);
         }
+
         setNegative(quotient, quotientIsNegative);
         return quotient;
     }
 
-    static Slice shiftLeft(Slice slice, int count)
+    // visible for testing
+    static Slice shiftLeft(Slice decimal, int leftShifts)
     {
-        checkArgument(slice.length() == NUMBER_OF_LONGS * Long.BYTES);
-        checkArgument(count < Long.SIZE * 2);
-        if (count == 0) {
-            return slice;
+        Slice result = Slices.copyOf(decimal);
+        shiftLeftDestructive(result, leftShifts);
+        return result;
+    }
+
+    // visible for testing
+    static void shiftLeftDestructive(Slice decimal, int leftShifts)
+    {
+        if (leftShifts == 0) {
+            return;
         }
-        long low = getRawLong(slice, 0);
-        long hi = getRawLong(slice, 1);
-        if (count >= Long.SIZE) {
-            hi = low;
-            low = 0L;
-            hi = hi << (count - Long.SIZE);
+
+        int wordShifts = leftShifts / 64;
+        int bitShiftsInWord = leftShifts % 64;
+        int shiftRestore = 64 - bitShiftsInWord;
+
+        // check overflow
+        if (bitShiftsInWord != 0) {
+            if ((getLong(decimal, 1 - wordShifts) & (-1L << shiftRestore)) != 0) {
+                throwOverflowException();
+            }
         }
-        else {
-            long remainder = low >>> (Long.SIZE - count);
-            low = low << count;
-            hi = (hi << count) | remainder;
+        if (wordShifts == 1) {
+            if (getLong(decimal, 1) != 0) {
+                throwOverflowException();
+            }
         }
-        setRawLong(slice, 0, low);
-        setRawLong(slice, 1, hi);
-        return slice;
+
+        // Store negative before settings values to result.
+        boolean negative = isNegative(decimal);
+
+        long low;
+        long high;
+
+        switch (wordShifts) {
+            case 0:
+                low = getLong(decimal, 0);
+                high = getLong(decimal, 1);
+                break;
+            case 1:
+                low = 0;
+                high = getLong(decimal, 0);
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+
+        if (bitShiftsInWord > 0) {
+            high = (high << bitShiftsInWord) | (low >>> shiftRestore);
+            low = (low << bitShiftsInWord);
+        }
+
+        pack(decimal, low, high, negative);
     }
 
     public static Slice remainder(long dividend, int dividendScaleFactor, long divisor, int divisorScaleFactor)
