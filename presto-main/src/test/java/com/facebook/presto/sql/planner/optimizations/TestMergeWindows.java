@@ -142,14 +142,14 @@ public class TestMergeWindows
 
         PlanMatchPattern pattern =
                 anyTree(
-                        window(specificationB,
+                        window(specificationA,
                                 ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
+                                functionCall("sum", commonFrame, quantityReference),
+                                functionCall("sum", commonFrame, discountReference)),
                                 anyTree(
-                                        window(specificationA,
+                                        window(specificationB,
                                                 ImmutableList.of(
-                                                functionCall("sum", commonFrame, quantityReference),
-                                                functionCall("sum", commonFrame, discountReference)),
+                                                functionCall("sum", commonFrame, quantityReference)),
                                                 anyNot(WindowNode.class,
                                                         anyTree())))));
 
