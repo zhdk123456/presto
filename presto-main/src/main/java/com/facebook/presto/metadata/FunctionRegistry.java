@@ -223,7 +223,6 @@ import static com.facebook.presto.operator.scalar.MapFilterFunction.MAP_FILTER_F
 import static com.facebook.presto.operator.scalar.MapHashCodeOperator.MAP_HASH_CODE;
 import static com.facebook.presto.operator.scalar.MapSubscriptOperator.MAP_SUBSCRIPT;
 import static com.facebook.presto.operator.scalar.MapToJsonCast.MAP_TO_JSON;
-import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_FLOOR_FUNCTION;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_MOD_FUNCTION;
 import static com.facebook.presto.operator.scalar.Re2JCastToRegexpFunction.castCharToRe2JRegexp;
 import static com.facebook.presto.operator.scalar.Re2JCastToRegexpFunction.castVarcharToRe2JRegexp;
@@ -435,6 +434,7 @@ public class FunctionRegistry
                 .scalar(MathFunctions.Truncate.class)
                 .scalar(MathFunctions.TruncateN.class)
                 .scalar(MathFunctions.Ceiling.class)
+                .scalar(MathFunctions.Floor.class)
                 .scalars(BitwiseFunctions.class)
                 .scalars(DateTimeFunctions.class)
                 .scalars(JsonFunctions.class)
@@ -544,7 +544,6 @@ public class FunctionRegistry
                 .function(castCharToRe2JRegexp(featuresConfig.getRe2JDfaStatesLimit(), featuresConfig.getRe2JDfaRetries()))
                 .function(DECIMAL_AVERAGE_AGGREGATION)
                 .function(DECIMAL_SUM_AGGREGATION)
-                .function(DECIMAL_FLOOR_FUNCTION)
                 .function(DECIMAL_MOD_FUNCTION)
                 .functions(ARRAY_TRANSFORM_FUNCTION, ARRAY_FILTER_FUNCTION, ARRAY_REDUCE_FUNCTION)
                 .functions(MAP_FILTER_FUNCTION)
