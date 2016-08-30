@@ -872,7 +872,13 @@ public class FunctionRegistry
         // so do a second pass allowing "type only" coercions
         for (SqlFunction candidate : candidates) {
             SignatureBinder binder = new SignatureBinder(typeManager, candidate.getSignature(), true);
-            Optional<BoundVariables> boundVariables = binder.bindVariables(argumentTypes, returnType);
+            Optional<BoundVariables> boundVariables = Optional.empty();
+            try {
+                boundVariables = binder.bindVariables(argumentTypes, returnType);
+            }
+            catch (IllegalStateException e) {
+                continue;
+            }
             if (!boundVariables.isPresent()) {
                 continue;
             }
