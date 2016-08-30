@@ -293,7 +293,6 @@ public final class UnscaledDecimal128Arithmetic
         else {
             scaleDownTenTruncate(decimal, scaleFactor, result);
         }
-
     }
 
     public static Slice add(Slice left, Slice right)
