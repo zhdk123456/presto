@@ -67,7 +67,7 @@ public class ServerSecurityModule
         }
 
         if (ldapServerConfig.getLdapUrl().startsWith("ldap://")) {
-            throw new IllegalArgumentException("Expected \"ldaps://\" but found \"ldap://\" in the property authentication.ldap.url");
+            throw new IllegalArgumentException("LDAP without SSL/TLS unsupported: Expected \"ldaps://\" but found \"ldap://\" in the property authentication.ldap.url");
         }
 
         if (ldapServerConfig.getServerType().equalsIgnoreCase(OPENLDAP.name())) {
