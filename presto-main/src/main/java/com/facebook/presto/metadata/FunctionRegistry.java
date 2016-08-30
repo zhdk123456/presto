@@ -219,7 +219,6 @@ import static com.facebook.presto.operator.scalar.MapToJsonCast.MAP_TO_JSON;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_CEILING_FUNCTIONS;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_FLOOR_FUNCTION;
 import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_MOD_FUNCTION;
-import static com.facebook.presto.operator.scalar.MathFunctions.DECIMAL_TRUNCATE_FUNCTION;
 import static com.facebook.presto.operator.scalar.Re2JCastToRegexpFunction.castCharToRe2JRegexp;
 import static com.facebook.presto.operator.scalar.Re2JCastToRegexpFunction.castVarcharToRe2JRegexp;
 import static com.facebook.presto.operator.scalar.RowDistinctFromOperator.ROW_DISTINCT_FROM;
@@ -424,6 +423,7 @@ public class FunctionRegistry
                 .scalar(MathFunctions.Round.class)
                 .scalar(MathFunctions.RoundN.class)
                 .scalar(MathFunctions.Truncate.class)
+                .scalar(MathFunctions.TruncateN.class)
                 .scalars(BitwiseFunctions.class)
                 .scalars(DateTimeFunctions.class)
                 .scalars(JsonFunctions.class)
@@ -535,7 +535,6 @@ public class FunctionRegistry
                 .functions(DECIMAL_CEILING_FUNCTIONS)
                 .function(DECIMAL_FLOOR_FUNCTION)
                 .function(DECIMAL_MOD_FUNCTION)
-                .function(DECIMAL_TRUNCATE_FUNCTION)
                 .function(TRY_CAST);
 
         builder.function(new ArrayAggregationFunction(featuresConfig.isLegacyArrayAgg()));
