@@ -959,8 +959,8 @@ public final class UnscaledDecimal128Arithmetic
 
         // if (2 * remainder >= divisor) - increment quotient by one
         shiftLeftDestructive(remainder, 1);
-        long remainderLow = getRawInt(remainder, 0);
-        long remainderHi = getRawInt(remainder, 1);
+        long remainderLow = getRawLong(remainder, 0);
+        long remainderHi = getRawLong(remainder, 1);
         long divisorHiUnsigned = (divisorHigh & (~SIGN_LONG_INDEX));
         if (compareUnsigned(remainderLow, remainderHi, divisorLow, divisorHiUnsigned) >= 0) {
             incrementUnsafe(quotient);
