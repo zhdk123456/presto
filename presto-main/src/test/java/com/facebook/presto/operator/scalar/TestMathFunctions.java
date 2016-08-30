@@ -247,6 +247,7 @@ public class TestMathFunctions
         assertFunction("truncate(NULL, NULL)", createDecimalType(1, 0), null);
 
         // OUT OF RANGE DECIMAL
+        assertInvalidFunction("truncate(DECIMAL '1234567890123456789012345678901234567890123', 0)", NUMERIC_VALUE_OUT_OF_RANGE);
     }
 
     @Test
