@@ -122,6 +122,7 @@ import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.type.BigintOperators;
 import com.facebook.presto.type.BooleanOperators;
+import com.facebook.presto.type.CharOperators;
 import com.facebook.presto.type.ColorOperators;
 import com.facebook.presto.type.DateOperators;
 import com.facebook.presto.type.DateTimeOperators;
@@ -509,6 +510,8 @@ public class FunctionRegistry
                 builder.scalars(Re2JRegexpFunctions.class);
                 break;
         }
+
+        builder.scalars(CharOperators.class);
 
         if (featuresConfig.isExperimentalSyntaxEnabled()) {
             builder.aggregate(ApproximateAverageAggregations.class)
