@@ -227,7 +227,7 @@ public class TestLogicalPlanner
     {
         Plan actualPlan = plan(sql, stage);
         queryRunner.inTransaction(transactionSession -> {
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            PlanAssert.assertPlanMatches(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
             return null;
         });
     }
