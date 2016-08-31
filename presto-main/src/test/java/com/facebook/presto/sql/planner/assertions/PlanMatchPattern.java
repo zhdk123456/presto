@@ -149,7 +149,7 @@ public final class PlanMatchPattern
 
     public PlanMatchPattern withAssignment(String pattern)
     {
-        return with(new AssignmentMatcher(pattern));
+        return with(new ProjectNodeMatcher(pattern));
     }
 
     public PlanMatchPattern withSymbol(String pattern, String alias)
