@@ -18,6 +18,7 @@ import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.DependencyExtractor;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
+import com.facebook.presto.sql.planner.PlanTester;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.assertions.PlanAssert;
@@ -53,6 +54,7 @@ import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
 
 public class TestSimplifyExpressions
+    implements PlanTester
 {
     private static final SqlParser SQL_PARSER = new SqlParser();
     private static final SimplifyExpressions SIMPLIFIER = new SimplifyExpressions(createTestMetadataManager(), SQL_PARSER);
@@ -144,7 +146,7 @@ public class TestSimplifyExpressions
         });
     }
 
-    private void assertPlanMatches(@Language("SQL") String sql, PlanMatchPattern pattern)
+    public void assertPlanMatches(@Language("SQL") String sql, PlanMatchPattern pattern)
     {
         Plan actualPlan = plan(sql);
         queryRunner.inTransaction(transactionSession -> {
@@ -153,7 +155,7 @@ public class TestSimplifyExpressions
         });
     }
 
-    private Plan plan(@Language("SQL") String sql)
+    public Plan plan(@Language("SQL") String sql)
     {
         return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
     }
