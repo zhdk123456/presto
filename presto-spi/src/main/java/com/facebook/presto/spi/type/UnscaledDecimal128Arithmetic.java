@@ -550,7 +550,7 @@ public final class UnscaledDecimal128Arithmetic
             return leftStrictlyNegative ? -1 : 1;
         }
         else {
-            return compareUnsigned(left, right) * (leftStrictlyNegative ? -1 : 1);
+            return compareAbsolute(left, right) * (leftStrictlyNegative ? -1 : 1);
         }
     }
 
@@ -569,7 +569,7 @@ public final class UnscaledDecimal128Arithmetic
         }
     }
 
-    public static int compareUnsigned(Slice left, Slice right)
+    public static int compareAbsolute(Slice left, Slice right)
     {
         long leftHi = getLong(left, 1);
         long rightHi = getLong(right, 1);
@@ -676,7 +676,7 @@ public final class UnscaledDecimal128Arithmetic
         if (precision == MAX_PRECISION) {
             return exceedsOrEqualTenToThirtyEight(value);
         }
-        return precision < MAX_PRECISION && compareUnsigned(value, POWERS_OF_TEN[precision]) >= 0;
+        return precision < MAX_PRECISION && compareAbsolute(value, POWERS_OF_TEN[precision]) >= 0;
     }
 
     public static void throwIfOverflows(Slice decimal)
