@@ -61,7 +61,7 @@ import static com.facebook.presto.spi.type.StandardTypes.REAL;
 import static com.facebook.presto.spi.type.StandardTypes.SMALLINT;
 import static com.facebook.presto.spi.type.StandardTypes.TINYINT;
 import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
-import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.compareUnsigned;
+import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.compareAbsolute;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.multiply;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.overflows;
 import static com.facebook.presto.spi.type.UnscaledDecimal128Arithmetic.rescale;
@@ -480,7 +480,7 @@ public final class DecimalCasts
     public static double longDecimalToDouble(Slice decimal, long precision, long scale, BigInteger tenToScale)
     {
         // If both decimal and scale can be represented exactly in double then compute rescaled and rounded result directly in double.
-        if (scale < DOUBLE_10_POW.length && compareUnsigned(decimal, MAX_EXACT_DOUBLE) <= 0) {
+        if (scale < DOUBLE_10_POW.length && compareAbsolute(decimal, MAX_EXACT_DOUBLE) <= 0) {
             return (double) unscaledDecimalToUnscaledLongUnsafe(decimal) / DOUBLE_10_POW[(int) scale];
         }
 
@@ -498,7 +498,7 @@ public final class DecimalCasts
     public static long longDecimalToReal(Slice decimal, long precision, long scale, BigInteger tenToScale)
     {
         // If both decimal and scale can be represented exactly in float then compute rescaled and rounded result directly in float.
-        if (scale < FLOAT_10_POW.length && compareUnsigned(decimal, MAX_EXACT_FLOAT) <= 0) {
+        if (scale < FLOAT_10_POW.length && compareAbsolute(decimal, MAX_EXACT_FLOAT) <= 0) {
             return floatToRawIntBits((float) unscaledDecimalToUnscaledLongUnsafe(decimal) / FLOAT_10_POW[(int) scale]);
         }
 
