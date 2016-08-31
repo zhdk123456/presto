@@ -275,7 +275,7 @@ public final class UnscaledDecimal128Arithmetic
             }
         }
         else {
-            int compare = compareUnsigned(left, right);
+            int compare = compareAbsolute(left, right);
             if (compare > 0) {
                 subtractUnsigned(left, right, result, isNegative(left));
             }
@@ -305,7 +305,7 @@ public final class UnscaledDecimal128Arithmetic
             }
         }
         else {
-            int compare = compareUnsigned(left, right);
+            int compare = compareAbsolute(left, right);
             if (compare > 0) {
                 subtractUnsigned(left, right, result, isNegative(left) && isNegative(right));
             }
