@@ -563,7 +563,9 @@ public final class UnscaledDecimal128Arithmetic
             return leftStrictlyNegative ? -1 : 1;
         }
         else {
-            return compareUnsigned(leftRawLo, leftRawHi, rightRawLo, rightRawHi) * (leftStrictlyNegative ? -1 : 1);
+            long leftHi = unpackUnsignedLong(leftRawHi);
+            long rightHi = unpackUnsignedLong(rightRawHi);
+            return compareUnsigned(leftRawLo, leftHi, rightRawLo, rightHi) * (leftStrictlyNegative ? -1 : 1);
         }
     }
 
@@ -586,16 +588,12 @@ public final class UnscaledDecimal128Arithmetic
 
     public static int compareUnsigned(long leftRawLo, long leftRawHi, long rightRawLo, long rightRawHi)
     {
-        long leftHi = unpackUnsignedLong(leftRawHi);
-        long rightHi = unpackUnsignedLong(rightRawHi);
-        if (leftHi != rightHi) {
-            return Long.compareUnsigned(leftHi, rightHi);
+        if (leftRawHi != rightRawHi) {
+            return Long.compareUnsigned(leftRawHi, rightRawHi);
         }
-
         if (leftRawLo != rightRawLo) {
             return Long.compareUnsigned(leftRawLo, rightRawLo);
         }
-
         return 0;
     }
 
@@ -961,7 +959,7 @@ public final class UnscaledDecimal128Arithmetic
         shiftLeftDestructive(remainder, 1);
         long remainderLow = getRawLong(remainder, 0);
         long remainderHi = getRawLong(remainder, 1);
-        long divisorHiUnsigned = (divisorHigh & (~SIGN_LONG_INDEX));
+        long divisorHiUnsigned = unpackUnsignedLong(divisorHigh);
         if (compareUnsigned(remainderLow, remainderHi, divisorLow, divisorHiUnsigned) >= 0) {
             incrementUnsafe(quotient);
             throwIfOverflows(quotient);
