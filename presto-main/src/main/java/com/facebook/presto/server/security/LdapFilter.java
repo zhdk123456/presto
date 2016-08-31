@@ -112,9 +112,10 @@ public class LdapFilter
             String[] credentials = new String(Base64.getDecoder().decode(parts.get(1))).split(":", 2);
             checkState(credentials.length == 2, "Username/password missing in the request header");
 
+            String user = credentials[0];
+
             DirContext context = null;
             try {
-                String user = credentials[0];
                 String password = credentials[1];
                 if (user.isEmpty() || password.isEmpty()) {
                     throw new AuthenticationException("Username or Password is empty");
@@ -132,7 +133,7 @@ public class LdapFilter
                     checkForGroupMembership(user, groupDistinguishedName.get(), context);
                 }
 
-                LOG.debug("User %s successfully authenticated", user);
+                LOG.debug("Authentication successful for user %s.", user);
 
                 // ldap authentication ok, continue
                 nextFilter.doFilter(new HttpServletRequestWrapper(request)
@@ -146,6 +147,7 @@ public class LdapFilter
                 return;
             }
             catch (AuthenticationException e) {
+                LOG.debug("Authentication failed for user %s. Invalid credentials: %s", user, e.getMessage());
                 throw new RuntimeException("Invalid credentials: " + e.getMessage());
             }
             catch (NamingException e) {
@@ -202,9 +204,11 @@ public class LdapFilter
             LOG.debug("Group membership check for user '%s' using query: %s and base distinguished name: %s", user, searchFilter, searchBase);
             NamingEnumeration<SearchResult> results = context.search(searchBase, searchFilter, searchControls);
             if (!results.hasMoreElements()) {
-                throw new RuntimeException(format("Unauthorized User: User %s not a member of the group %s", user, groupDistinguishedName));
+                String errorMessage = format("User %s not a member of the group %s.", user, groupDistinguishedName);
+                LOG.debug("Authorization failed for user. " + errorMessage);
+                throw new RuntimeException("Unauthorized User: " + errorMessage);
             }
-            LOG.debug("Group membership check succeeded for user %s in group %s", user, groupDistinguishedName);
+            LOG.debug("Authorization succeeded for user %s in group %s.", user, groupDistinguishedName);
         }
         catch (NamingException e) {
             throw Throwables.propagate(e);
