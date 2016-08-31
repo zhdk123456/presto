@@ -122,6 +122,7 @@ import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.type.BigintOperators;
 import com.facebook.presto.type.BooleanOperators;
+import com.facebook.presto.type.CharOperators;
 import com.facebook.presto.type.ColorOperators;
 import com.facebook.presto.type.DateOperators;
 import com.facebook.presto.type.DateTimeOperators;
@@ -442,6 +443,7 @@ public class FunctionRegistry
                 .scalars(FailureFunction.class)
                 .scalars(JoniRegexpCasts.class)
                 .scalars(CharacterStringCasts.class)
+                .scalars(CharOperators.class)
                 .scalar(DecimalOperators.Negation.class)
                 .scalar(DecimalOperators.HashCode.class)
                 .functions(IDENTITY_CAST, CAST_FROM_UNKNOWN)
