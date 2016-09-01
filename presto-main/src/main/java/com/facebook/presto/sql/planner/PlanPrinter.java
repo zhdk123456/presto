@@ -78,6 +78,8 @@ import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.SymbolReference;
+import com.facebook.presto.sql.tree.Window;
+import com.facebook.presto.sql.tree.WindowFrame;
 import com.facebook.presto.util.GraphvizPrinter;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Functions;
@@ -794,7 +796,11 @@ public class PlanPrinter
 
             for (Map.Entry<Symbol, WindowNode.Function> entry : node.getWindowFunctions().entrySet()) {
                 FunctionCall call = entry.getValue().getFunctionCall();
-                print(indent + 2, "%s := %s(%s)", entry.getKey(), call.getName(), Joiner.on(", ").join(call.getArguments()));
+                String frameInfo = "";
+                if (call.getWindow().isPresent()) {
+                     frameInfo = getFrameInfo(call.getWindow().get());
+                }
+                print(indent + 2, "%s := %s(%s) %s", entry.getKey(), call.getName(), Joiner.on(", ").join(call.getArguments()), frameInfo);
             }
             return processChildren(node, indent + 1);
         }
@@ -1283,6 +1289,28 @@ public class PlanPrinter
         }
 
         return "[" + Joiner.on(", ").join(symbols) + "]";
+    }
+
+    private static String getFrameInfo(Window window)
+    {
+        if (!window.getFrame().isPresent()) {
+            return "";
+        }
+
+        WindowFrame frame = window.getFrame().get();
+        StringBuilder builder = new StringBuilder(frame.getType().toString());
+        if (frame.getStart().getValue().isPresent()) {
+            builder.append(" ").append(frame.getStart().getOriginalValue().get());
+        }
+        builder.append(" ").append(frame.getStart().getType());
+
+        if (frame.getEnd().isPresent()) {
+            if (frame.getEnd().get().getOriginalValue().isPresent()) {
+                builder.append(" ").append(frame.getEnd().get().getOriginalValue().get());
+            }
+            builder.append(" ").append(frame.getEnd().get().getType());
+        }
+        return builder.toString();
     }
 
     private static String castToVarchar(Type type, Object value, Metadata metadata, Session session)
