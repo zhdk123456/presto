@@ -12,3 +12,4 @@ Administration
     admin/resource-groups
     admin/query-performance-analysis
     aws/emr
+    admin/feature-toggles
