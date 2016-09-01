@@ -55,7 +55,8 @@ public class TestFeaturesConfig
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("4MB"))
                 .setSpillerSpillPath(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
-                .setParseDecimalLiteralsAsDouble(false));
+                .setParseDecimalLiteralsAsDouble(false)
+                .setReorderWindows(true));
     }
 
     @Test
@@ -75,6 +76,7 @@ public class TestFeaturesConfig
                 .put("optimizer.push-table-write-through-union", "false")
                 .put("optimizer.processing-optimization", "columnar_dictionary")
                 .put("optimizer.dictionary-aggregation", "true")
+                .put("optimizer.reorder-windows", "false")
                 .put("regex-library", "RE2J")
                 .put("re2j.dfa-states-limit", "42")
                 .put("re2j.dfa-retries", "42")
@@ -98,6 +100,7 @@ public class TestFeaturesConfig
                 .put("optimizer.push-table-write-through-union", "false")
                 .put("optimizer.processing-optimization", "columnar_dictionary")
                 .put("optimizer.dictionary-aggregation", "true")
+                .put("optimizer.reorder-windows", "false")
                 .put("regex-library", "RE2J")
                 .put("re2j.dfa-states-limit", "42")
                 .put("re2j.dfa-retries", "42")
@@ -129,7 +132,8 @@ public class TestFeaturesConfig
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"))
                 .setSpillerSpillPath("/tmp/custom/spill/path")
                 .setSpillerThreads(42)
-                .setParseDecimalLiteralsAsDouble(true);
+                .setParseDecimalLiteralsAsDouble(true)
+                .setReorderWindows(false);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
