@@ -68,6 +68,7 @@ public final class SystemSessionProperties
     public static final String OPERATOR_MEMORY_LIMIT_BEFORE_SPILL = "operator_memory_limit_before_spill";
     public static final String OPTIMIZE_DISTINCT_AGGREGATIONS = "optimize_mixed_distinct_aggregations";
     public static final String PARSE_DECIMAL_LITERALS_AS_DOUBLE = "parse_decimal_literals_as_double";
+    public static final String REORDER_WINDOWS = "reorder_windows";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -285,6 +286,11 @@ public final class SystemSessionProperties
                         PARSE_DECIMAL_LITERALS_AS_DOUBLE,
                         "Parse decimal literals as DOUBLE instead of DECIMAL",
                         featuresConfig.isParseDecimalLiteralsAsDouble(),
+                        false),
+                booleanSessionProperty(
+                        REORDER_WINDOWS,
+                        "Allow reordering window functions in query",
+                        featuresConfig.isReorderWindows(),
                         false));
     }
 
@@ -398,6 +404,11 @@ public final class SystemSessionProperties
         Integer priority = session.getSystemProperty(QUERY_PRIORITY, Integer.class);
         checkArgument(priority > 0, "Query priority must be positive");
         return priority;
+    }
+
+    public static boolean isReorderWindowsEnabled(Session session)
+    {
+        return session.getSystemProperty(REORDER_WINDOWS, Boolean.class);
     }
 
     public static Duration getSplitConcurrencyAdjustmentInterval(Session session)

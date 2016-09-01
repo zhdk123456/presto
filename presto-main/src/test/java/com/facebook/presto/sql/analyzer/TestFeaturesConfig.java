@@ -58,7 +58,8 @@ public class TestFeaturesConfig
                 .setOptimizeMixedDistinctAggregations(false)
                 .setParseDecimalLiteralsAsDouble(false)
                 .setSpillMinimumFreeSpaceThreshold(0.9)
-                .setSmallTableCoefficient(0.01));
+                .setSmallTableCoefficient(0.01)
+                .setReorderWindows(true));
     }
 
     @Test
@@ -79,6 +80,7 @@ public class TestFeaturesConfig
                 .put("optimizer.push-table-write-through-union", "false")
                 .put("optimizer.processing-optimization", "columnar_dictionary")
                 .put("optimizer.dictionary-aggregation", "true")
+                .put("optimizer.reorder-windows", "false")
                 .put("regex-library", "RE2J")
                 .put("re2j.dfa-states-limit", "42")
                 .put("re2j.dfa-retries", "42")
@@ -105,6 +107,7 @@ public class TestFeaturesConfig
                 .put("optimizer.push-table-write-through-union", "false")
                 .put("optimizer.processing-optimization", "columnar_dictionary")
                 .put("optimizer.dictionary-aggregation", "true")
+                .put("optimizer.reorder-windows", "false")
                 .put("regex-library", "RE2J")
                 .put("re2j.dfa-states-limit", "42")
                 .put("re2j.dfa-retries", "42")
@@ -141,7 +144,8 @@ public class TestFeaturesConfig
                 .setSpillerThreads(42)
                 .setSpillMinimumFreeSpaceThreshold(0.8)
                 .setParseDecimalLiteralsAsDouble(true)
-                .setSmallTableCoefficient(0.2);
+                .setSmallTableCoefficient(0.2)
+                .setReorderWindows(false);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
