@@ -79,6 +79,7 @@ public class DriverContext
 
     private final AtomicLong memoryReservation = new AtomicLong();
     private final AtomicLong systemMemoryReservation = new AtomicLong();
+    private final AtomicLong revocableSystemMemoryReservation = new AtomicLong();
 
     private final List<OperatorContext> operatorContexts = new CopyOnWriteArrayList<>();
     private final boolean partitioned;
@@ -210,6 +211,13 @@ public class DriverContext
         return pipelineContext.reserveSpill(bytes);
     }
 
+    public ListenableFuture<?> reserveRevocableSystemMemory(long bytes)
+    {
+        ListenableFuture<?> future = pipelineContext.reserveRevocableSystemMemory(bytes);
+        revocableSystemMemoryReservation.getAndAdd(bytes);
+        return future;
+    }
+
     public boolean tryReserveMemory(long bytes)
     {
         if (pipelineContext.tryReserveMemory(bytes)) {
@@ -239,6 +247,17 @@ public class DriverContext
         checkArgument(bytes <= systemMemoryReservation.get(), "tried to free more system memory than is reserved");
         pipelineContext.freeSystemMemory(bytes);
         systemMemoryReservation.getAndAdd(-bytes);
+    }
+
+    public void freeRevocableSystemMemory(long bytes)
+    {
+        if (bytes == 0) {
+            return;
+        }
+        checkArgument(bytes >= 0, "bytes is negative");
+        checkArgument(bytes <= revocableSystemMemoryReservation.get(), "tried to free more revocable system memory than is reserved");
+        pipelineContext.freeRevocableSystemMemory(bytes);
+        revocableSystemMemoryReservation.getAndAdd(-bytes);
     }
 
     public void freeSpill(long bytes)
@@ -390,7 +409,7 @@ public class DriverContext
                 queuedTime.convertToMostSuccinctTimeUnit(),
                 elapsedTime.convertToMostSuccinctTimeUnit(),
                 succinctBytes(memoryReservation.get()),
-                succinctBytes(systemMemoryReservation.get()),
+                succinctBytes(systemMemoryReservation.get() + revocableSystemMemoryReservation.get()),
                 new Duration(totalScheduledTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),
                 new Duration(totalCpuTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),
                 new Duration(totalUserTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),

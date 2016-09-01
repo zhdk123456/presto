@@ -62,6 +62,9 @@ public class QueryContext
     @GuardedBy("this")
     private long spillUsed;
 
+    @GuardedBy("this")
+    private long revocableSystemReserved;
+
     public QueryContext(QueryId queryId, DataSize maxMemory, MemoryPool memoryPool, MemoryPool systemMemoryPool, Executor executor, DataSize maxSpill, SpillSpaceTracker spillSpaceTracker)
     {
         this.queryId = requireNonNull(queryId, "queryId is null");
@@ -99,6 +102,15 @@ public class QueryContext
 
         ListenableFuture<?> future = systemMemoryPool.reserve(queryId, bytes);
         systemReserved += bytes;
+        return future;
+    }
+
+    public synchronized ListenableFuture<?> reserveRevocableSystemMemory(long bytes)
+    {
+        checkArgument(bytes >= 0, "bytes is negative");
+
+        ListenableFuture<?> future = systemMemoryPool.reserve(queryId, bytes);
+        revocableSystemReserved += bytes;
         return future;
     }
 
@@ -147,6 +159,14 @@ public class QueryContext
         checkArgument(spillUsed - bytes >= 0, "tried to free more memory than is reserved");
         spillUsed -= bytes;
         spillSpaceTracker.free(bytes);
+    }
+
+    public synchronized void freeRevocableSystemMemory(long bytes)
+    {
+        checkArgument(bytes >= 0, "bytes is negative");
+        checkArgument(revocableSystemReserved - bytes >= 0, "tried to free more revocable system memory than is reserved");
+        revocableSystemReserved -= bytes;
+        systemMemoryPool.free(queryId, bytes);
     }
 
     public synchronized void setMemoryPool(MemoryPool pool)
