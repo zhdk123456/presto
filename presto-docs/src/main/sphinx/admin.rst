@@ -11,4 +11,4 @@ Administration
     admin/queue
     admin/resource-groups
     aws/emr
-
+    admin/feature-toggles
