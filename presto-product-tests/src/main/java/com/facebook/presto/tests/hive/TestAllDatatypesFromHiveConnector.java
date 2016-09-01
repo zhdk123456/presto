@@ -221,6 +221,7 @@ public class TestAllDatatypesFromHiveConnector
                     SMALLINT,
                     INTEGER,
                     BIGINT,
+                    REAL,
                     DOUBLE,
                     DECIMAL,
                     DECIMAL,
@@ -292,6 +293,7 @@ public class TestAllDatatypesFromHiveConnector
                 TIMESTAMP,
                 LONGNVARCHAR,
                 LONGNVARCHAR,
+                CHAR,
                 BOOLEAN,
                 LONGVARBINARY
         );
