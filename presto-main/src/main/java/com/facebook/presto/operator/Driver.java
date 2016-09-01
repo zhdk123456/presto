@@ -496,6 +496,7 @@ public class Driver
             }
             driverContext.freeMemory(driverContext.getMemoryUsage());
             driverContext.freeSystemMemory(driverContext.getSystemMemoryUsage());
+            driverContext.freeRevocableMemory(driverContext.getRevocableMemoryUsage());
             driverContext.finished();
         }
         catch (Throwable t) {

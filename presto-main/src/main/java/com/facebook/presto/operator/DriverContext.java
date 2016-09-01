@@ -79,6 +79,7 @@ public class DriverContext
     private final AtomicLong memoryReservation = new AtomicLong();
     private final AtomicLong peakMemoryReservation = new AtomicLong();
     private final AtomicLong systemMemoryReservation = new AtomicLong();
+    private final AtomicLong revocableMemoryReservation = new AtomicLong();
 
     private final List<OperatorContext> operatorContexts = new CopyOnWriteArrayList<>();
     private final boolean partitioned;
@@ -190,7 +191,15 @@ public class DriverContext
     {
         ListenableFuture<?> future = pipelineContext.reserveMemory(bytes);
         long newMemoryReservation = memoryReservation.addAndGet(bytes);
-        peakMemoryReservation.accumulateAndGet(newMemoryReservation, Math::max);
+        peakMemoryReservation.accumulateAndGet(revocableMemoryReservation.get() + newMemoryReservation, Math::max);
+        return future;
+    }
+
+    public ListenableFuture<?> reserveRevocableMemory(long bytes)
+    {
+        ListenableFuture<?> future = pipelineContext.reserveRevocableMemory(bytes);
+        long newRevocableMemoryReservation = revocableMemoryReservation.getAndAdd(bytes);
+        peakMemoryReservation.accumulateAndGet(newRevocableMemoryReservation + memoryReservation.get(), Math::max);
         return future;
     }
 
@@ -228,6 +237,17 @@ public class DriverContext
         memoryReservation.getAndAdd(-bytes);
     }
 
+    public void freeRevocableMemory(long bytes)
+    {
+        if (bytes == 0) {
+            return;
+        }
+        checkArgument(bytes >= 0, "bytes is negative");
+        checkArgument(bytes <= revocableMemoryReservation.get(), "tried to free more revocable memory than is reserved");
+        pipelineContext.freeRevocableMemory(bytes);
+        revocableMemoryReservation.getAndAdd(-bytes);
+    }
+
     public void freeSystemMemory(long bytes)
     {
         if (bytes == 0) {
@@ -256,6 +276,11 @@ public class DriverContext
     public long getMemoryUsage()
     {
         return memoryReservation.get();
+    }
+
+    public long getRevocableMemoryUsage()
+    {
+        return revocableMemoryReservation.get();
     }
 
     public void moreMemoryAvailable()
@@ -391,7 +416,7 @@ public class DriverContext
                 executionEndTime.get(),
                 queuedTime.convertToMostSuccinctTimeUnit(),
                 elapsedTime.convertToMostSuccinctTimeUnit(),
-                succinctBytes(memoryReservation.get()),
+                succinctBytes(memoryReservation.get() + revocableMemoryReservation.get()),
                 succinctBytes(peakMemoryReservation.get()),
                 succinctBytes(systemMemoryReservation.get()),
                 new Duration(totalScheduledTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),
