@@ -48,8 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
 
 public class PrestoLdapCliTests
-    extends PrestoCliTests
-    implements RequirementsProvider
+        extends PrestoCliLauncher
+        implements RequirementsProvider
 {
     @Inject(optional = true)
     @Named("databases.presto.cli_ldap_truststore_path")
@@ -163,7 +163,6 @@ public class PrestoLdapCliTests
         assertTrue(trimLines(presto.readRemainingErrorLines()).stream().anyMatch(str -> str.contains("User " + ldapUserName + " not a member of the group")));
     }
 
-    @Override
     protected void launchPrestoCliWithServerArgument(String... arguments)
             throws IOException, InterruptedException
     {
