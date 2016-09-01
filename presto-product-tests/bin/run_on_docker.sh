@@ -58,9 +58,16 @@ function run_product_tests() {
     -jar "/docker/volumes/presto-product-tests/presto-product-tests-executable.jar" \
     --report-dir "/docker/volumes/test-reports" \
     --config-local "/docker/volumes/tempto/tempto-configuration-local.yaml" \
-    "$@"
+    "$@" \
+    &
+  PRODUCT_TESTS_PROCESS_ID=$!
+  wait ${PRODUCT_TESTS_PROCESS_ID}
+  local PRODUCT_TESTS_EXIT_CODE=$?
+
   #make the files in $REPORT_DIR modifiable by everyone, as they were created by root (by docker)
   run_in_application_runner_container chmod -R 777 "/docker/volumes/test-reports"
+
+  return ${PRODUCT_TESTS_EXIT_CODE}
 }
 
 # docker-compose down is not good enough because it's ignores services created with "run" command
@@ -203,9 +210,7 @@ retry check_presto
 
 # run product tests
 set +e
-run_product_tests "$*" &
-PRODUCT_TESTS_PROCESS_ID=$!
-wait ${PRODUCT_TESTS_PROCESS_ID}
+run_product_tests "$*"
 EXIT_CODE=$?
 set -e
 
