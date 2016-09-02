@@ -55,20 +55,20 @@ import static it.unimi.dsi.fastutil.HashCommon.arraySize;
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(2)
-@Warmup(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10)
+@Measurement(iterations = 10)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkGroupByHash
 {
-    private static final int POSITIONS = 10_000_000;
-    private static final String GROUP_COUNT_STRING = "3000000";
+    private static final int POSITIONS = 1_000_000;
+    private static final String GROUP_COUNT_STRING = "300000";
     private static final int GROUP_COUNT = Integer.parseInt(GROUP_COUNT_STRING);
-    private static final int EXPECTED_SIZE = 10_000;
+    private static final int EXPECTED_SIZE = 1_000;
     private static final JoinCompiler JOIN_COMPILER = new JoinCompiler();
 
     @Benchmark
     @OperationsPerInvocation(POSITIONS)
-    public Object groupByHashPreCompute(BenchmarkData data)
+    public Object groupByGetGroupsUBenchto(BenchmarkData data)
     {
         GroupByHash groupByHash = new MultiChannelGroupByHash(data.getTypes(), data.getChannels(), data.getHashChannel(), EXPECTED_SIZE, false, JOIN_COMPILER);
         data.getPages().forEach(groupByHash::getGroupIds);
@@ -89,7 +89,7 @@ public class BenchmarkGroupByHash
 
     @Benchmark
     @OperationsPerInvocation(POSITIONS)
-    public Object addPagePreCompute(BenchmarkData data)
+    public Object groupByAddPageUBenchto(BenchmarkData data)
     {
         GroupByHash groupByHash = new MultiChannelGroupByHash(data.getTypes(), data.getChannels(), data.getHashChannel(), EXPECTED_SIZE, false, JOIN_COMPILER);
         data.getPages().forEach(groupByHash::addPage);
@@ -290,7 +290,7 @@ public class BenchmarkGroupByHash
     @State(Scope.Thread)
     public static class BenchmarkData
     {
-        @Param({ "1", "5", "10", "15", "20" })
+        @Param({ "1", "15"})
         private int channelCount = 1;
 
         // todo add more group counts when JMH support programmatic ability to set OperationsPerInvocation
@@ -344,8 +344,8 @@ public class BenchmarkGroupByHash
         // assure the benchmarks are valid before running
         BenchmarkData data = new BenchmarkData();
         data.setup();
-        new BenchmarkGroupByHash().groupByHashPreCompute(data);
-        new BenchmarkGroupByHash().addPagePreCompute(data);
+        new BenchmarkGroupByHash().groupByGetGroupsUBenchto(data);
+        new BenchmarkGroupByHash().groupByAddPageUBenchto(data);
 
         SingleChannelBenchmarkData singleChannelBenchmarkData = new SingleChannelBenchmarkData();
         singleChannelBenchmarkData.setup();
