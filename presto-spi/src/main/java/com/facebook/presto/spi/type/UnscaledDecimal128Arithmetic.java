@@ -371,6 +371,18 @@ public final class UnscaledDecimal128Arithmetic
         }
     }
 
+    public static void incrementUnsafe(Slice decimal)
+    {
+        long lo = getLong(decimal, 0);
+        if (lo != ALL_BITS_SET_64) {
+            setRawLong(decimal, 0, lo + 1);
+            return;
+        }
+
+        long hi = getLong(decimal, 1);
+        setNegativeLong(decimal, hi + 1, isNegative(decimal));
+    }
+
     /**
      * This method ignores signs of the left and right. Returns overflow value.
      */
@@ -1432,18 +1444,6 @@ public final class UnscaledDecimal128Arithmetic
     private static void throwDivisionByZeroException()
     {
         throw new PrestoException(DIVISION_BY_ZERO, "Division by zero");
-    }
-
-    private static void incrementUnsafe(Slice decimal)
-    {
-        long lo = getLong(decimal, 0);
-        if (lo != ALL_BITS_SET_64) {
-            setRawLong(decimal, 0, lo + 1);
-            return;
-        }
-
-        long hi = getLong(decimal, 1);
-        setNegativeLong(decimal, hi + 1, isNegative(decimal));
     }
 
     private static void multiplyShiftDestructive(Slice decimal, Slice multiplier, int rightShifts)
