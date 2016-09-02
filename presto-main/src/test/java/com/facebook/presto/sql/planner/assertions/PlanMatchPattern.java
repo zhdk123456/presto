@@ -17,6 +17,7 @@ import com.facebook.presto.Session;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkState;
@@ -147,9 +149,9 @@ public final class PlanMatchPattern
         return states.build();
     }
 
-    public PlanMatchPattern withAssignment(String pattern)
+    public PlanMatchPattern withAssignments(Map<Symbol, Expression> assignments)
     {
-        return with(new ProjectNodeMatcher(pattern));
+        return with(new ProjectNodeMatcher(assignments));
     }
 
     public PlanMatchPattern withSymbol(String pattern, String alias)

@@ -26,11 +26,11 @@ import java.util.regex.Pattern;
 final class ProjectNodeMatcher
         implements Matcher
 {
-    private final Pattern pattern;
+    private final Map<Symbol, Expression> assignments;
 
-    ProjectNodeMatcher(String pattern)
+    ProjectNodeMatcher(Map<Symbol, Expression> assignments)
     {
-        this.pattern = Pattern.compile(pattern);
+        this.assignments = assignments;
     }
 
     @Override
@@ -38,11 +38,8 @@ final class ProjectNodeMatcher
     {
         if (node instanceof ProjectNode) {
             ProjectNode projectNode = (ProjectNode) node;
-            for (Map.Entry<Symbol, Expression> assignment : projectNode.getAssignments().entrySet()) {
-                Expression expression = assignment.getValue();
-                if (pattern.matcher(expression.getClass().getSimpleName()).find()) {
-                    return true;
-                }
+            if (projectNode.getAssignments().equals(assignments)) {
+                return true;
             }
         }
         return false;

@@ -13,7 +13,11 @@
  */
 package com.facebook.presto.sql.planner.optimizations;
 
+import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.metadata.MetadataManager;
+import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.DependencyExtractor;
 import com.facebook.presto.sql.planner.Plan;
@@ -24,18 +28,27 @@ import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.assertions.PlanAssert;
 import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
 import com.facebook.presto.sql.planner.plan.FilterNode;
+import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
+import com.facebook.presto.sql.tree.ArithmeticBinaryExpression;
+import com.facebook.presto.sql.tree.Cast;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
+import com.facebook.presto.sql.tree.GenericLiteral;
 import com.facebook.presto.sql.tree.LogicalBinaryExpression;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tpch.TpchConnectorFactory;
+import com.facebook.presto.type.TypeRegistry;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import javax.inject.Provider;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,6 +72,9 @@ public class TestSimplifyExpressions
     private static final SqlParser SQL_PARSER = new SqlParser();
     private static final SimplifyExpressions SIMPLIFIER = new SimplifyExpressions(createTestMetadataManager(), SQL_PARSER);
     private LocalQueryRunner queryRunner;
+    private Map<Symbol, Expression> inputAssignments;
+    private Map<Symbol, Expression> expectedAssignments;
+    private Map<Symbol, Type> typeAssignments;
 
     @BeforeTest
     public void setUp()
@@ -71,6 +87,10 @@ public class TestSimplifyExpressions
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(queryRunner.getNodeManager(), 1),
                 ImmutableMap.<String, String>of());
+
+        inputAssignments = new HashMap<Symbol, Expression>();
+        expectedAssignments = new HashMap<Symbol, Expression>();
+        typeAssignments = new HashMap<Symbol, Type>();
     }
 
     @Test
@@ -116,9 +136,27 @@ public class TestSimplifyExpressions
     }
 
     @Test
-    public void testRemoveIdentityCasts()
+    public void testRemoveIdentityCastBigintLiteral()
     {
-        assertCastNotInPlan("SELECT CAST(BIGINT '5' as BIGINT)");
+        inputAssignments.put(new Symbol("expr"), new Cast(new GenericLiteral("BIGINT", "5"), "BIGINT"));
+        expectedAssignments.put(new Symbol("expr"), new GenericLiteral("BIGINT", "5"));
+        typeAssignments.put(new Symbol("expr"), BigintType.BIGINT);
+        ProjectNode simplifiedProjectNode = simplifyProjectNode(inputAssignments, typeAssignments);
+        Map<Symbol, Expression> actualAssignments = simplifiedProjectNode.getAssignments();
+        assert (actualAssignments.equals(expectedAssignments));
+    }
+
+    @Test
+    public void testRemoveIdentityCastMultiplyBigintLiteral()
+    {
+        inputAssignments.put(new Symbol("expr"),
+                new Cast(new ArithmeticBinaryExpression(BigintType.BIGINT,
+                        new GenericLiteral("BIGINT", "3"),
+                        ),
+                        "BIGINT"))
+    }
+
+        /*
         assertCastNotInPlan("SELECT 3 * CAST(BIGINT '5' as BIGINT)");
         assertCastNotInPlan("SELECT CAST(nationkey AS BIGINT) FROM nation");
         assertCastNotInPlan("SELECT 3 * CAST(nationkey AS BIGINT) FROM nation");
@@ -134,8 +172,10 @@ public class TestSimplifyExpressions
 
         assertCastInPlan("SELECT CAST(nationkey AS SMALLINT) FROM nation");
         assertCastInPlan("SELECT CAST(name AS VARCHAR(30)) FROM nation");
-        assertCastInPlan("SELECT CAST(name AS VARCHAR) FROM nation");
-    }
+        assertCastInPlan("SELECT CAST(name AS VARCHAR) FROM nation");*/
+
+
+    private void assertRemovesIdentityCast()
 
     public void assertPlanDoesNotMatch(@Language("SQL") String sql, PlanMatchPattern pattern)
     {
@@ -160,20 +200,31 @@ public class TestSimplifyExpressions
         return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
     }
 
-    private void assertCastNotInPlan(@Language("SQL") String sql)
+    private void assertUnitPlanMatches(@Language("SQL") String sql, PlanMatchPattern pattern)
     {
-        PlanMatchPattern pattern = anyTree(
-                project(anyTree()).withAssignment("Cast")
-        );
-        assertPlanDoesNotMatch(sql, pattern);
+        Plan actualPlan = unitPlan(sql);
+        queryRunner.inTransaction(transactionSession -> {
+            PlanAssert.assertPlanMatches(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            return null;
+        });
     }
 
-    private void assertCastInPlan(@Language("SQL") String sql)
+    private Plan unitPlan(@Language("SQL") String sql)
     {
-        PlanMatchPattern pattern = anyTree(
-                project(anyTree()).withAssignment("Cast")
-        );
-        assertPlanMatches(sql, pattern);
+        FeaturesConfig featuresConfig = new FeaturesConfig()
+                .setExperimentalSyntaxEnabled(true)
+                .setDistributedIndexJoinsEnabled(false)
+                .setOptimizeHashGeneration(true);
+        Metadata metadata = new MetadataManager(featuresConfig,
+                new TypeRegistry(),
+                )
+        Provider<List<PlanOptimizer>> optimizerProvider = () -> ImmutableList.of(
+                new UnaliasSymbolReferences(),
+                new PruneIdentityProjections(),
+                new MergeIdenticalWindows(),
+                new PruneUnreferencedOutputs(),
+                new SimplifyExpressions());
+        return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizerProvider));
     }
 
     private static void assertSimplifies(String expression, String expected)
@@ -181,11 +232,11 @@ public class TestSimplifyExpressions
         Expression actualExpression = rewriteQualifiedNamesToSymbolReferences(SQL_PARSER.createExpression(expression));
         Expression expectedExpression = rewriteQualifiedNamesToSymbolReferences(SQL_PARSER.createExpression(expected));
         assertEquals(
-                normalize(simplifyExpressions(actualExpression)),
+                normalize(simplifyFilterNode(actualExpression)),
                 normalize(expectedExpression));
     }
 
-    private static Expression simplifyExpressions(Expression expression)
+    private static Expression simplifyFilterNode(Expression expression)
     {
         PlanNodeIdAllocator planNodeIdAllocator = new PlanNodeIdAllocator();
         FilterNode filterNode = new FilterNode(
@@ -198,6 +249,19 @@ public class TestSimplifyExpressions
                 new SymbolAllocator(),
                 planNodeIdAllocator);
         return simplifiedNode.getPredicate();
+    }
+
+    private static ProjectNode simplifyProjectNode(Map<Symbol, Expression> assignments, Map<Symbol, Type> typeAssignments)
+    {
+        PlanNodeIdAllocator planNodeIdAllocator = new PlanNodeIdAllocator();
+        ProjectNode projectNode = new ProjectNode(planNodeIdAllocator.getNextId(),
+                new ValuesNode(planNodeIdAllocator.getNextId(), emptyList(), emptyList()),
+                assignments);
+        return (ProjectNode) SIMPLIFIER.optimize(projectNode,
+                TEST_SESSION,
+                typeAssignments,
+                new SymbolAllocator(),
+                planNodeIdAllocator);
     }
 
     private static Map<Symbol, Type> booleanSymbolTypeMapFor(Expression expression)
