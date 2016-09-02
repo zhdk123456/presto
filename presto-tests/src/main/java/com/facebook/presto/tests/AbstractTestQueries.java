@@ -6018,7 +6018,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testCorrelatedScalarSubqueries()
     {
-        String errorMsg = "Correlated subquery is not yet supported";
+        String errorMsg = "Unsupported correlated subquery type";
 
         assertQueryFails("SELECT (SELECT l.orderkey) FROM lineitem l", errorMsg);
         assertQueryFails("SELECT (SELECT 2 * l.orderkey) FROM lineitem l", errorMsg);
@@ -6044,7 +6044,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testCorrelatedInPredicateSubqueries()
     {
-        String errorMsg = "Correlated subquery is not yet supported";
+        String errorMsg = "Unsupported correlated subquery type";
 
         assertQueryFails("SELECT 1 IN (SELECT l.orderkey) FROM lineitem l", errorMsg);
         assertQueryFails("SELECT 1 IN (SELECT 2 * l.orderkey) FROM lineitem l", errorMsg);
@@ -6097,7 +6097,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testCorrelatedExistsSubqueries()
     {
-        String errorMsg = "Correlated subquery is not yet supported";
+        String errorMsg = "Unsupported correlated subquery type";
 
         assertQueryFails("SELECT EXISTS(SELECT 1 WHERE l.orderkey > 0) FROM lineitem l", errorMsg);
         assertQueryFails("SELECT count(*) FROM lineitem l WHERE EXISTS(SELECT 1 WHERE l.orderkey > 0)", errorMsg);
