@@ -3774,6 +3774,79 @@ public abstract class AbstractTestQueries
     }
 
     @Test
+    public void testWindowsSameOrdering()
+            throws Exception
+    {
+        MaterializedResult actual = computeActual("SELECT " +
+                "sum(quantity) OVER(PARTITION BY suppkey ORDER BY orderkey) q," +
+                "min(tax) OVER(PARTITION BY suppkey ORDER BY shipdate) m " +
+                "FROM lineitem ORDER BY q LIMIT 3");
+
+        MaterializedResult expected = resultBuilder(getSession(), DOUBLE, DOUBLE)
+                .row(1.0, 0.0)
+                .row(2.0, 0.0)
+                .row(2.0, 0.0)
+                .build();
+
+        assertEquals(actual, expected);
+    }
+
+    @Test
+    public void testWindowsPrefixPartitioning()
+            throws Exception
+    {
+        MaterializedResult actual = computeActual("SELECT " +
+                "min(discount) OVER(PARTITION BY suppkey, tax ORDER BY receiptdate) d," +
+                "avg(quantity) OVER(PARTITION BY suppkey ORDER BY orderkey) q " +
+                "FROM lineitem ORDER BY q LIMIT 3");
+
+        MaterializedResult expected = resultBuilder(getSession(), DOUBLE, DOUBLE)
+                .row(0.0, 1.0)
+                .row(0.0, 2.0)
+                .row(0.0, 2.0)
+                .build();
+
+        assertEquals(actual, expected);
+    }
+
+    @Test
+    public void testWindowsDifferentPartitions()
+            throws Exception
+    {
+        MaterializedResult actual = computeActual("SELECT " +
+                "sum(quantity) OVER(PARTITION BY suppkey ORDER BY orderkey) q," +
+                "avg(discount) OVER(PARTITION BY partkey ORDER BY receiptdate) d," +
+                "min(tax) OVER(PARTITION BY suppkey, tax ORDER BY receiptdate) t " +
+                "FROM lineitem ORDER BY q,d LIMIT 3");
+
+        MaterializedResult expected = resultBuilder(getSession(), DOUBLE, DOUBLE, DOUBLE)
+                .row(1.0, 0.038, 0.06)
+                .row(2.0, 0.0225, 0.06)
+                .row(2.0, 0.06, 0.02)
+                .build();
+
+        assertEquals(actual, expected);
+    }
+
+    @Test
+    public void testWindowsConstantExpression()
+            throws Exception
+    {
+        MaterializedResult actual = computeActual("SELECT " +
+                "sum(quantity) OVER (PARTITION BY suppkey ORDER BY receiptdate) q," +
+                "lag(tax, 1) OVER (PARTITION BY suppkey ORDER BY orderkey) t " +
+                "FROM lineitem ORDER BY q,t LIMIT 3");
+
+        MaterializedResult expected = resultBuilder(getSession(), DOUBLE, DOUBLE)
+                .row(1.0, 0.03)
+                .row(2.0, 0.07)
+                .row(5.0, 0.0)
+                .build();
+
+        assertEquals(actual, expected);
+    }
+
+    @Test
     public void testHaving()
             throws Exception
     {
