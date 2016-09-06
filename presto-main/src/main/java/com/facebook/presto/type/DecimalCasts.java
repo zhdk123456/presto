@@ -206,11 +206,7 @@ public final class DecimalCasts
     @UsedByGeneratedCode
     public static Slice booleanToLongDecimal(boolean value, long precision, long scale, BigInteger tenToScale)
     {
-<<<<<<< af552bf6162ca847129ff514967fcaa999a4f0f8
         return unscaledDecimal(value ? tenToScale : ZERO);
-=======
-        return encodeUnscaledValue(value ? tenToScale : ZERO);
->>>>>>> Fix silent numeric overflow when casting int -> long decimal type
     }
 
     @UsedByGeneratedCode
