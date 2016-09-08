@@ -73,7 +73,7 @@ public class CallTask
         }
 
         Session session = stateMachine.getSession();
-        QualifiedObjectName procedureName = createQualifiedObjectName(session, call, call.getName());
+        QualifiedObjectName procedureName = createQualifiedObjectName(session, call, call.getQualifiedName());
         ConnectorId connectorId = metadata.getCatalogNames().get(procedureName.getCatalogName());
         if (connectorId == null) {
             throw new SemanticException(MISSING_CATALOG, call, "Catalog %s does not exist", procedureName.getCatalogName());
