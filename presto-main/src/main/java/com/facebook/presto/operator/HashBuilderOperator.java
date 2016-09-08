@@ -15,6 +15,8 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spiller.PartitioningSpillerFactory;
+import com.facebook.presto.spiller.SingleStreamSpillerFactory;
 import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler.JoinFilterFunctionFactory;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
@@ -22,6 +24,7 @@ import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.concurrent.MoreFutures;
+import io.airlift.units.DataSize;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -31,6 +34,7 @@ import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -50,6 +54,10 @@ public class HashBuilderOperator
         private final PagesIndex.Factory pagesIndexFactory;
 
         private final int expectedPositions;
+        private final boolean spillEnabled;
+        private final DataSize memoryLimitBeforeSpill;
+        private final SingleStreamSpillerFactory singleStreamSpillerFactory;
+        private final PartitioningSpillerFactory partitioningSpillerFactory;
 
         private int partitionIndex;
         private boolean closed;
@@ -67,6 +75,47 @@ public class HashBuilderOperator
                 int expectedPositions,
                 int partitionCount,
                 PagesIndex.Factory pagesIndexFactory)
+        {
+            this(operatorId,
+                    planNodeId,
+                    types,
+                    outputChannels,
+                    layout,
+                    hashChannels,
+                    preComputedHashChannel,
+                    outer,
+                    filterFunctionFactory,
+                    expectedPositions,
+                    partitionCount,
+                    pagesIndexFactory,
+                    false,
+                    new DataSize(0, MEGABYTE),
+                    (types1, localSpillContextSupplier, memoryContext) -> {
+                        throw new UnsupportedOperationException();
+                    },
+                    (types12, partitionGenerator, partitionsCount, ignorePartitions, localSpillContextSupplier, memoryContext) -> {
+                        throw new UnsupportedOperationException();
+                    }
+            );
+        }
+
+        public HashBuilderOperatorFactory(
+                int operatorId,
+                PlanNodeId planNodeId,
+                List<Type> types,
+                List<Integer> outputChannels,
+                Map<Symbol, Integer> layout,
+                List<Integer> hashChannels,
+                Optional<Integer> preComputedHashChannel,
+                boolean outer,
+                Optional<JoinFilterFunctionFactory> filterFunctionFactory,
+                int expectedPositions,
+                int partitionCount,
+                PagesIndex.Factory pagesIndexFactory,
+                boolean spillEnabled,
+                DataSize memoryLimitBeforeSpill,
+                SingleStreamSpillerFactory singleStreamSpillerFactory,
+                PartitioningSpillerFactory partitioningSpillerFactory)
         {
             this.operatorId = operatorId;
             this.planNodeId = requireNonNull(planNodeId, "planNodeId is null");
@@ -87,6 +136,10 @@ public class HashBuilderOperator
             this.preComputedHashChannel = requireNonNull(preComputedHashChannel, "preComputedHashChannel is null");
             this.filterFunctionFactory = requireNonNull(filterFunctionFactory, "filterFunctionFactory is null");
             this.pagesIndexFactory = requireNonNull(pagesIndexFactory, "pagesIndexFactory is null");
+            this.spillEnabled = spillEnabled;
+            this.memoryLimitBeforeSpill = requireNonNull(memoryLimitBeforeSpill, "memoryLimitBeforeSpill is null");
+            this.singleStreamSpillerFactory = requireNonNull(singleStreamSpillerFactory, "singleStreamSpillerFactory is null");
+            this.partitioningSpillerFactory = requireNonNull(partitioningSpillerFactory, "partitioningSpillerFactory is null");
 
             this.expectedPositions = expectedPositions;
         }
@@ -116,7 +169,10 @@ public class HashBuilderOperator
                     preComputedHashChannel,
                     filterFunctionFactory,
                     expectedPositions,
-                    pagesIndexFactory);
+                    pagesIndexFactory,
+                    spillEnabled,
+                    memoryLimitBeforeSpill,
+                    singleStreamSpillerFactory);
 
             partitionIndex++;
             return operator;
@@ -146,6 +202,10 @@ public class HashBuilderOperator
 
     private final PagesIndex index;
 
+    private final boolean spillEnabled;
+    private final DataSize memoryLimitBeforeSpill;
+    private final SingleStreamSpillerFactory singleStreamSpillerFactory;
+
     private boolean finishing;
     private final HashCollisionsCounter hashCollisionsCounter;
 
@@ -158,7 +218,10 @@ public class HashBuilderOperator
             Optional<Integer> preComputedHashChannel,
             Optional<JoinFilterFunctionFactory> filterFunctionFactory,
             int expectedPositions,
-            PagesIndex.Factory pagesIndexFactory)
+            PagesIndex.Factory pagesIndexFactory,
+            boolean spillEnabled,
+            DataSize memoryLimitBeforeSpill,
+            SingleStreamSpillerFactory singleStreamSpillerFactory)
     {
         requireNonNull(pagesIndexFactory, "pagesIndexFactory is null");
 
@@ -175,6 +238,10 @@ public class HashBuilderOperator
 
         this.hashCollisionsCounter = new HashCollisionsCounter(operatorContext);
         operatorContext.setInfoSupplier(hashCollisionsCounter);
+
+        this.spillEnabled = spillEnabled;
+        this.memoryLimitBeforeSpill = memoryLimitBeforeSpill;
+        this.singleStreamSpillerFactory = singleStreamSpillerFactory;
     }
 
     @Override

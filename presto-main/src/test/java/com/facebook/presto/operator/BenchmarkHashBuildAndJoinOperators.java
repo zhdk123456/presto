@@ -279,7 +279,15 @@ public class BenchmarkHashBuildAndJoinOperators
                 Optional.empty(),
                 10_000,
                 1,
-                new PagesIndex.TestingFactory());
+                new PagesIndex.TestingFactory(),
+                false,
+                new DataSize(1, GIGABYTE),
+                (types, localSpillContext, memoryContext) -> {
+                    throw new UnsupportedOperationException();
+                },
+                (types, partitionGenerator, partitionsCount, ignorePartitions, localSpillContextSupplier, memoryContext) -> {
+                    throw new UnsupportedOperationException();
+                });
 
         Operator operator = hashBuilderOperatorFactory.createOperator(driverContext);
         for (Page page : buildContext.getBuildPages()) {

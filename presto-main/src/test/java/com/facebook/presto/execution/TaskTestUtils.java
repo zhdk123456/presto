@@ -35,7 +35,9 @@ import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.type.TestingTypeManager;
 import com.facebook.presto.spiller.BinaryFileSingleStreamSpillerFactory;
+import com.facebook.presto.spiller.GenericPartitioningSpillerFactory;
 import com.facebook.presto.spiller.GenericSpillerFactory;
+import com.facebook.presto.spiller.PartitioningSpillerFactory;
 import com.facebook.presto.spiller.SpillerStats;
 import com.facebook.presto.split.PageSinkManager;
 import com.facebook.presto.split.PageSourceManager;
@@ -122,6 +124,8 @@ public final class TaskTestUtils
                 new NodeTaskMap(finalizerService));
         NodePartitioningManager nodePartitioningManager = new NodePartitioningManager(nodeScheduler);
 
+        BinaryFileSingleStreamSpillerFactory singleStreamSpillerFactory = new BinaryFileSingleStreamSpillerFactory(new BlockEncodingManager(metadata.getTypeManager()), new SpillerStats(), new FeaturesConfig());
+        PartitioningSpillerFactory partitioningSpillerFactory = new GenericPartitioningSpillerFactory(singleStreamSpillerFactory);
         return new LocalExecutionPlanner(
                 metadata,
                 new SqlParser(),
@@ -136,7 +140,9 @@ public final class TaskTestUtils
                 new IndexJoinLookupStats(),
                 new CompilerConfig(),
                 new TaskManagerConfig(),
-                new GenericSpillerFactory(new BinaryFileSingleStreamSpillerFactory(new BlockEncodingManager(metadata.getTypeManager()), new SpillerStats(), new FeaturesConfig())),
+                new GenericSpillerFactory(singleStreamSpillerFactory),
+                singleStreamSpillerFactory,
+                partitioningSpillerFactory,
                 new TestingBlockEncodingSerde(new TestingTypeManager()),
                 new PagesIndex.TestingFactory(),
                 new JoinCompiler(),
