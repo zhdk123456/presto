@@ -24,6 +24,9 @@ import com.facebook.presto.operator.exchange.LocalExchangeSourceOperator.LocalEx
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.spiller.SingleStreamSpiller;
+import com.facebook.presto.spiller.SpillerFactory;
+import com.facebook.presto.spiller.SpillerFactoryWithStats;
 import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler.JoinFilterFunctionFactory;
 import com.facebook.presto.sql.gen.JoinProbeCompiler;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
@@ -39,8 +42,10 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -64,6 +69,7 @@ public class TestHashJoinOperator
 {
     private static final int PARTITION_COUNT = 4;
     private static final LookupJoinOperators LOOKUP_JOIN_OPERATORS = new LookupJoinOperators(new JoinProbeCompiler());
+    private static final SpillerFactory SPILLER_FACTORY = new DummySpillerFactory();
 
     private ExecutorService executor;
 
@@ -852,7 +858,10 @@ public class TestHashJoinOperator
                 filterFunctionFactory,
                 100,
                 partitionCount,
-                new PagesIndex.TestingFactory());
+                new PagesIndex.TestingFactory(),
+                false,
+                DataSize.succinctBytes(0),
+                SPILLER_FACTORY);
         PipelineContext buildPipeline = taskContext.addPipelineContext(1, true, true);
 
         Driver[] buildDrivers = new Driver[partitionCount];
@@ -899,6 +908,46 @@ public class TestHashJoinOperator
         public boolean filter(int leftPosition, Block[] leftBlocks, int rightPosition, Block[] rightBlocks)
         {
             return lambda.filter(leftPosition, leftBlocks, rightPosition, rightBlocks);
+        }
+    }
+
+    private static class DummySpillerFactory
+            extends SpillerFactoryWithStats
+    {
+        @Override
+        public SingleStreamSpiller createSingleStreamSpiller(List<Type> types)
+        {
+            return new SingleStreamSpiller()
+            {
+                private final ImmutableList.Builder<Page> spills = ImmutableList.builder();
+
+                @Override
+                public CompletableFuture<?> spill(Iterator<Page> pageIterator)
+                {
+                    while (pageIterator.hasNext()) {
+                        spill(pageIterator.next());
+                    }
+                    return CompletableFuture.completedFuture(null);
+                }
+
+                @Override
+                public CompletableFuture<?> spill(Page page)
+                {
+                    spills.add(page);
+                    return CompletableFuture.completedFuture(null);
+                }
+
+                @Override
+                public Iterator<Page> getSpilledPages()
+                {
+                    return spills.build().iterator();
+                }
+
+                @Override
+                public void close()
+                {
+                }
+            };
         }
     }
 }
