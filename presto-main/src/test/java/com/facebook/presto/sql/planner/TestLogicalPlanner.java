@@ -77,9 +77,9 @@ public class TestLogicalPlanner
                 anyTree(
                         join(INNER, ImmutableList.of(aliasPair("O", "L")),
                                 any(
-                                        tableScan("orders").withSymbol("orderkey", "O")),
+                                        tableScan("orders").withSymbol(symbolStem("orderkey"), "O")),
                                 anyTree(
-                                        tableScan("lineitem").withSymbol("orderkey", "L")))));
+                                        tableScan("lineitem").withSymbol(symbolStem("orderkey"), "L")))));
     }
 
     @Test
