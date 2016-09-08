@@ -53,6 +53,7 @@ import java.util.stream.IntStream;
 import static com.facebook.presto.RowPagesBuilder.rowPagesBuilder;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.facebook.presto.operator.OperatorAssertion.assertOperatorEquals;
+import static com.facebook.presto.operator.OperatorAssertion.assertOperatorEqualsIgnoreOrder;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.sql.planner.SystemPartitioningHandle.FIXED_HASH_DISTRIBUTION;
@@ -99,8 +100,26 @@ public class TestHashJoinOperator
                 {false, false, false}};
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testInnerJoin(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @DataProvider(name = "hashEnabledValuesWithSpill")
+    public static Object[][] hashEnabledValuesWithSpillProvider()
+    {
+        return new Object[][] {
+                {true, true, true, 0},
+                {true, true, false, 0},
+                {true, false, true, 0},
+                {true, false, false, 0},
+                {true, true, true, 8},
+                {true, true, false, 8},
+                {true, false, true, 8},
+                {true, false, false, 8},
+                {false, true, true, 0},
+                {false, true, false, 0},
+                {false, false, true, 0},
+                {false, false, false, 0}};
+    }
+
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testInnerJoin(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -108,7 +127,7 @@ public class TestHashJoinOperator
         // build
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), ImmutableList.of(VARCHAR, BIGINT, BIGINT))
                 .addSequencePage(10, 20, 30, 40);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         RowPagesBuilder probePages = rowPagesBuilder(probeHashEnabled, Ints.asList(0), ImmutableList.of(VARCHAR, BIGINT, BIGINT));
@@ -139,11 +158,11 @@ public class TestHashJoinOperator
                 .row("29", 1029L, 2029L, "29", 39L, 49L)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testInnerJoinWithNullProbe(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testInnerJoinWithNullProbe(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -154,7 +173,7 @@ public class TestHashJoinOperator
                 .row("a")
                 .row("b")
                 .row("c");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -183,11 +202,11 @@ public class TestHashJoinOperator
                 .row("b", "b")
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testInnerJoinWithNullBuild(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testInnerJoinWithNullBuild(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -200,7 +219,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -227,11 +246,11 @@ public class TestHashJoinOperator
                 .row("b", "b")
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testInnerJoinWithNullOnBothSides(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testInnerJoinWithNullOnBothSides(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -244,7 +263,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -272,11 +291,11 @@ public class TestHashJoinOperator
                 .row("b", "b")
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testInnerJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testInnerJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -284,7 +303,7 @@ public class TestHashJoinOperator
         // build
         List<Type> buildTypes = ImmutableList.of(VARCHAR);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), buildTypes);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -303,8 +322,8 @@ public class TestHashJoinOperator
         assertTrue(operator.isFinished());
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testLookupOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testLookupOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -312,7 +331,7 @@ public class TestHashJoinOperator
         // build
         List<Type> buildTypes = ImmutableList.of(VARCHAR);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), buildTypes);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -331,8 +350,8 @@ public class TestHashJoinOperator
         assertTrue(operator.isFinished());
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testProbeOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testProbeOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -340,7 +359,7 @@ public class TestHashJoinOperator
         // build
         List<Type> buildTypes = ImmutableList.of(VARCHAR);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), buildTypes);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -371,8 +390,8 @@ public class TestHashJoinOperator
         assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testFullOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testFullOuterJoinWithEmptyLookupSource(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -380,7 +399,7 @@ public class TestHashJoinOperator
         // build
         List<Type> buildTypes = ImmutableList.of(VARCHAR);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), buildTypes);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -408,11 +427,11 @@ public class TestHashJoinOperator
                 .row(null, null)
                 .row("c", null)
                 .build();
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testProbeOuterJoin(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testProbeOuterJoin(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -421,7 +440,7 @@ public class TestHashJoinOperator
         List<Type> buildTypes = ImmutableList.of(VARCHAR, BIGINT, BIGINT);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), ImmutableList.of(VARCHAR, BIGINT, BIGINT))
                 .addSequencePage(10, 20, 30, 40);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR, BIGINT, BIGINT);
@@ -458,11 +477,11 @@ public class TestHashJoinOperator
                 .row("34", 1034L, 2034L, null, null, null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testProbeOuterJoinWithFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testProbeOuterJoinWithFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -474,7 +493,7 @@ public class TestHashJoinOperator
         List<Type> buildTypes = ImmutableList.of(VARCHAR, BIGINT, BIGINT);
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), ImmutableList.of(VARCHAR, BIGINT, BIGINT))
                 .addSequencePage(10, 20, 30, 40);
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction));
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR, BIGINT, BIGINT);
@@ -510,11 +529,11 @@ public class TestHashJoinOperator
                 .row("34", 1034L, 2034L, null, null, null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullProbe(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullProbe(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -525,7 +544,7 @@ public class TestHashJoinOperator
                 .row("a")
                 .row("b")
                 .row("c");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -555,11 +574,11 @@ public class TestHashJoinOperator
                 .row("b", "b")
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullProbeAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullProbeAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -573,7 +592,7 @@ public class TestHashJoinOperator
                 .row("a")
                 .row("b")
                 .row("c");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction));
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -603,11 +622,11 @@ public class TestHashJoinOperator
                 .row("b", null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullBuild(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullBuild(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -620,7 +639,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -647,11 +666,11 @@ public class TestHashJoinOperator
                 .row("c", null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullBuildAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullBuildAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -668,7 +687,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction));
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -695,11 +714,11 @@ public class TestHashJoinOperator
                 .row("c", null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullOnBothSides(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullOnBothSides(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -711,7 +730,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -740,11 +759,11 @@ public class TestHashJoinOperator
                 .row("c", null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
-    @Test(dataProvider = "hashEnabledValues")
-    public void testOuterJoinWithNullOnBothSidesAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled)
+    @Test(dataProvider = "hashEnabledValuesWithSpill")
+    public void testOuterJoinWithNullOnBothSidesAndFilterFunction(boolean parallelBuild, boolean probeHashEnabled, boolean buildHashEnabled, long memoryLimitBeforeSpill)
             throws Exception
     {
         TaskContext taskContext = createTaskContext();
@@ -760,7 +779,7 @@ public class TestHashJoinOperator
                 .row((String) null)
                 .row("a")
                 .row("b");
-        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction));
+        LookupSourceFactory lookupSourceFactory = buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.of(filterFunction), memoryLimitBeforeSpill);
 
         // probe
         List<Type> probeTypes = ImmutableList.of(VARCHAR);
@@ -789,7 +808,7 @@ public class TestHashJoinOperator
                 .row("c", null)
                 .build();
 
-        assertOperatorEquals(joinOperatorFactory, taskContext.addPipelineContext(0, true, true).addDriverContext(), probeInput, expected, true, getHashChannels(probePages, buildPages));
+        assertOperatorEqualsIgnoreOrder(joinOperatorFactory, taskContext, probeInput, expected, true, getHashChannels(probePages, buildPages));
     }
 
     @Test(expectedExceptions = ExceededMemoryLimitException.class, expectedExceptionsMessageRegExp = "Query exceeded local memory limit of.*", dataProvider = "hashEnabledValues")
@@ -800,7 +819,7 @@ public class TestHashJoinOperator
 
         RowPagesBuilder buildPages = rowPagesBuilder(buildHashEnabled, Ints.asList(0), ImmutableList.of(VARCHAR, BIGINT, BIGINT))
                 .addSequencePage(10, 20, 30, 40);
-        buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty());
+        buildHash(parallelBuild, taskContext, Ints.asList(0), buildPages, Optional.empty(), 0);
     }
 
     private TaskContext createTaskContext()
@@ -820,7 +839,13 @@ public class TestHashJoinOperator
         return hashChannels.build();
     }
 
-    private static LookupSourceFactory buildHash(boolean parallelBuild, TaskContext taskContext, List<Integer> hashChannels, RowPagesBuilder buildPages, Optional<InternalJoinFilterFunction> filterFunction)
+    private static LookupSourceFactory buildHash(
+            boolean parallelBuild,
+            TaskContext taskContext,
+            List<Integer> hashChannels,
+            RowPagesBuilder buildPages,
+            Optional<InternalJoinFilterFunction> filterFunction,
+            long maxMemoryLimitBeforeSpill)
     {
         Optional<JoinFilterFunctionFactory> filterFunctionFactory = filterFunction
                 .map(function -> ((session, addresses, channels) -> new StandardJoinFilterFunction(function, addresses, channels)));
@@ -859,8 +884,8 @@ public class TestHashJoinOperator
                 100,
                 partitionCount,
                 new PagesIndex.TestingFactory(),
-                false,
-                DataSize.succinctBytes(0),
+                maxMemoryLimitBeforeSpill > 0,
+                DataSize.succinctBytes(maxMemoryLimitBeforeSpill),
                 SPILLER_FACTORY);
         PipelineContext buildPipeline = taskContext.addPipelineContext(1, true, true);
 
