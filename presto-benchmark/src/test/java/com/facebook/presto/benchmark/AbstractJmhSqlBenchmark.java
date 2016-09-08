@@ -71,7 +71,7 @@ public class AbstractJmhSqlBenchmark
             MemoryPool systemMemoryPool = new MemoryPool(new MemoryPoolId("testSystem"), new DataSize(1, GIGABYTE));
 
             TaskContext taskContext = new QueryContext(new QueryId("test"), new DataSize(256, MEGABYTE), memoryPool, systemMemoryPool, executor)
-                    .addTaskContext(new TaskStateMachine(new TaskId("query", "stage", 0), executor),
+                    .addTaskContext(new TaskStateMachine(new TaskId("query", 1, 0), executor),
                             session,
                             new DataSize(1, MEGABYTE),
                             false,
