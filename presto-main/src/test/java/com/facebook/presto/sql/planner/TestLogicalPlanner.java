@@ -194,7 +194,7 @@ public class TestLogicalPlanner
                 anyTree(
                         filter("3 = X",
                                 apply(ImmutableList.of("X"),
-                                        tableScan("orders").withSymbol("orderkey", "X"),
+                                        tableScan("orders").withSymbol(symbolStem("orderkey"), "X"),
                                         node(EnforceSingleRowNode.class,
                                                 project(
                                                         node(ValuesNode.class)
@@ -209,10 +209,10 @@ public class TestLogicalPlanner
                         filter("3 IN (C)",
                                 apply(ImmutableList.of("C", "O"),
                                         project(
-                                                tableScan("orders").withSymbol("orderkey", "O").withSymbol("custkey", "C")),
+                                                tableScan("orders").withSymbol(symbolStem("orderkey"), "O").withSymbol(symbolStem("custkey"), "C")),
                                         anyTree(
                                                 apply(ImmutableList.of("L"),
-                                                        tableScan("lineitem").withSymbol("orderkey", "L"),
+                                                        tableScan("lineitem").withSymbol(symbolStem("orderkey"), "L"),
                                                         node(EnforceSingleRowNode.class,
                                                                 project(
                                                                         node(ValuesNode.class)
