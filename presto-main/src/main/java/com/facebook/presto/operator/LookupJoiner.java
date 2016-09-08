@@ -19,9 +19,13 @@ import com.facebook.presto.spi.type.Type;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.concurrent.MoreFutures.getFutureValue;
+import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +50,7 @@ public class LookupJoiner
 
     public LookupJoiner(
             List<Type> types,
-            ListenableFuture<LookupSource> lookupSourceFuture,
+            ListenableFuture<? extends LookupSource> lookupSourceFuture,
             JoinProbeFactory joinProbeFactory,
             boolean probeOnOuterSide)
     {
@@ -237,3 +241,4 @@ public class LookupJoiner
         }
     }
 }
+
