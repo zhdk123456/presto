@@ -52,6 +52,10 @@ public final class ImmutableLdapObjectDefinitions
 
     public static final LdapObjectDefinition ORPHAN_USER = buildLdapUserObject("OrphanUser", Optional.empty(), LDAP_PASSWORD);
 
+    public static final LdapObjectDefinition SPECIAL_USER = buildLdapUserObject("User WithSpecialPwd", Optional.of(Arrays.asList("DefaultGroup")), "LDAP:Pass ~!@#$%^&*()_+{}|:\"<>?/.,';\\][=-`");
+
+    public static final LdapObjectDefinition USER_IN_MULTIPLE_GROUPS = buildLdapUserObject("UserInMultipleGroups", Optional.of(Arrays.asList("DefaultGroup", "ParentGroup")), password);
+
     private static LdapObjectDefinition buildLdapOrganizationObject(String id, String distinguishedName, String unit)
     {
         return LdapObjectDefinition.builder(id)
