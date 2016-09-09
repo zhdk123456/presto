@@ -80,6 +80,7 @@ public final class InMemoryJoinHash
         // We will process addresses in batches, to save memory on array of hashes.
         int positionsInStep = Math.min(addresses.size() + 1, (int) CACHE_SIZE.toBytes() / Integer.SIZE);
         long[] positionToFullHashes = new long[positionsInStep];
+        long hashCollisionsLocal = 0;
 
         for (int step = 0; step * positionsInStep <= addresses.size(); step++) {
             int stepBeginPosition = step * positionsInStep;
@@ -119,7 +120,7 @@ public final class InMemoryJoinHash
                     }
                     // increment position and mask to handler wrap around
                     pos = (pos + 1) & mask;
-                    hashCollisions++;
+                    hashCollisionsLocal++;
                 }
 
                 key[pos] = realPosition;
@@ -128,6 +129,7 @@ public final class InMemoryJoinHash
 
         size = sizeOf(addresses.elements()) + pagesHashStrategy.getSizeInBytes() +
                 sizeOf(key) + sizeOf(positionLinks) + sizeOf(positionToHashes);
+        hashCollisions = hashCollisionsLocal;
         expectedHashCollisions = estimateNumberOfHashCollisions(addresses.size(), hashSize);
     }
 
