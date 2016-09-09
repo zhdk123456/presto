@@ -166,6 +166,12 @@ public final class SqlQueryExecution
                 }
             });
 
+            stateMachine.addStateChangeListener(state -> {
+                if (state.isDone()) {
+                    metadata.cleanupQuery(getSession());
+                }
+            });
+
             this.remoteTaskFactory = new MemoryTrackingRemoteTaskFactory(requireNonNull(remoteTaskFactory, "remoteTaskFactory is null"), stateMachine);
         }
     }
