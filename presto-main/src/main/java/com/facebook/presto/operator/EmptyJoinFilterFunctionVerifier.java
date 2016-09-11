@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.operator;
 
-import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.Page;
 
 public class EmptyJoinFilterFunctionVerifier
         implements JoinFilterFunctionVerifier
@@ -23,7 +23,7 @@ public class EmptyJoinFilterFunctionVerifier
     private EmptyJoinFilterFunctionVerifier() {}
 
     @Override
-    public boolean applyFilterFunction(int leftBlockIndex, int leftPosition, int rightPosition, Block[] allRightBlocks)
+    public boolean applyFilterFunction(int leftBlockIndex, int leftPosition, int rightPosition, Page rightPage)
     {
         return true;
     }

@@ -246,7 +246,7 @@ public final class InMemoryJoinHash
         int blockIndex = decodeSliceIndex(pageAddress);
         int blockPosition = decodePosition(pageAddress);
 
-        return filterFunctionVerifier.applyFilterFunction(blockIndex, blockPosition, rightPosition, rightPage.getBlocks());
+        return filterFunctionVerifier.applyFilterFunction(blockIndex, blockPosition, rightPosition, rightPage);
     }
 
     private boolean positionEqualsPositionIgnoreNulls(int leftPosition, int rightPosition)

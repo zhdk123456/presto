@@ -14,6 +14,7 @@
 
 package com.facebook.presto.operator;
 
+import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.Block;
 import com.google.common.collect.ImmutableList;
 
@@ -49,9 +50,9 @@ public class StandardJoinFilterFunctionVerifier
     }
 
     @Override
-    public boolean applyFilterFunction(int leftBlockIndex, int leftPosition, int rightPosition, Block[] allRightBlocks)
+    public boolean applyFilterFunction(int leftBlockIndex, int leftPosition, int rightPosition, Page rightPage)
     {
-        return filterFunction.filter(leftPosition, getLeftBlocks(leftBlockIndex), rightPosition, allRightBlocks);
+        return filterFunction.filter(leftPosition, getLeftBlocks(leftBlockIndex), rightPosition, rightPage.getBlocks());
     }
 
     private Block[] getLeftBlocks(int leftBlockIndex)
