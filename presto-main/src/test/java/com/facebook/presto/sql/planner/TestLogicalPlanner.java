@@ -77,9 +77,9 @@ public class TestLogicalPlanner
                 anyTree(
                         join(INNER, ImmutableList.of(aliasPair("O", "L")),
                                 any(
-                                        tableScan("orders").withSymbol(symbolStem("orderkey"), "O")),
+                                        tableScan("orders").withSymbol("orderkey", "O")),
                                 anyTree(
-                                        tableScan("lineitem").withSymbol(symbolStem("orderkey"), "L")))));
+                                        tableScan("lineitem").withSymbol("orderkey", "L")))));
     }
 
     @Test
@@ -194,7 +194,7 @@ public class TestLogicalPlanner
                 anyTree(
                         filter("3 = X",
                                 apply(ImmutableList.of("X"),
-                                        tableScan("orders").withSymbol(symbolStem("orderkey"), "X"),
+                                        tableScan("orders").withSymbol("orderkey", "X"),
                                         node(EnforceSingleRowNode.class,
                                                 project(
                                                         node(ValuesNode.class)
@@ -209,10 +209,10 @@ public class TestLogicalPlanner
                         filter("3 IN (C)",
                                 apply(ImmutableList.of("C", "O"),
                                         project(
-                                                tableScan("orders").withSymbol(symbolStem("orderkey"), "O").withSymbol(symbolStem("custkey"), "C")),
+                                                tableScan("orders").withSymbol("orderkey", "O").withSymbol("custkey", "C")),
                                         anyTree(
                                                 apply(ImmutableList.of("L"),
-                                                        tableScan("lineitem").withSymbol(symbolStem("orderkey"), "L"),
+                                                        tableScan("lineitem").withSymbol("orderkey", "L"),
                                                         node(EnforceSingleRowNode.class,
                                                                 project(
                                                                         node(ValuesNode.class)
