@@ -37,6 +37,7 @@ public final class InMemoryJoinHash
     private final LongArrayList addresses;
     private final PagesHashStrategy pagesHashStrategy;
     private final JoinFilterFunctionVerifier filterFunctionVerifier;
+    private final boolean filterFunctionPresent;
 
     private final int channelCount;
     private final int mask;
@@ -56,6 +57,7 @@ public final class InMemoryJoinHash
         this.addresses = requireNonNull(addresses, "addresses is null");
         this.pagesHashStrategy = requireNonNull(pagesHashStrategy, "pagesHashStrategy is null");
         this.filterFunctionVerifier = requireNonNull(filterFunctionVerifier, "filterFunctionVerifier can not be null");
+        this.filterFunctionPresent = !(filterFunctionVerifier instanceof EmptyJoinFilterFunctionVerifier);
         this.channelCount = pagesHashStrategy.getChannelCount();
 
         // reserve memory for the arrays
@@ -186,7 +188,7 @@ public final class InMemoryJoinHash
     private long getNextJoinPositionFrom(int startJoinPosition, int probePosition, Page allProbeChannelsPage)
     {
         int currentJoinPosition = Ints.checkedCast(startJoinPosition);
-        while (currentJoinPosition != -1 && !applyFilterFilterFunction((currentJoinPosition), probePosition, allProbeChannelsPage)) {
+        while (filterFunctionPresent && currentJoinPosition != -1 && !applyFilterFilterFunction(currentJoinPosition, probePosition, allProbeChannelsPage)) {
             currentJoinPosition = positionLinks[Ints.checkedCast(currentJoinPosition)];
         }
         return currentJoinPosition;
