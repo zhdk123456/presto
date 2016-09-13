@@ -692,7 +692,7 @@ public class LocalExecutionPlanner
                 Optional<Integer> frameStartChannel = Optional.empty();
                 Optional<Integer> frameEndChannel = Optional.empty();
 
-                Frame frame = entry.getValue().getFrame();
+                Frame frame = node.getFrames().get(entry.getValue());
                 if (frame.getStartValue().isPresent()) {
                     frameStartChannel = Optional.of(source.getLayout().get(frame.getStartValue().get()));
                 }

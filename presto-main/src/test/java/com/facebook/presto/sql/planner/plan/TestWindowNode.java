@@ -97,6 +97,7 @@ public class TestWindowNode
                 ImmutableList.of(BIGINT.getTypeSignature()),
                 false);
         FunctionCall functionCall = new FunctionCall(QualifiedName.of("sum"), ImmutableList.of(columnC.toSymbolReference()));
+        WindowNode.Function windowFunction = new WindowNode.Function(functionCall, signature);
         WindowNode.Frame frame = new WindowNode.Frame(
                 WindowFrame.Type.RANGE,
                 FrameBound.Type.UNBOUNDED_PRECEDING,
@@ -109,7 +110,8 @@ public class TestWindowNode
                 ImmutableList.of(columnA),
                 ImmutableList.of(columnB),
                 ImmutableMap.of(columnB, SortOrder.ASC_NULLS_FIRST));
-        Map<Symbol, WindowNode.Function> functions = ImmutableMap.of(windowSymbol, new WindowNode.Function(functionCall, signature, frame));
+        Map<Symbol, WindowNode.Function> functions = ImmutableMap.of(windowSymbol, windowFunction);
+        Map<WindowNode.Function, WindowNode.Frame> frames = ImmutableMap.of(windowFunction, frame);
         Optional<Symbol> hashSymbol = Optional.of(columnB);
         Set<Symbol> prePartitionedInputs = ImmutableSet.of(columnA);
         WindowNode windowNode = new WindowNode(
@@ -117,6 +119,7 @@ public class TestWindowNode
                 sourceNode,
                 specification,
                 functions,
+                frames,
                 hashSymbol,
                 prePartitionedInputs,
                 0);

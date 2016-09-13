@@ -286,6 +286,7 @@ public class TestEffectivePredicateExtractor
                         ImmutableList.of(A),
                         ImmutableMap.of(A, SortOrder.ASC_NULLS_LAST)),
                 ImmutableMap.of(),
+                ImmutableMap.of(),
                 Optional.empty(),
                 ImmutableSet.of(),
                 0);
