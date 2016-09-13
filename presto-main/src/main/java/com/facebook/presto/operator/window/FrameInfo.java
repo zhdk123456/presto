@@ -16,7 +16,6 @@ package com.facebook.presto.operator.window;
 import com.facebook.presto.sql.tree.FrameBound;
 import com.facebook.presto.sql.tree.WindowFrame;
 
-import java.util.Objects;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -67,32 +66,6 @@ public class FrameInfo
     public int getEndChannel()
     {
         return endChannel;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(type, startType, startChannel, endType, endChannel);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-
-        FrameInfo other = (FrameInfo) obj;
-
-        return Objects.equals(this.type, other.type) &&
-                Objects.equals(this.startType, other.startType) &&
-                Objects.equals(this.startChannel, other.startChannel) &&
-                Objects.equals(this.endType, other.endType) &&
-                Objects.equals(this.endChannel, other.endChannel);
     }
 
     @Override
