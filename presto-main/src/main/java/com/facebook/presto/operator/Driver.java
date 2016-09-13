@@ -526,6 +526,9 @@ public class Driver
         if (blocked.isDone()) {
             blocked = operator.getOperatorContext().isWaitingForMemory();
         }
+        if (blocked.isDone()) {
+            blocked = operator.getOperatorContext().isWaitingForRevocableMemory();
+        }
         return blocked;
     }
 
