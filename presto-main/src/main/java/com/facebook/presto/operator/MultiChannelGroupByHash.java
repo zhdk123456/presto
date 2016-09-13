@@ -273,6 +273,7 @@ public class MultiChannelGroupByHash
 
         // look for an empty slot or a slot containing this key
         int groupId = -1;
+        long hashCollisionsDelta = 0;
         while (groupAddressByHash[hashPosition] != -1) {
             if (positionEqualsCurrentRow(groupAddressByHash[hashPosition], hashPosition, position, page, (byte) rawHash, channels)) {
                 // found an existing slot for this key
@@ -282,8 +283,9 @@ public class MultiChannelGroupByHash
             }
             // increment position and mask to handle wrap around
             hashPosition = (hashPosition + 1) & mask;
-            hashCollisions++;
+            hashCollisionsDelta++;
         }
+        hashCollisions += hashCollisionsDelta;
 
         // did we find an existing group?
         if (groupId < 0) {
@@ -355,6 +357,7 @@ public class MultiChannelGroupByHash
         byte[] rawHashes = new byte[newCapacity];
         Arrays.fill(newKey, -1);
         int[] newValue = new int[newCapacity];
+        long hashCollisionsDelta = 0;
 
         int oldIndex = 0;
         for (int groupId = 0; groupId < nextGroupId; groupId++) {
@@ -371,7 +374,7 @@ public class MultiChannelGroupByHash
             int pos = (int) getHashPosition(rawHash, newMask);
             while (newKey[pos] != -1) {
                 pos = (pos + 1) & newMask;
-                hashCollisions++;
+                hashCollisionsDelta++;
             }
 
             // record the mapping
@@ -387,6 +390,7 @@ public class MultiChannelGroupByHash
         this.groupAddressByHash = newKey;
         this.rawHashByHashPosition = rawHashes;
         this.groupIdsByHash = newValue;
+        this.hashCollisions += hashCollisionsDelta;
         groupAddressByGroupId.ensureCapacity(maxFill);
     }
 

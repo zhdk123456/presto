@@ -223,6 +223,7 @@ public class BigintGroupByHash
 
         long value = BIGINT.getLong(block, position);
         long hashPosition = getHashPosition(value, mask);
+        long hashCollisionsDelta = 0;
 
         // look for an empty slot or a slot containing this key
         while (true) {
@@ -232,14 +233,16 @@ public class BigintGroupByHash
             }
 
             if (value == values.get(hashPosition)) {
+                hashCollisions += hashCollisionsDelta;
                 return groupId;
             }
 
             // increment position and mask to handle wrap around
             hashPosition = (hashPosition + 1) & mask;
-            hashCollisions++;
+            hashCollisionsDelta++;
         }
 
+        hashCollisions += hashCollisionsDelta;
         return addNewGroup(hashPosition, value);
     }
 
@@ -274,6 +277,7 @@ public class BigintGroupByHash
         newValues.ensureCapacity(newCapacity);
         IntBigArray newGroupIds = new IntBigArray(-1);
         newGroupIds.ensureCapacity(newCapacity);
+        long hashCollisionsDelta = 0;
 
         for (int groupId = 0; groupId < nextGroupId; groupId++) {
             if (groupId == nullGroupId) {
@@ -285,7 +289,7 @@ public class BigintGroupByHash
             long hashPosition = getHashPosition(value, newMask);
             while (newGroupIds.get(hashPosition) != -1) {
                 hashPosition = (hashPosition + 1) & newMask;
-                hashCollisions++;
+                hashCollisionsDelta++;
             }
 
             // record the mapping
@@ -298,6 +302,7 @@ public class BigintGroupByHash
         maxFill = calculateMaxFill(hashCapacity);
         values = newValues;
         groupIds = newGroupIds;
+        hashCollisions += hashCollisionsDelta;
 
         this.valuesByGroupId.ensureCapacity(maxFill);
     }
