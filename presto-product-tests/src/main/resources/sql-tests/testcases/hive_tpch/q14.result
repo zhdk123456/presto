@@ -1,2 +1,2 @@
--- delimiter: |; ignoreOrder: false; types: DOUBLE
+-- delimiter: |; ignoreOrder: false; types: DECIMAL
 16.3807786263955401|
