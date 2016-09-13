@@ -24,9 +24,9 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 final class WindowMatcher
         implements Matcher
@@ -46,15 +46,17 @@ final class WindowMatcher
         }
 
         WindowNode windowNode = (WindowNode) node;
-        LinkedList<FunctionCall> actualCalls = windowNode.getWindowFunctions().values().stream()
+        List<FunctionCall> actualCalls = windowNode.getWindowFunctions().values().stream()
                 .map(WindowNode.Function::getFunctionCall)
-                .collect(Collectors.toCollection(LinkedList::new));
+                .collect(toList());
 
         if (actualCalls.size() != functionCalls.size()) {
             return false;
         }
 
-        for (FunctionCall expectedCall : functionCalls) {
+        LinkedList<FunctionCall> expectedCalls = new LinkedList<>(functionCalls);
+
+        for (FunctionCall expectedCall : expectedCalls) {
             if (!actualCalls.remove(expectedCall)) {
                 // Found an expectedCall not in expectedCalls.
                 return false;
