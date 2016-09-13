@@ -290,7 +290,8 @@ public class TestEffectivePredicateExtractor
                         new WindowNode.Frame(WindowFrame.Type.RANGE,
                                 FrameBound.Type.UNBOUNDED_PRECEDING, Optional.empty(),
                                 FrameBound.Type.CURRENT_ROW, Optional.empty())),
-                ImmutableMap.of(),
+                ImmutableMap.<Symbol, FunctionCall>of(),
+                ImmutableMap.<Symbol, Signature>of(),
                 Optional.empty(),
                 ImmutableSet.of(),
                 0);

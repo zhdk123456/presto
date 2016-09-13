@@ -181,8 +181,8 @@ public final class ValidateDependenciesChecker
             }
             checkDependencies(inputs, bounds.build(), "Invalid node. Frame bounds (%s) not in source plan output (%s)", bounds.build(), node.getSource().getOutputSymbols());
 
-            for (WindowNode.Function function : node.getWindowFunctions().values()) {
-                Set<Symbol> dependencies = DependencyExtractor.extractUnique(function.getFunctionCall());
+            for (FunctionCall call : node.getWindowFunctions().values()) {
+                Set<Symbol> dependencies = DependencyExtractor.extractUnique(call);
                 checkDependencies(inputs, dependencies, "Invalid node. Window function dependencies (%s) not in source plan output (%s)", dependencies, node.getSource().getOutputSymbols());
             }
 
