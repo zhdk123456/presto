@@ -330,13 +330,11 @@ public class PruneUnreferencedOutputs
                     .addAll(node.getPartitionBy())
                     .addAll(node.getOrderBy());
 
-            for (WindowNode.Frame frame : node.getFrames().values()) {
-                if (frame.getStartValue().isPresent()) {
-                    expectedInputs.add(frame.getStartValue().get());
-                }
-                if (frame.getEndValue().isPresent()) {
-                    expectedInputs.add(frame.getEndValue().get());
-                }
+            if (node.getFrame().getStartValue().isPresent()) {
+                expectedInputs.add(node.getFrame().getStartValue().get());
+            }
+            if (node.getFrame().getEndValue().isPresent()) {
+                expectedInputs.add(node.getFrame().getEndValue().get());
             }
 
             if (node.getHashSymbol().isPresent()) {
@@ -368,7 +366,6 @@ public class PruneUnreferencedOutputs
                     source,
                     node.getSpecification(),
                     functions,
-                    node.getFrames(),
                     node.getHashSymbol(),
                     node.getPrePartitionedInputs(),
                     node.getPreSortedOrderPrefix());
