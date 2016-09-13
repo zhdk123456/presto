@@ -92,6 +92,7 @@ import com.facebook.presto.sql.tree.Select;
 import com.facebook.presto.sql.tree.SelectItem;
 import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.ShowCatalogs;
+import com.facebook.presto.sql.tree.ShowGrants;
 import com.facebook.presto.sql.tree.ShowPartitions;
 import com.facebook.presto.sql.tree.ShowSchemas;
 import com.facebook.presto.sql.tree.ShowSession;
@@ -1334,6 +1335,18 @@ public class TestSqlParser
                 new Revoke(false, Optional.empty(), true, QualifiedName.of("t"), "u"));
         assertStatement("REVOKE taco ON TABLE t FROM u",
                 new Revoke(false, Optional.of(ImmutableList.of("taco")), true, QualifiedName.of("t"), "u"));
+    }
+
+    @Test
+    public void testShowGrants()
+        throws Exception
+    {
+        assertStatement("SHOW GRANTS ON TABLE t",
+                new ShowGrants(true, Optional.of(QualifiedName.of("t")), false));
+        assertStatement("SHOW GRANTS ON t",
+                new ShowGrants(false, Optional.of(QualifiedName.of("t")), false));
+        assertStatement("SHOW GRANTS ON ALL",
+                new ShowGrants(false, Optional.empty(), true));
     }
 
     @Test
