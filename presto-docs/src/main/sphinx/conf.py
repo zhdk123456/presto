@@ -70,25 +70,12 @@ source_suffix = '.rst'
 
 master_doc = 'index'
 
-project = 'Teradata Distribution of Presto'
+project = u'Presto'
 
 version = get_version()
 release = version
 
-teradata_exclude = ['connector/cassandra.rst',
-                    'connector/kafka.rst',
-                    'connector/kafka-tutorial.rst',
-                    'connector/localfile.rst',
-                    'connector/mongodb.rst',
-                    'connector/redis.rst',
-                    'installation.rst',
-                    'installation/deployment.rst',
-                    'installation/verifier.rst',
-                    'installation/benchmark-driver.rst',
-                    'installation/tableau.rst',
-]
-
-exclude_patterns = ['_build', 'rest*', 'overview/concepts*'] + teradata_exclude
+exclude_patterns = ['_build', 'rest*', 'overview/concepts*']
 
 pygments_style = 'sphinx'
 
@@ -100,9 +87,8 @@ rst_epilog = """
 
 # -- Options for HTML output ---------------------------------------------------
 
-html_theme = "sphinx_rtd_theme"
-
 html_theme_path = ['./themes']
+html_theme = 'presto'
 
 html_title = '%s %s Documentation' % (project, release)
 

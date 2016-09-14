@@ -10,5 +10,3 @@ Administration
     admin/properties
     admin/queue
     admin/resource-groups
-    aws/emr
-

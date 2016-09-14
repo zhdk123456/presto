@@ -8,26 +8,18 @@ from different data sources.
 .. toctree::
     :maxdepth: 1
 
-    connector/teradata
+    connector/blackhole
+    connector/cassandra
     connector/hive
     connector/hive-security
+    connector/memory
+    connector/jmx
+    connector/kafka
+    connector/kafka-tutorial
+    connector/localfile
+    connector/mongodb
     connector/mysql
     connector/postgresql
-    connector/tpch
+    connector/redis
     connector/system
-    connector/blackhole
-    connector/jmx
-    connector/memory
-   
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   connector/cassandra
-   connector/kafka
-   connector/kafka-tutorial
-   connector/localfile
-   connector/mongodb
-   connector/redis
-   connector/tpch
-      
+    connector/tpch

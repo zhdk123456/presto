@@ -7,15 +7,7 @@ Presto Documentation
     :numbered: 2
 
     overview
-    system-requirements
-    getting-started
-    sandbox-vms
-    server-installation-cluster-automated
-    server-installation-cluster-manual
-    server-installation-aws-emr-manual
-    client
-    Presto Admin <installation/presto-admin/user-guide>
-    yarn
+    installation
     security
     admin
     connector
@@ -25,5 +17,5 @@ Presto Documentation
     migration
     develop
     release
-    
+
 .. Note: If "release" is not the last item, the CSS must be updated.

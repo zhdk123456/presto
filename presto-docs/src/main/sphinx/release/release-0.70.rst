@@ -26,6 +26,12 @@ DUAL Table
 The synthetic ``DUAL`` table is no longer supported. As an alternative, please
 write your queries without a ``FROM`` clause or use the ``VALUES`` syntax.
 
+Presto Verifier
+---------------
+
+There is a new project, :doc:`/installation/verifier`, which can be used to
+verify a set of queries against two different clusters.
+
 Connector Improvements
 ----------------------
 
