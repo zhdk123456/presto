@@ -20,7 +20,7 @@ import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.type.LiteralParameter;
 import io.airlift.slice.Slice;
 
-import static com.facebook.presto.spi.type.Chars.padSpacesAndTruncateToLength;
+import static com.facebook.presto.spi.type.Chars.padSpaces;
 import static com.facebook.presto.spi.type.Chars.trimSpaces;
 import static com.facebook.presto.spi.type.Chars.trimSpacesAndTruncateToLength;
 import static com.facebook.presto.spi.type.Varchars.truncateToLength;
@@ -69,9 +69,13 @@ public final class CharacterStringCasts
     @ScalarOperator(OperatorType.CAST)
     @SqlType("varchar(y)")
     @LiteralParameters({"x", "y"})
-    public static Slice charToVarcharCast(@LiteralParameter("y") Long y, @SqlType("char(x)") Slice slice)
+    public static Slice charToVarcharCast(@LiteralParameter("x") Long x, @LiteralParameter("y") Long y, @SqlType("char(x)") Slice slice)
     {
-        return padSpacesAndTruncateToLength(slice, y.intValue());
+        if (x.intValue() <= y.intValue()) {
+            return padSpaces(slice, x.intValue());
+        }
+
+        return padSpaces(truncateToLength(slice, y.intValue()), y.intValue());
     }
 
     @ScalarOperator(OperatorType.SATURATED_FLOOR_CAST)
