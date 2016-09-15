@@ -14,8 +14,6 @@
 package com.facebook.presto.tests.cli;
 
 import com.facebook.presto.cli.Presto;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.teradata.tempto.ProductTest;
 
 import java.io.IOException;
@@ -34,14 +32,6 @@ public class PrestoCliLauncher
     protected static final String EXIT_COMMAND = "exit";
     protected final List<String> nationTableInteractiveLines;
     protected final List<String> nationTableBatchLines;
-
-    @Inject
-    @Named("databases.presto.host")
-    protected String serverHost;
-
-    @Inject
-    @Named("databases.presto.server_address")
-    protected String serverAddress;
 
     protected PrestoCliProcess presto;
 

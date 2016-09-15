@@ -56,6 +56,10 @@ public class PrestoLdapCliTests
         extends PrestoCliLauncher
         implements RequirementsProvider
 {
+    @Inject
+    @Named("databases.presto.host")
+    protected String serverHost;
+
     @Inject(optional = true)
     @Named("databases.presto.cli_ldap_truststore_path")
     private String ldapTruststorePath;

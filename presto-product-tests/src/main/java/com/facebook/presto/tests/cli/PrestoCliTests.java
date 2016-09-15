@@ -44,6 +44,10 @@ public class PrestoCliTests
         implements RequirementsProvider
 {
     @Inject(optional = true)
+    @Named("databases.presto.cli_server_address")
+    protected String cliServerAddress;
+
+    @Inject(optional = true)
     @Named("databases.presto.cli_kerberos_authentication")
     private boolean kerberosAuthentication;
 
@@ -177,6 +181,7 @@ public class PrestoCliTests
             throws IOException, InterruptedException
     {
         if (kerberosAuthentication) {
+            requireNonNull(cliServerAddress, "databases.presto.cli_server_address");
             requireNonNull(kerberosPrincipal, "databases.presto.cli_kerberos_principal is null");
             requireNonNull(kerberosKeytab, "databases.presto.cli_kerberos_keytab is null");
             requireNonNull(kerberosServiceName, "databases.presto.cli_kerberos_service_name is null");
@@ -186,7 +191,7 @@ public class PrestoCliTests
 
             ImmutableList.Builder<String> prestoClientOptions = ImmutableList.builder();
             prestoClientOptions.add(
-                    "--server", serverAddress,
+                    "--server", cliServerAddress,
                     "--user", jdbcUser,
                     "--enable-authentication",
                     "--krb5-principal", kerberosPrincipal,
@@ -204,7 +209,7 @@ public class PrestoCliTests
         else {
             ImmutableList.Builder<String> prestoClientOptions = ImmutableList.builder();
             prestoClientOptions.add(
-                    "--server", serverAddress,
+                    "--server", cliServerAddress,
                     "--user", jdbcUser);
             prestoClientOptions.add(arguments);
             launchPrestoCli(prestoClientOptions.build());
