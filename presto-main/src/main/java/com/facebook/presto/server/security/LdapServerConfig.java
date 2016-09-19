@@ -15,9 +15,12 @@ package com.facebook.presto.server.security;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.units.Duration;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+
+import java.util.concurrent.TimeUnit;
 
 public class LdapServerConfig
 {
@@ -26,6 +29,7 @@ public class LdapServerConfig
     private String userBaseDistinguishedName;
     private String groupDistinguishedName;
     private String userObjectClass;
+    private Duration ldapCacheTtl = new Duration(1, TimeUnit.MINUTES);
 
     public enum ServerType{
         ACTIVE_DIRECTORY,
@@ -98,6 +102,19 @@ public class LdapServerConfig
     public LdapServerConfig setUserObjectClass(String userObjectClass)
     {
         this.userObjectClass = userObjectClass;
+        return this;
+    }
+
+    @NotNull
+    public Duration getLdapCacheTtl()
+    {
+        return ldapCacheTtl;
+    }
+
+    @Config("authentication.ldap.cache-ttl")
+    public LdapServerConfig setLdapCacheTtl(Duration ldapCacheTtl)
+    {
+        this.ldapCacheTtl = ldapCacheTtl;
         return this;
     }
 }
