@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.operator.scalar;
 
-import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.function.Description;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
@@ -66,8 +65,6 @@ public final class RFunctions
     public static Slice typeof(@SqlType("VARCHAR") Slice functionCode, @SqlType("T") double value)
     {
         try {
-            Page page;
-
             RConnection c = new RConnection();
             double[] input = { value };
             c.assign("x", input);

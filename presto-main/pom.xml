@@ -311,16 +311,12 @@
             <groupId>org.rosuda</groupId>
             <artifactId>org.rosuda.REngine.Rserve</artifactId>
             <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>/javalib/RserveEngine.jar</systemPath>
         </dependency>
 
         <dependency>
             <groupId>org.rosuda</groupId>
             <artifactId>org.rosuda.REngine</artifactId>
             <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>/javalib/REngine.jar</systemPath>
         </dependency>
     </dependencies>
 
@@ -368,4 +364,11 @@
             </build>
         </profile>
     </profiles>
+
+    <repositories>
+        <repository>
+            <id>REngineLocalRepo</id>
+            <url>file://${project.parent.basedir}/REngineLocalRepo</url>
+        </repository>
+    </repositories>
 </project>
