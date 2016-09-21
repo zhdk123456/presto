@@ -368,7 +368,7 @@
     <repositories>
         <repository>
             <id>REngineLocalRepo</id>
-            <url>file://${project.parent.basedir}/REngineLocalRepo</url>
+            <url>file:///${project.basedir}/../REngineLocalRepo</url>
         </repository>
     </repositories>
 </project>
