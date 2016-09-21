@@ -60,6 +60,7 @@ import static java.util.Objects.requireNonNull;
         @JsonSubTypes.Type(value = ExplainAnalyzeNode.class, name = "explainAnalyze"),
         @JsonSubTypes.Type(value = ApplyNode.class, name = "apply"),
         @JsonSubTypes.Type(value = AssignUniqueId.class, name = "uuid"),
+        @JsonSubTypes.Type(value = RcallNode.class, name = "rcall"),
 })
 public abstract class PlanNode
 {

@@ -36,6 +36,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.RowNumberNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
@@ -310,6 +311,12 @@ public class DistributedExecutionPlanner
 
         @Override
         public Map<PlanNodeId, SplitSource> visitExchange(ExchangeNode node, Void context)
+        {
+            return processSources(node.getSources(), context);
+        }
+
+        @Override
+        public Map<PlanNodeId, SplitSource> visitRcall(RcallNode node, Void context)
         {
             return processSources(node.getSources(), context);
         }

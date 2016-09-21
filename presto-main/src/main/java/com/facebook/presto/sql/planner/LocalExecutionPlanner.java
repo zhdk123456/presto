@@ -57,6 +57,7 @@ import com.facebook.presto.operator.PartitionFunction;
 import com.facebook.presto.operator.PartitionedOutputOperator.PartitionedOutputFactory;
 import com.facebook.presto.operator.ProjectionFunction;
 import com.facebook.presto.operator.ProjectionFunctions;
+import com.facebook.presto.operator.RcallOperator;
 import com.facebook.presto.operator.RowNumberOperator;
 import com.facebook.presto.operator.SampleOperator.SampleOperatorFactory;
 import com.facebook.presto.operator.ScanFilterAndProjectOperator;
@@ -121,6 +122,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.RowNumberNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
@@ -1126,6 +1128,22 @@ public class LocalExecutionPlanner
                 inputTypes.put(input, type);
             }
             return inputTypes.build();
+        }
+
+        @Override
+        public PhysicalOperation visitRcall(RcallNode node, LocalExecutionPlanContext context)
+        {
+            PhysicalOperation source = node.getSource().accept(this, context);
+            List<Type> sourceTypes = getSourceOperatorTypes(node, context.getTypes());
+
+            OperatorFactory operatorFactory = new RcallOperator.RcallOperatorFactory(
+                    context.getNextOperatorId(),
+                    node.getId(),
+                    sourceTypes,
+                    source.getLayout(),
+                    node.getrProgram(),
+                    node.getParams());
+            return new PhysicalOperation(operatorFactory, makeLayout(node), source);
         }
 
         @Override
