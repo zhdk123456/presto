@@ -92,8 +92,14 @@ public class PageToRTranslator
 
     static Page getReturnPage(String[] l)
     {
-        Slice[] slices =  (Slice[]) Arrays.stream(l).map(x -> Slices.wrappedBuffer(x.getBytes())).toArray();
-        return new Page(new SliceArrayBlock(l.length, slices, true));
+        try {
+            Slice[] slices = Arrays.stream(l).map(x -> Slices.utf8Slice(x)).toArray(size -> new Slice[size]);
+            return new Page(new SliceArrayBlock(l.length, slices, true));
+        } catch (ClassCastException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public Page RCALL(String rCode, Page page, Type returnType, Type[] types)
@@ -111,7 +117,7 @@ public class PageToRTranslator
     {
         Object[] arguments = new Object[types.length];
         for (int i = 0; i < page.getBlocks().length; ++i) {
-            switch (types[i].getTypeSignature().getBase()) {
+            switch (types[i].getTypeSignature().getBase().toUpperCase()) {
                 case "VARCHAR":
                     String[] s = getStringColumn(page, i);
                     arguments[i] = s;
@@ -157,7 +163,7 @@ public class PageToRTranslator
     {
         try {
             for (int i = 0; i < args.length; ++i) {
-                switch (types[i].getTypeSignature().getBase()) {
+                switch (types[i].getTypeSignature().getBase().toUpperCase()) {
                     case "VARCHAR":
                         connection.assign(varNames[i], (String[]) args[i]);
                         break;
@@ -194,7 +200,7 @@ public class PageToRTranslator
     private Page callAndPack(String call, Type returnType)
     {
         try {
-            switch (returnType.getTypeSignature().getBase()) {
+            switch (returnType.getTypeSignature().getBase().toUpperCase()) {
                 case "VARCHAR":
                     return getReturnPage(connection.eval(call).asStrings());
                 case "BIGINT":

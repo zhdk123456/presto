@@ -14,6 +14,7 @@
 
 package com.facebook.presto.operator;
 
+import com.facebook.presto.operator.scalar.PageToRTranslator;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
@@ -99,6 +100,7 @@ public class RcallOperator
     private Page outputPage = null;
     private final List<Symbol> params;
     private final Type[] argumentsTypes;
+    private final PageToRTranslator rcaller = new PageToRTranslator();
 
     public RcallOperator(OperatorContext operatorContext, List<Type> types, List<Type> sourceTypes, Map<Symbol, Integer> sourceLayout, String rProgram, List<Symbol> params)
     {
@@ -149,7 +151,7 @@ public class RcallOperator
     public void addInput(Page page)
     {
         Page argumentsPage = buildArgumentsPage(page);
-        Page rResultPage = RCALL(rProgram, argumentsPage, VarcharType.createUnboundedVarcharType(), argumentsTypes);
+        Page rResultPage = rcaller.RCALL(rProgram, argumentsPage, VarcharType.createUnboundedVarcharType(), argumentsTypes);
         outputPage = buildResultPage(page, rResultPage);
     }
 
