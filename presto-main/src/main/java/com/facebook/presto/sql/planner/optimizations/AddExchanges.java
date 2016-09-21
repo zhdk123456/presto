@@ -189,6 +189,7 @@ public class AddExchanges
     private class Rewriter
             extends PlanVisitor<Context, PlanWithProperties>
     {
+        // todo rcall wtf?
         private final SymbolAllocator allocator;
         private final PlanNodeIdAllocator idAllocator;
         private final SymbolAllocator symbolAllocator;

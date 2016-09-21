@@ -41,6 +41,7 @@ import com.facebook.presto.sql.planner.plan.MarkDistinctNode;
 import com.facebook.presto.sql.planner.plan.OutputNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.RowNumberNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
@@ -734,6 +735,16 @@ public class PruneUnreferencedOutputs
                     .build();
             PlanNode input = context.rewrite(node.getInput(), inputContext);
             return new ApplyNode(node.getId(), input, subquery, newCorrelation);
+        }
+
+        @Override
+        public PlanNode visitRcall(RcallNode node, RewriteContext<Set<Symbol>> context)
+        {
+            Set<Symbol> expectedInputs = new HashSet<>();
+            expectedInputs.addAll(node.getParams());
+            expectedInputs.addAll(context.get());
+            PlanNode source = context.rewrite(node.getSource(), expectedInputs);
+            return new RcallNode(node.getId(), source, node.getrProgram(), node.getParams(), node.getOutputSymbol());
         }
     }
 

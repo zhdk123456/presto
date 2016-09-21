@@ -26,6 +26,7 @@ import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SortNode;
 import com.facebook.presto.sql.planner.plan.TableScanNode;
@@ -150,6 +151,12 @@ public class EffectivePredicateExtractor
                         .add(underlyingPredicate)
                         .build()),
                 node.getOutputSymbols());
+    }
+
+    @Override
+    public Expression visitRcall(RcallNode node, Void context)
+    {
+        return node.getSource().accept(this, context);
     }
 
     @Override

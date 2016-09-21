@@ -42,6 +42,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.RowNumberNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
@@ -64,6 +65,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -593,6 +595,21 @@ public final class ValidateDependenciesChecker
             checkDependencies(DependencyExtractor.extractUnique(node.getSubquery()), node.getCorrelation(), "not all APPLY correlation symbols are used in subquery");
 
             verifyUniqueId(node);
+
+            return null;
+        }
+
+        @Override
+        public Void visitRcall(RcallNode node, Set<Symbol> boundSymbols)
+        {
+            PlanNode source = node.getSource();
+            source.accept(this, boundSymbols); // visit child
+
+            verifyUniqueId(node);
+
+            Set<Symbol> inputs = createInputs(source, boundSymbols);
+            List<Symbol> dependencies = node.getParams();
+            checkDependencies(inputs, dependencies, "Invalid node. Parameter symbols (%s) not in source node output (%s)", dependencies, inputs);
 
             return null;
         }

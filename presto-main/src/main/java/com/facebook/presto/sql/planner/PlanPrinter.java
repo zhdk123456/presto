@@ -60,6 +60,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.RcallNode;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.RowNumberNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
@@ -830,6 +831,16 @@ public class PlanPrinter
             }
 
             return visitScanFilterAndProjectInfo(node.getId(), Optional.empty(), Optional.of(node), indent);
+        }
+
+        @Override
+        public Void visitRcall(RcallNode node, Integer indent)
+        {
+            List<String> parameters = node.getParams().stream().map(Symbol::getName).collect(Collectors.toList());
+            print(indent, "- RCall[%s, parameters = %s] => [%s]", node.getrProgram(), Joiner.on(",").join(parameters), formatOutputs(node.getOutputSymbols()));
+            printStats(indent + 2, node.getId());
+
+            return processChildren(node, indent + 1);
         }
 
         private Void visitScanFilterAndProjectInfo(

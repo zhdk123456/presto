@@ -269,4 +269,11 @@ public class ChildReplacer
         checkArgument(newChildren.size() == 1, "expected newChildren to contain 1 node");
         return new AssignUniqueId(node.getId(), Iterables.getOnlyElement(newChildren), node.getUnique());
     }
+
+    @Override
+    public PlanNode visitRcall(RcallNode node, List<PlanNode> newChildren)
+    {
+        checkArgument(newChildren.size() == 1, "expected newChildren to contain 1 node");
+        return new RcallNode(node.getId(), Iterables.getOnlyElement(newChildren), node.getrProgram(), node.getParams(), node.getOutputSymbol());
+    }
 }

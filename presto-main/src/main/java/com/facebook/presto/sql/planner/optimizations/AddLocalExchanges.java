@@ -95,6 +95,7 @@ import static java.util.stream.Collectors.toList;
 public class AddLocalExchanges
         implements PlanOptimizer
 {
+    // todo rcall wtf?
     private final Metadata metadata;
     private final SqlParser parser;
 
