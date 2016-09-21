@@ -13,6 +13,9 @@
  */
 package com.facebook.presto.operator.scalar;
 
+import com.facebook.presto.spi.Page;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.block.LongArrayBlock;
 import com.facebook.presto.spi.function.Description;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
@@ -26,20 +29,26 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import static java.lang.Double.doubleToRawLongBits;
+
 @Description("Calls defined R function for given parameters")
 @ScalarFunction("R")
 public final class RFunctions
 {
-    private RFunctions() {}
+    private static RConnection connection = getConnectionIgnoreException();
+    private static boolean functionLoaded = false;
 
     @SqlType(StandardTypes.VARCHAR)
     @TypeParameter("T")
     public static Slice typeof(@SqlType("VARCHAR") Slice functionCode, @SqlType("T") Slice value)
     {
-        RConnection c = null;
         try {
-            c = new RConnection();
-            REXP x = c.eval("R.version.string");
+            //RConnection connection = new RConnection();
+            REXP x = connection.eval("R.version.string");
+            connection.close();
             return Slices.wrappedBuffer(x.asString().getBytes());
         }
         catch (RserveException e) {
@@ -62,14 +71,16 @@ public final class RFunctions
 
     @SqlType(StandardTypes.VARCHAR)
     @TypeParameter("T")
-    public static Slice typeof(@SqlType("VARCHAR") Slice functionCode, @SqlType("T") double value)
+    synchronized public static Slice typeof(@SqlType("VARCHAR") Slice functionCode, @SqlType("T") double value)
     {
         try {
-            RConnection c = new RConnection();
             double[] input = { value };
-            c.assign("x", input);
-            c.eval(functionCode.toStringUtf8());
-            double[] result = c.eval("fun(x)").asDoubles();
+            connection.assign("x", input);
+            if (!functionLoaded) {
+                connection.eval(functionCode.toStringUtf8());
+                functionLoaded = true;
+            }
+            double[] result = connection.eval("fun(x)").asDoubles();
             return Slices.wrappedBuffer(Double.toString(result[0]).getBytes());
         }
         catch (RserveException e) {
@@ -92,5 +103,30 @@ public final class RFunctions
     {
         String result = "xxx";
         return Slices.wrappedBuffer(result.getBytes());
+    }
+
+    public static RConnection getConnectionIgnoreException()
+    {
+        try {
+            return new RConnection();
+        }
+        catch (RserveException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static class PageToRTranslator
+    {
+        double[] getDoubleColumn(Page p, int columnIndex)
+        {
+            Block b = p.getBlock(columnIndex);
+            ByteBuffer bb = b.getSlice(0, 0, b.getLength(0)).toByteBuffer();
+            return bb.asDoubleBuffer().array();
+        }
+
+        Page getReturnDoublePage(double[] d) {
+            return new Page(new LongArrayBlock(d.length, new boolean[d.length], Arrays.stream(d).mapToLong(x -> doubleToRawLongBits(x)).toArray()));
+        }
     }
 }
