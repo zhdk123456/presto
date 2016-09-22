@@ -30,7 +30,6 @@ import java.io.IOException;
 
 import static com.facebook.presto.tests.TestGroups.CLI;
 import static com.facebook.presto.tests.TestGroups.PREPARED_STATEMENTS;
-import static com.facebook.presto.tests.TestGroups.QUARANTINE;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Strings.repeat;
 import static com.teradata.tempto.fulfillment.table.hive.tpch.TpchTableDefinitions.NATION;
@@ -128,8 +127,7 @@ public class PrestoCliTests
         assertThat(trimLines(presto.readRemainingOutputLines())).containsAll(nationTableBatchLines);
     }
 
-    // Quarantined because of SWARM-3390: fails when run with front-end Kerberos
-    @Test(groups = {CLI, QUARANTINE}, timeOut = TIMEOUT)
+    @Test(groups = CLI, timeOut = TIMEOUT)
     public void shouldUseCatalogAndSchemaOptions()
             throws IOException, InterruptedException
     {
@@ -158,8 +156,7 @@ public class PrestoCliTests
         assertThat(trimLines(presto.readRemainingOutputLines())).containsAll(nationTableBatchLines);
     }
 
-    // Quarantine because of SWARM-3391: fails when front-end Kerberos is enabled.
-    @Test(groups = {CLI, PREPARED_STATEMENTS, QUARANTINE}, timeOut = TIMEOUT)
+    @Test(groups = {CLI, PREPARED_STATEMENTS}, timeOut = TIMEOUT)
     public void shouldExecuteLongPreparedStatement()
             throws IOException, InterruptedException
     {
@@ -170,11 +167,7 @@ public class PrestoCliTests
         assertThat(trimLines(presto.readRemainingOutputLines())).containsAll(nationTableBatchLines);
     }
 
-    // Quarantine because of SWARM-3391.
-    // This test appears to fail silently when front-end Kerberos is enabled.  I suspect that the CLI returns
-    // the status of the last command executed, which in this case is "deallocate prepare", which always succeeds.
-    // We need to find a better way to test this.
-    @Test(groups = {CLI, PREPARED_STATEMENTS, QUARANTINE}, timeOut = TIMEOUT)
+    @Test(groups = {CLI, PREPARED_STATEMENTS}, timeOut = TIMEOUT)
     public void shouldAddAndDeallocateLongPreparedStatement()
             throws IOException, InterruptedException
     {
