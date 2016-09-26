@@ -733,51 +733,49 @@ The following query will fail with the error ``Column 'name' is ambiguous``::
     CROSS JOIN region;
 
 
-Subquery expressions
---------------------
+Subqueries
+----------
 
-Subquery is an expression which is composed of a SQL query. The subquery is called correlated when refers to variables from the surrounding query. Such variables will act as constants during any one evaluation of the subquery.
+A subquery is an expression which is composed of a query. The subquery
+is correlated when it refers to columns outside of the subquery.
+Logically, the subquery will be evaluated for each row in the surrounding
+query. The referenced columns will thus be constant during any single
+evaluation of the subquery.
 
-.. note:: The subquery expression will generally only be executed far enough to determine information required by surrounding query, not all the way to completion (see ref:`exists` and ref:`in_predicate`). It is unwise to write a subquery that has any side effects; whether the side effects occur or not may be difficult to predict.
+.. note::
 
-.. note:: Support for correlated subqueries is limited and not all of their forms are supported.
-
-.. _exists:
+  Support for correlated subqueries is limited. Not every standard form is
+  supported
 
 EXISTS
 ^^^^^^
-.. code-block:: sql
 
-    SELECT nation.name, region.name
-    FROM nation n
-    WHERE EXISTS(SELECT * FROM region WHERE regionkey = n.regionkey);
+The ``EXISTS`` predicate determines if a subquery returns any rows::
 
-The argument of ``EXISTS`` is an arbitrary ``SELECT`` statement, or subquery. The subquery is evaluated to determine whether it returns any rows. If it returns at least one row, the result of ``EXISTS`` is ``true``; if the subquery returns no rows, the result of ``EXISTS`` is ``false``.
-
-.. _in_predicate:
+    SELECT name
+    FROM nation
+    WHERE EXISTS (SELECT * FROM region WHERE region.regionkey = nation.regionkey)
 
 IN
 ^^
 
-.. code-block:: sql
+The ``IN`` predicate determines if any values produced by the subquery
+are equal to the provided expression. The result of ``IN`` follows the
+standard rules for nulls. The subquery must produce exactly one column::
 
-    SELECT nation.name, region.name
-    FROM nation n
-    WHERE regionkey IN (SELECT regionkey FROM region);
+    SELECT name
+    FROM nation
+    WHERE regionkey IN (SELECT regionkey FROM region)
 
-The result of ``IN`` is ``true`` if any equal-to-left-side-of-IN subquery row is found. The result is ``false`` if no equal row is found (including the special case where the subquery returns no rows).
-
-.. note:: Currently only single column can be returned from the IN predicate subquery.
-
-Scalar subquery
+Scalar Subquery
 ^^^^^^^^^^^^^^^
 
-.. code-block:: sql
+A scalar subquery is a non-correlated subquery that returns zero or
+one row. It is an error for the subquery to produce more than one
+row. The returned value is ``NULL`` if the subquery produces no rows::
 
-    SELECT nation.name, region.name
-    FROM nation n
-    WHERE regionkey = (SELECT max(regionkey) FROM region);
-
-The result of scalar subquery is a row returned arbitrary ``SELECT`` statement. If the query returns more than single row then runtime error is propagated, in case of no rows then ``null`` is returned.
+    SELECT name
+    FROM nation
+    WHERE regionkey = (SELECT max(regionkey) FROM region)
 
 .. note:: Currently only single column can be returned from the scalar subquery.
