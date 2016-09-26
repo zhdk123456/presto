@@ -72,6 +72,7 @@ import static com.facebook.presto.util.Failures.checkCondition;
 import static com.facebook.presto.util.JsonUtil.createJsonGenerator;
 import static com.facebook.presto.util.JsonUtil.createJsonParser;
 import static com.facebook.presto.util.Types.checkType;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Double.parseDouble;
 import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.intBitsToFloat;
@@ -476,17 +477,29 @@ public final class DecimalCasts
     @UsedByGeneratedCode
     public static long doubleToShortDecimal(double value, long precision, long scale, long tenToScale)
     {
-        // TODO: optimize
-        BigDecimal decimal = new BigDecimal(value);
-        decimal = decimal.setScale((int) scale, ROUND_HALF_UP);
-        if (overflows(decimal, precision)) {
-            throw new PrestoException(INVALID_CAST_ARGUMENT, format("Cannot cast DOUBLE '%s' to DECIMAL(%s, %s)", value, precision, scale));
+        // TODO: implement specialized version for short decimals
+        Slice decimal = internalDoubleToLongDecimal(value, precision, scale);
+
+        long low = UnscaledDecimal128Arithmetic.getLong(decimal, 0);
+        long high = UnscaledDecimal128Arithmetic.getLong(decimal, 1);
+
+        checkState(high == 0 && low >= 0, "Unexpected long decimal");
+
+        if (UnscaledDecimal128Arithmetic.isNegative(decimal)) {
+            return -low;
         }
-        return decimal.unscaledValue().longValue();
+        else {
+            return low;
+        }
     }
 
     @UsedByGeneratedCode
     public static Slice doubleToLongDecimal(double value, long precision, long scale, BigInteger tenToScale)
+    {
+        return internalDoubleToLongDecimal(value, precision, scale);
+    }
+
+    public static Slice internalDoubleToLongDecimal(double value, long precision, long scale)
     {
         Slice decimal = UnscaledDecimal128Arithmetic.doubleToLongDecimal(value, precision, (int) scale);
         if (overflows(decimal, (int) precision)) {
