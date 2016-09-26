@@ -405,6 +405,11 @@ public class OperatorContext
         // changed it to SettableFuture.create in exactly same method.
     }
 
+    public SettableFuture<?> getMemoryRevokingRequestedFuture()
+    {
+        return memoryRevokingRequestedFuture.get();
+    }
+
     public void setInfoSupplier(Supplier<?> infoSupplier)
     {
         requireNonNull(infoSupplier, "infoProvider is null");
