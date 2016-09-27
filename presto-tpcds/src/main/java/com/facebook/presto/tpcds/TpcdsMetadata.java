@@ -74,7 +74,6 @@ import java.util.Set;
 import static com.facebook.presto.spi.type.DecimalType.createDecimalType;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.tpcds.Types.checkType;
-import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static java.lang.String.format;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
@@ -89,10 +88,11 @@ public class TpcdsMetadata
 
     public TpcdsMetadata()
     {
-        this.tableNames = Table.getBaseTables().stream()
-                .map(Table::getName)
-                .map(name -> name.toLowerCase(ENGLISH))
-                .collect(toImmutableSet());
+        ImmutableSet.Builder<String> tableNames = ImmutableSet.builder();
+        for (Table tpchTable : Table.getBaseTables()) {
+            tableNames.add(tpchTable.getName().toLowerCase(ENGLISH));
+        }
+        this.tableNames = tableNames.build();
     }
 
     @Override

@@ -19,7 +19,6 @@ import com.facebook.presto.spi.type.DecimalParseResult;
 import com.facebook.presto.spi.type.DecimalType;
 import com.facebook.presto.spi.type.Decimals;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
 import com.teradata.tpcds.Results;
 import com.teradata.tpcds.column.Column;
@@ -51,10 +50,15 @@ public class TpcdsRecordSet
     public TpcdsRecordSet(Results results, List<Column> columns)
     {
         requireNonNull(results, "results is null");
+        requireNonNull(columns, "columns is null");
 
         this.results = results;
         this.columns = ImmutableList.copyOf(columns);
-        this.columnTypes = this.columns.stream().map(column -> getPrestoType(column.getType())).collect(ImmutableCollectors.toImmutableList());
+        ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
+        for (Column column : columns) {
+            columnTypes.add(getPrestoType(column.getType()));
+        }
+        this.columnTypes = columnTypes.build();
     }
 
     @Override

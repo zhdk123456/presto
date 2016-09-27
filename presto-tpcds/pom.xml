@@ -26,16 +26,6 @@
             <artifactId>guava</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>presto-main</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>slice</artifactId>
-        </dependency>
-
         <!-- Presto SPI -->
         <dependency>
             <groupId>com.facebook.presto</groupId>
@@ -44,10 +34,17 @@
         </dependency>
 
         <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-tests</artifactId>
