@@ -793,9 +793,13 @@ public final class MathFunctions
                 return num;
             }
             int rescaleFactor = numScale.intValue() - (int) decimals;
-            Slice ret = rescale(rescale(num, -rescaleFactor), rescaleFactor);
-            throwIfOverflows(ret, resultPrecision.intValue());
-            return ret;
+            try {
+                Slice ret = rescale(rescale(num, -rescaleFactor), rescaleFactor);
+                throwIfOverflows(ret, resultPrecision.intValue());
+                return ret;
+            } catch (ArithmeticException e) {
+                throw new PrestoException(NUMERIC_VALUE_OUT_OF_RANGE, "decimal overflow: " + num, e);
+            }
         }
 
         @LiteralParameters({"p", "s", "rp"})

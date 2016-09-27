@@ -906,6 +906,9 @@ public class TestMathFunctions
         assertFunction("round(DECIMAL '-123456789012345678.99', -2)", createDecimalType(21, 2), SqlDecimal.of("-123456789012345700.00"));
         assertFunction("round(DECIMAL '123456789012345678.99', -30)", createDecimalType(21, 2), SqlDecimal.of("0.00"));
         assertFunction("round(DECIMAL '-123456789012345678.99', -30)", createDecimalType(21, 2), SqlDecimal.of("0.00"));
+        assertFunction("round(DECIMAL '9999999999999999999999999999999999999.9', 1)", createDecimalType(38,1), SqlDecimal.of("9999999999999999999999999999999999999.9"));
+        assertInvalidFunction("round(DECIMAL '9999999999999999999999999999999999999.9', 0)", NUMERIC_VALUE_OUT_OF_RANGE);
+        assertInvalidFunction("round(DECIMAL '9999999999999999999999999999999999999.9', -1)", NUMERIC_VALUE_OUT_OF_RANGE);
 
         // ROUND_N short DECIMAL -> long DECIMAL
         assertFunction("round(DECIMAL '999999999999999.99', 1)", createDecimalType(18, 2), SqlDecimal.of("1000000000000000.00"));
