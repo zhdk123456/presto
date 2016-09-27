@@ -101,6 +101,12 @@ public class HashAggregationOperator
                         {
                             throw new UnsupportedOperationException();
                         }
+
+                        @Override
+                        public long getSpilledBytes()
+                        {
+                            return 0;
+                        }
                     });
         }
 
