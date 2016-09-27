@@ -19,7 +19,6 @@ import com.google.inject.Inject;
 import io.airlift.log.Logger;
 
 import javax.annotation.PostConstruct;
-import javax.management.JMException;
 
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -89,6 +88,17 @@ public class JmxPeriodicSampler
     @Override
     public void run()
     {
+        try {
+            runUnsafe();
+        }
+        catch (Exception exception) {
+            // Do not swallow even weirdest exceptions
+            log.error(exception, "This should never happen, JmxPeriodicSampler will not be scheduled again.");
+        }
+    }
+
+    private void runUnsafe()
+    {
         // we are using rounded up timestamp, so that records from different nodes and different
         // tables will have matching timestamps (for joining/grouping etc)
         long dumpTimestamp = roundToPeriod(currentTimeMillis());
@@ -109,8 +119,8 @@ public class JmxPeriodicSampler
                         dumpTimestamp);
                 jmxHistoricalData.addRow(tableHandle.getObjectName(), row);
             }
-            catch (JMException ex) {
-                log.error(ex, "Error in JmxHistoryDumper thread");
+            catch (Exception exception) {
+                log.error(exception, "Error reading jmx records");
             }
         }
 
