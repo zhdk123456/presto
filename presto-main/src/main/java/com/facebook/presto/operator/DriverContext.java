@@ -193,15 +193,14 @@ public class DriverContext
     {
         ListenableFuture<?> future = pipelineContext.reserveMemory(bytes);
         long newMemoryReservation = memoryReservation.addAndGet(bytes);
-        peakMemoryReservation.accumulateAndGet(revocableMemoryReservation.get() + newMemoryReservation, Math::max);
+        peakMemoryReservation.accumulateAndGet(newMemoryReservation, Math::max);
         return future;
     }
 
     public ListenableFuture<?> reserveRevocableMemory(long bytes)
     {
         ListenableFuture<?> future = pipelineContext.reserveRevocableMemory(bytes);
-        long newRevocableMemoryReservation = revocableMemoryReservation.getAndAdd(bytes);
-        peakMemoryReservation.accumulateAndGet(newRevocableMemoryReservation + memoryReservation.get(), Math::max);
+        revocableMemoryReservation.getAndAdd(bytes);
         return future;
     }
 
@@ -418,8 +417,9 @@ public class DriverContext
                 executionEndTime.get(),
                 queuedTime.convertToMostSuccinctTimeUnit(),
                 elapsedTime.convertToMostSuccinctTimeUnit(),
-                succinctBytes(memoryReservation.get() + revocableMemoryReservation.get()),
+                succinctBytes(memoryReservation.get()),
                 succinctBytes(peakMemoryReservation.get()),
+                succinctBytes(revocableMemoryReservation.get()),
                 succinctBytes(systemMemoryReservation.get()),
                 new Duration(totalScheduledTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),
                 new Duration(totalCpuTime, NANOSECONDS).convertToMostSuccinctTimeUnit(),
