@@ -60,9 +60,10 @@ public class TestOperatorStats
 
             new DataSize(20, BYTE),
             new DataSize(21, BYTE),
+            new DataSize(22, BYTE),
             Optional.empty(),
-            "22",
-            new DataSize(23, BYTE));
+            "23",
+            new DataSize(24, BYTE));
 
     public static final OperatorStats MERGEABLE = new OperatorStats(
             41,
@@ -95,9 +96,10 @@ public class TestOperatorStats
 
             new DataSize(20, BYTE),
             new DataSize(21, BYTE),
+            new DataSize(22, BYTE),
             Optional.empty(),
-            new LongMergeable(22),
-            new DataSize(23, BYTE));
+            new LongMergeable(23),
+            new DataSize(24, BYTE));
 
     @Test
     public void testJson()
@@ -139,10 +141,11 @@ public class TestOperatorStats
         assertEquals(actual.getFinishUser(), new Duration(19, NANOSECONDS));
 
         assertEquals(actual.getMemoryReservation(), new DataSize(20, BYTE));
-        assertEquals(actual.getSystemMemoryReservation(), new DataSize(21, BYTE));
-        assertEquals(actual.getInfo(), "22");
+        assertEquals(actual.getRevocableMemoryReservation(), new DataSize(21, BYTE));
+        assertEquals(actual.getSystemMemoryReservation(), new DataSize(22, BYTE));
+        assertEquals(actual.getInfo(), "23");
 
-        assertEquals(actual.getSpilledDataSize(), new DataSize(23, BYTE));
+        assertEquals(actual.getSpilledDataSize(), new DataSize(24, BYTE));
     }
 
     @Test
@@ -176,7 +179,8 @@ public class TestOperatorStats
         assertEquals(actual.getFinishCpu(), new Duration(3 * 18, NANOSECONDS));
         assertEquals(actual.getFinishUser(), new Duration(3 * 19, NANOSECONDS));
         assertEquals(actual.getMemoryReservation(), new DataSize(3 * 20, BYTE));
-        assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 21, BYTE));
+        assertEquals(actual.getRevocableMemoryReservation(), new DataSize(3 * 21, BYTE));
+        assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 22, BYTE));
         assertEquals(actual.getInfo(), null);
         assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 23, BYTE));
     }
@@ -212,10 +216,11 @@ public class TestOperatorStats
         assertEquals(actual.getFinishCpu(), new Duration(3 * 18, NANOSECONDS));
         assertEquals(actual.getFinishUser(), new Duration(3 * 19, NANOSECONDS));
         assertEquals(actual.getMemoryReservation(), new DataSize(3 * 20, BYTE));
-        assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 21, BYTE));
-        assertEquals(actual.getInfo(), new LongMergeable(22 * 3));
+        assertEquals(actual.getRevocableMemoryReservation(), new DataSize(3 * 21, BYTE));
+        assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 22, BYTE));
+        assertEquals(actual.getInfo(), new LongMergeable(23 * 3));
 
-        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 23, BYTE));
+        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 24, BYTE));
     }
 
     private static class LongMergeable
