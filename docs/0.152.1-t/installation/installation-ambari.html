@@ -1,0 +1,462 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Automated Installation on a Cluster &mdash; Teradata Distribution of Presto 0.152.1-t Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/teradata.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Teradata Distribution of Presto 0.152.1-t Documentation" href="../index.html"/>
+        <link rel="up" title="3. Getting Started" href="../getting-started.html"/>
+        <link rel="next" title="Manual Installation on a Cluster" href="installation-presto-admin.html"/>
+        <link rel="prev" title="3. Getting Started" href="../getting-started.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Teradata Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.152.1-t
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. System Requirements</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../getting-started.html">3. Getting Started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../getting-started.html#presto-installation">3.1. Presto Installation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../getting-started.html#presto-client-software-installation">3.2. Presto Client Software Installation</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Automated Installation on a Cluster</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pre-requisites">Pre-Requisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-the-presto-service">Adding the Presto Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#assigning-presto-processes-to-nodes-in-a-cluster">Assigning Presto Processes to Nodes in a Cluster</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-presto">Configuring Presto</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="installation-presto-admin.html">Manual Installation on a Cluster</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../sandbox-vms.html">4. Presto Installation on a Sandbox VM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-automated.html">5. Presto Server Installation on a Cluster (Ambari)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-manual.html">6. Presto Server Installation on a Cluster (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-aws-emr-manual.html">7. Presto Server Installation on an AWS EMR (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">8. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="presto-admin/user-guide.html">9. Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../yarn.html">10. YARN Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">11. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">12. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">13. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">15. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">18. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">19. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Teradata Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../getting-started.html">3. Getting Started</a> &raquo;</li>
+      
+    <li>Automated Installation on a Cluster</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/installation/installation-ambari.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="automated-installation-on-a-cluster">
+<h1><a class="toc-backref" href="#id1">Automated Installation on a Cluster</a></h1>
+<p>You can use Apache Ambari to install Presto. To install Presto using Ambari, you must have the <a class="reference external" href="https:www.teradata.com/presto">Presto Ambari Integration package</a>.</p>
+<p>Note:
+The following procedures <strong>do not describe how to use Ambari to
+install Presto on YARN-based clusters</strong>. For those procedures, see <a class="reference internal" href="installation-yarn-automated.html"><span class="doc">Automated Installation on a YARN-Based Cluster</span></a>.</p>
+<div class="contents topic" id="installing-presto-with-ambari">
+<p class="topic-title first">Installing Presto with Ambari</p>
+<ul class="simple">
+<li><a class="reference internal" href="#automated-installation-on-a-cluster" id="id1">Automated Installation on a Cluster</a><ul>
+<li><a class="reference internal" href="#pre-requisites" id="id2">Pre-Requisites</a></li>
+<li><a class="reference internal" href="#adding-the-presto-service" id="id3">Adding the Presto Service</a></li>
+<li><a class="reference internal" href="#assigning-presto-processes-to-nodes-in-a-cluster" id="id4">Assigning Presto Processes to Nodes in a Cluster</a></li>
+<li><a class="reference internal" href="#configuring-presto" id="id5">Configuring Presto</a><ul>
+<li><a class="reference internal" href="#adding-and-removing-connectors" id="id6">Adding and Removing Connectors</a><ul>
+<li><a class="reference internal" href="#known-issues" id="id7">Known Issues</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="pre-requisites">
+<h2><a class="toc-backref" href="#id2">Pre-Requisites</a></h2>
+<ol class="arabic simple">
+<li>Red Hat Enterprise Linux 6.x (64-bit) or CentOS equivalent.</li>
+<li>You must have Ambari installed and thus transitively fulfill <a class="reference external" href="http://docs.hortonworks.com/HDPDocuments/Ambari-2.1.2.1/bk_Installing_HDP_AMB/content/_meet_minimum_system_requirements.html">Ambari&#8217;s requirements</a>.</li>
+<li>Oracle Java JDK 1.8 (64-bit). Note that when installing Ambari you will be prompted to
+select a JDK. You can tell Ambari to download Oracle JDK 1.8 or point Ambari to an
+existing installation. Presto picks up the JDK Ambari was installed with so it is
+imperative that Ambari is running on Oracle JDK 1.8.</li>
+<li>Disable <code class="docutils literal"><span class="pre">requiretty</span></code>. On RHEL 6.x this can be done by editing the <code class="docutils literal"><span class="pre">/etc/sudoers</span></code>
+file and commenting out <code class="docutils literal"><span class="pre">Defaults</span>&nbsp;&nbsp;&nbsp; <span class="pre">requiretty</span></code>.</li>
+<li>Install <code class="docutils literal"><span class="pre">wget</span></code> on all nodes that will run a Presto component.</li>
+</ol>
+</div>
+<hr class="docutils" />
+<div class="section" id="adding-the-presto-service">
+<h2><a class="toc-backref" href="#id3">Adding the Presto Service</a></h2>
+<p>This section and the following sections walk you through the integration steps needed to
+get Presto working with Ambari. By default, this integration code installs the latest
+Teradata Presto release.</p>
+<p>To integrate the Presto service with Ambari:</p>
+<ol class="arabic">
+<li><p class="first">Assuming HDP 2.3 was installed with Ambari, create the following directory on the node
+where the <code class="docutils literal"><span class="pre">ambari-server</span></code> is running:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mkdir /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO
+$ <span class="nb">cd</span> /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO
+</pre></div>
+</div>
+</li>
+<li><p class="first">Place the integration files within the newly created PRESTO directory by uploading the
+integration archive to your cluster and extracting it as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ tar -xvf /path/to/integration/package/ambari-presto-0.1.0.tar.gz -C /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO
+$ mv /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO/ambari-presto-0.1.0/* /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO
+$ rm -rf /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO/ambari-presto-0.1.0
+</pre></div>
+</div>
+</li>
+<li><p class="first">Make all integration files executable and restart the Ambari server:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ chmod -R +x /var/lib/ambari-server/resources/stacks/HDP/2.3/services/PRESTO/*
+$ ambari-server restart
+</pre></div>
+</div>
+</li>
+<li><p class="first">After the server restarts, point your browser to it.</p>
+</li>
+<li><p class="first">On the main Ambari Web UI page, click the <code class="docutils literal"><span class="pre">Add</span> <span class="pre">Service</span></code> button and follow the
+on screen wizard to add Presto.</p>
+<p>The following sections provide more details about the options and choices you
+need to make when adding Presto to the cluster.</p>
+</li>
+</ol>
+</div>
+<hr class="docutils" />
+<div class="section" id="assigning-presto-processes-to-nodes-in-a-cluster">
+<h2><a class="toc-backref" href="#id4">Assigning Presto Processes to Nodes in a Cluster</a></h2>
+<p>Presto is composed of a coordinator and worker processes. The same code runs all nodes
+because the same Presto server RPM is installed for both workers and coordinator. The
+configuration on each node determines how a particular node behaves.</p>
+<p>Presto can run in distributed mode or psuedo-distributed mode.</p>
+<ul class="simple">
+<li>In distributed mode, the Presto coordinator runs on one node and the Presto workers
+run on other nodes. Distributed mode is recommended.</li>
+<li>In pseudo-distributed mode, a single Presto process on one node acts as both coordinator
+and worker. Pseudo-distributed mode is not recommended for production nodes.</li>
+</ul>
+<p>When you select a topology for Presto and finish the installation procedures as described
+below, <strong>you cannot modify that topology</strong>.</p>
+<p>The client component of Presto is the <code class="docutils literal"><span class="pre">presto-cli</span></code> executable JAR. During or after
+installation, place the client component of Presto on any node all nodes where you expect
+to access the Presto server with this command line utility. The <code class="docutils literal"><span class="pre">presto-cli</span></code> executable
+JAR does not need to be co-located with either a worker or a coordinator. It can be installed
+on its own. The CLI can be found at <code class="docutils literal"><span class="pre">/usr/lib/presto/bin/presto-cli</span></code>.</p>
+<p>After you add the Presto Service as described in the previous section, two screens on the
+main Ambari WebUI page allow you to assign the Presto processes among the nodes in your cluster.</p>
+<ol class="arabic simple">
+<li>Assign the Presto processes among the nodes in your cluster:<ol class="loweralpha">
+<li>Select a node for the Presto coordinator.</li>
+<li>Assign as many Presto workers to nodes as you need.
+<strong>Do not place a worker on the same node as a coordinator.</strong> Doing so causes
+the installation to fail because the integration software will attempt to
+install the RPM twice.</li>
+</ol>
+</li>
+<li>Place the client component on all nodes where you expect to access the Presto server
+with this command line utility.</li>
+<li>If you would like to schedule work on the Presto coordinator, effectively turning the
+process into a dual worker/coordinator, enable the <code class="docutils literal"><span class="pre">node-scheduler.include-coordinator</span></code>
+toggle available in the configuration screen.</li>
+</ol>
+<hr class="docutils" />
+</div>
+<div class="section" id="configuring-presto">
+<span id="configuring-presto-label"></span><h2><a class="toc-backref" href="#id5">Configuring Presto</a></h2>
+<p>The one configuration property that does not have a default and requires input is
+<code class="docutils literal"><span class="pre">discovery.uri</span></code>. The expected value is <code class="docutils literal"><span class="pre">http://&lt;FQDN-of-node-hosting-coordinator&gt;:8081</span></code>.
+Note that it is <code class="docutils literal"><span class="pre">http</span></code> and not <code class="docutils literal"><span class="pre">https</span></code> and that the port is <code class="docutils literal"><span class="pre">8081</span></code>. If you change the
+value of <code class="docutils literal"><span class="pre">http-server.http.port</span></code>, make sure you also change it in <code class="docutils literal"><span class="pre">disovery.uri</span></code>.</p>
+<p>Some of the most popular properties are displayed in the Settings tab (open by default). In
+the Advanced tab, set custom properties by opening up the correct drop down and specifying a
+key and a value. Note that specifying a property that Presto does not recognize will cause
+the installation to finish with errors because some or all servers fail to start.</p>
+<p>You can change the Presto configuration after installation by doing the following:</p>
+<ol class="arabic simple">
+<li>In Ambari, select the Presto service.</li>
+<li>Select the Configs tab.</li>
+<li>Change a configuration option.</li>
+<li>Restart Presto for the changes to take effect.</li>
+</ol>
+<p>If you are running a version of Ambari that is older than 2.1 (version less than 2.1),
+you must omit the memory suffix (GB) when setting the following memory-related configurations:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">query.max-memory-per-node</span></code></li>
+<li><code class="docutils literal"><span class="pre">query.max-memory</span></code></li>
+</ul>
+<p>For these two properties, the memory suffix is automatically added by the integration software.
+For all other memory-related configurations that you add as custom properties, you must
+include the memory suffix when specifying the value.</p>
+<div class="section" id="adding-and-removing-connectors">
+<h3><a class="toc-backref" href="#id6">Adding and Removing Connectors</a></h3>
+<p>To add a connector, modify the <code class="docutils literal"><span class="pre">connectors.to.add</span></code> property, whose format is the following:</p>
+<p><code class="docutils literal"><span class="pre">{'connector1':</span> <span class="pre">['key1=value1',</span> <span class="pre">'key2=value2',</span> <span class="pre">etc.],</span> <span class="pre">'connector2':</span> <span class="pre">['key3=value3',</span> <span class="pre">'key4=value4'],</span> <span class="pre">etc.}</span></code></p>
+<p>Note the single quotes around each individual element. This property only adds connectors and
+does not delete connectors. If you add connector1, save the configuration, restart Presto, and
+then specify {} for this property, connector1 will not be deleted. If you specify incorrect values
+in your connector settings, for example, setting the <code class="docutils literal"><span class="pre">hive.metastore.uri</span></code> in the Hive connector
+to point to an invalid hostname, then Presto will fail to start.</p>
+<p>For example, to add the Hive and Kafka connectors, set the <code class="docutils literal"><span class="pre">connectors.to.add</span></code> property to:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>{
+    &#39;hive&#39;: [&#39;connector.name=hive-cdh4&#39;, &#39;hive.metastore.uri=thrift://example.net:9083&#39;],
+    &#39;kafka&#39;: [&#39;connector.name=kafka&#39;, &#39;kafka.table-names=table1,table2&#39;, &#39;kafka.nodes=host1:port,host2:port&#39;]
+}
+</pre></div>
+</div>
+<p>To delete a connector, modify the <code class="docutils literal"><span class="pre">connectors.to.delete</span></code> property, whose format is the following:</p>
+<p><code class="docutils literal"><span class="pre">['connector1',</span> <span class="pre">'connector2',</span> <span class="pre">etc.]</span></code></p>
+<p>Again, note the single quotes around each element. The above value will delete connectors <code class="docutils literal"><span class="pre">connector1</span></code> and
+<code class="docutils literal"><span class="pre">connector2</span></code>. Note that the <code class="docutils literal"><span class="pre">tpch</span></code> connector cannot be deleted because it is used to smoketest Presto
+after it starts. The presence of the <code class="docutils literal"><span class="pre">tpch</span></code> connector has negligible impact on the system.</p>
+<p>For example, to delete the Hive and Kafka connectors, set the <code class="docutils literal"><span class="pre">connectors.to.delete</span></code> property to:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">['hive',</span> <span class="pre">'kafka']</span></code></div></blockquote>
+<hr class="docutils" />
+<div class="section" id="known-issues">
+<h4><a class="toc-backref" href="#id7">Known Issues</a></h4>
+<ul>
+<li><p class="first">For some older versions of Presto, when using the Hive connector to <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> or
+<code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code>, you may run into the following error:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>Query 20151120_203243_00003_68gdx failed: java.security.AccessControlException: Permission denied: user=hive, access=WRITE, inode=&quot;/apps/hive/warehouse/nation&quot;:hdfs:hdfs:drwxr-xr-x
+           at org.apache.hadoop.hdfs.server.namenode.FSPermissionChecker.check(FSPermissionChecker.java:319)
+           at org.apache.hadoop.hdfs.server.namenode.FSPermissionChecker.checkPermission(FSPermissionChecker.java:219)
+           at org.apache.hadoop.hdfs.server.namenode.FSPermissionChecker.checkPermission(FSPermissionChecker.java:190)
+           at org.apache.hadoop.hdfs.server.namenode.FSDirectory.checkPermission(FSDirectory.java:1771)
+</pre></div>
+</div>
+<p>This problem affects Presto <code class="docutils literal"><span class="pre">0.115t</span></code> but does not affect <code class="docutils literal"><span class="pre">0.127t</span></code>.</p>
+<p>To work around the issue, edit your <code class="docutils literal"><span class="pre">jvm.config</span></code> settings by doing the following:</p>
+<ol class="arabic">
+<li><p class="first">Add the following property:</p>
+<p><code class="docutils literal"><span class="pre">-DHADOOP_USER_NAME=hive</span></code></p>
+</li>
+<li><p class="first">Save your edit to <code class="docutils literal"><span class="pre">jvm.config</span></code>.</p>
+</li>
+<li><p class="first">Restart all Presto components for the changes to take effect.</p>
+</li>
+</ol>
+</li>
+<li><p class="first">If you decide to deploy an older version of Presto, you may have to adjust some settings manually.
+See <a class="reference internal" href="#configuring-presto-label"><span class="std std-ref">Configuring Presto</span></a> for an explanation of how to add custom settings. For example,
+the <code class="docutils literal"><span class="pre">task.max-memory</span></code> setting was deprecated in <code class="docutils literal"><span class="pre">0.127t</span></code>, but is valid in <code class="docutils literal"><span class="pre">0.115t</span></code>. If you&#8217;re installing
+<code class="docutils literal"><span class="pre">0.115t</span></code> and would like to change <code class="docutils literal"><span class="pre">task.max-memory</span></code> to something other than its default, add it as a
+custom property.</p>
+</li>
+<li><p class="first">On the Presto service home page, if you click &#8216;Presto workers&#8217;, you will get an incorrect list of workers.
+This is a known issue and has been fixed in Ambari 2.2.0.</p>
+</li>
+<li><p class="first">If the installation of Presto fails with the error message <code class="docutils literal"><span class="pre">Python</span> <span class="pre">script</span> <span class="pre">has</span> <span class="pre">been</span> <span class="pre">killed</span> <span class="pre">due</span> <span class="pre">to</span> <span class="pre">timeout</span>
+<span class="pre">after</span> <span class="pre">waiting</span> <span class="pre">1800</span> <span class="pre">secs</span></code>, then the <code class="docutils literal"><span class="pre">wget</span></code> for either the Presto RPM or <code class="docutils literal"><span class="pre">presto-cli</span></code> JAR has timed out.
+To increase the timeout, increase the <code class="docutils literal"><span class="pre">agent.package.install.task.timeout</span></code> setting by doing the following:</p>
+<ol class="arabic simple">
+<li>On the Ambari server host, in <code class="docutils literal"><span class="pre">/etc/ambari-server/conf/ambari.properties</span></code>, edit the setting.</li>
+<li>Restart the Ambari server for the change to take effect.</li>
+<li>To resume the installation, do one of the following:<ol class="loweralpha">
+<li>Click the Retry button in the installation wizard.</li>
+<li>Finish the wizard and then install all Presto components individually by navigating to the relevant host
+and selecting Re-install.</li>
+</ol>
+</li>
+</ol>
+<p>The components can be installed manually in any order, but when starting the components, start the Presto
+coordinator last.</p>
+<p>If the installation keeps timing out, we suggest downloading the RPM and JAR outside the installation process,
+uploading them somewhere on your network, and editing <code class="docutils literal"><span class="pre">package/scripts/download.ini</span></code> with the new URLs.</p>
+</li>
+<li><p class="first">At the moment, upgrading Presto from Ambari is not possible. Even though Ambari provides the capability to
+upgrade software, upgrading has not been implemented in the integration. If many users request this feature,
+we can add it to a future release. (If you&#8217;d like to see this feature, let us know by commenting on
+<a class="reference external" href="https://github.com/prestodb/ambari-presto-service/issues/17">this issue</a>).</p>
+<p>To upgrade Presto without the native upgrade integratio,n you must manually uninstall Presto, and then install
+the new version.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation-presto-admin.html" class="btn btn-neutral float-right" title="Manual Installation on a Cluster" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../getting-started.html" class="btn btn-neutral" title="3. Getting Started" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.152.1-t',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
