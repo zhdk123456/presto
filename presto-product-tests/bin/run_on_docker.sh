@@ -56,7 +56,8 @@ function run_product_tests() {
   run_in_application_runner_container \
     java "-Djava.util.logging.config.file=/docker/volumes/conf/tempto/logging.properties" \
     ${TLS_CERTIFICATE} \
-    -jar "/docker/volumes/presto-product-tests/presto-product-tests-executable.jar" \
+    -classpath "/docker/volumes/jdbc/driver.jar:/docker/volumes/presto-product-tests/presto-product-tests-executable.jar" \
+    com.facebook.presto.tests.TemptoProductTestRunner \
     --report-dir "/docker/volumes/test-reports" \
     --config-local "/docker/volumes/tempto/tempto-configuration-local.yaml" \
     "$@" \
