@@ -49,3 +49,9 @@ fi
 export_canonical_path PRODUCT_TESTS_JAR
 
 export HIVE_PROXY_PORT=${HIVE_PROXY_PORT:-1180}
+
+if [[ -z ${PRESTO_JDBC_DRIVER_JAR} ]]; then
+    source "${PRODUCT_TESTS_ROOT}/target/classes/presto.env"
+    PRESTO_JDBC_DRIVER_JAR="${PROJECT_ROOT}/presto-jdbc/target/presto-jdbc-${PRESTO_VERSION}.jar"
+fi
+export_canonical_path PRESTO_JDBC_DRIVER_JAR
