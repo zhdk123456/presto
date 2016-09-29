@@ -3629,11 +3629,11 @@ public abstract class AbstractTestQueries
                 "LIMIT 5");
 
         MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT)
-                .row(12.0, 10L)
-                .row(12.0, 9L)
-                .row(12.0, 8L)
-                .row(12.0, 7L)
-                .row(12.0, 6L)
+                .row(new BigDecimal("12.0"), 10L)
+                .row(new BigDecimal("12.0"), 9L)
+                .row(new BigDecimal("12.0"), 8L)
+                .row(new BigDecimal("12.0"), 7L)
+                .row(new BigDecimal("12.0"), 6L)
                 .build();
 
         assertEquals(actual, expected);
