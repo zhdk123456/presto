@@ -44,6 +44,7 @@ import javax.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -124,7 +125,8 @@ public class PluginManager
         Map<String, String> optionalConfig = new TreeMap<>(configurationFactory.getProperties());
         optionalConfig.put("node.id", nodeInfo.getNodeId());
         // TODO: make this work with and without HTTP and HTTPS
-        optionalConfig.put("http-server.http.port", Integer.toString(httpServerInfo.getHttpUri().getPort()));
+        URI nodeUri = httpServerInfo.getHttpExternalUri() != null ? httpServerInfo.getHttpExternalUri() : httpServerInfo.getHttpsExternalUri();
+        optionalConfig.put("http-server.http.port", Integer.toString(nodeUri.getPort()));
         this.optionalConfig = ImmutableMap.copyOf(optionalConfig);
 
         this.connectorManager = requireNonNull(connectorManager, "connectorManager is null");
