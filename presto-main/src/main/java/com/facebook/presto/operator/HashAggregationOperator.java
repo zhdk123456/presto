@@ -237,6 +237,7 @@ public class HashAggregationOperator
             checkState(!aggregationBuilder.isFull(), "Aggregation buffer is full");
         }
         aggregationBuilder.processPage(page);
+        aggregationBuilder.updateMemory();
     }
 
     @Override
