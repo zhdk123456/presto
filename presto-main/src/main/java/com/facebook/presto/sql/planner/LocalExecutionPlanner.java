@@ -175,8 +175,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.SystemSessionProperties.getOperatorMemoryLimitBeforeSpill;
 import static com.facebook.presto.SystemSessionProperties.getTaskConcurrency;
 import static com.facebook.presto.SystemSessionProperties.getTaskWriterCount;
+import static com.facebook.presto.SystemSessionProperties.isSpillEnabled;
 import static com.facebook.presto.metadata.FunctionKind.SCALAR;
 import static com.facebook.presto.operator.DistinctLimitOperator.DistinctLimitOperatorFactory;
 import static com.facebook.presto.operator.NestedLoopBuildOperator.NestedLoopBuildOperatorFactory;
@@ -888,7 +890,10 @@ public class LocalExecutionPlanner
                 return planGlobalAggregation(context.getNextOperatorId(), node, source);
             }
 
-            return planGroupByAggregation(node, source, context.getNextOperatorId());
+            boolean spillEnabled = isSpillEnabled(context.getSession());
+            DataSize memoryLimitBeforeSpill = getOperatorMemoryLimitBeforeSpill(context.getSession());
+
+            return planGroupByAggregation(node, source, context.getNextOperatorId(), spillEnabled, memoryLimitBeforeSpill);
         }
 
         @Override
@@ -1849,7 +1854,12 @@ public class LocalExecutionPlanner
             return new PhysicalOperation(operatorFactory, outputMappings.build(), source);
         }
 
-        private PhysicalOperation planGroupByAggregation(AggregationNode node, PhysicalOperation source, int operatorId)
+        private PhysicalOperation planGroupByAggregation(
+                AggregationNode node,
+                PhysicalOperation source,
+                int operatorId,
+                boolean spillEnabled,
+                DataSize memoryLimitBeforeSpill)
         {
             List<Symbol> groupBySymbols = node.getGroupingKeys();
 
@@ -1911,7 +1921,10 @@ public class LocalExecutionPlanner
                     hashChannel,
                     node.getGroupIdSymbol().map(mappings::get),
                     10_000,
-                    maxPartialAggregationMemorySize);
+                    maxPartialAggregationMemorySize,
+                    spillEnabled,
+                    memoryLimitBeforeSpill,
+                    spillerFactory);
 
             return new PhysicalOperation(operatorFactory, mappings, source);
         }
