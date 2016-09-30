@@ -1048,7 +1048,8 @@ public class LocalExecutionPlanner
                             context.getNextOperatorId(),
                             planNodeId,
                             processor,
-                            Lists.transform(rewrittenProjections, forMap(expressionTypes)));
+                            Lists.transform(rewrittenProjections, forMap(expressionTypes)),
+                            filterExpression);
 
                     return new PhysicalOperation(operatorFactory, outputMappings, source);
                 }
@@ -1110,7 +1111,8 @@ public class LocalExecutionPlanner
                         context.getNextOperatorId(),
                         planNodeId,
                         () -> new GenericPageProcessor(filterFunction, projectionFunctions),
-                        toTypes(projectionFunctions));
+                        toTypes(projectionFunctions),
+                        filterExpression);
                 return new PhysicalOperation(operatorFactory, outputMappings, source);
             }
         }
