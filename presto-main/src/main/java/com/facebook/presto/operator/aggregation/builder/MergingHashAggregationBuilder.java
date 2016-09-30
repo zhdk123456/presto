@@ -20,6 +20,7 @@ import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.google.common.collect.ImmutableList;
+import io.airlift.units.DataSize;
 
 import java.io.Closeable;
 import java.util.Collections;
@@ -127,6 +128,7 @@ public class MergingHashAggregationBuilder
                 groupByPartialChannels,
                 hashChannel,
                 operatorContext,
+                DataSize.succinctBytes(0),
                 Optional.of(overwriteIntermediateChannelOffset));
     }
 }
