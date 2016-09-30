@@ -207,6 +207,7 @@ public class SpillableHashAggregationBuilder
                 groupByTypes,
                 groupByChannels,
                 hashChannel,
-                operatorContext);
+                operatorContext,
+                DataSize.succinctBytes(0));
     }
 }
