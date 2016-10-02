@@ -37,6 +37,7 @@ public final class HiveSessionProperties
     private static final String MAX_SPLIT_SIZE = "max_split_size";
     private static final String MAX_INITIAL_SPLIT_SIZE = "max_initial_split_size";
     private static final String RCFILE_OPTIMIZED_READER_ENABLED = "rcfile_optimized_reader_enabled";
+    private static final String MULTI_FILE_BUCKETING_ENABLED = "multi_file_bucketing_enabled";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -93,7 +94,12 @@ public final class HiveSessionProperties
                         RCFILE_OPTIMIZED_READER_ENABLED,
                         "Experimental: RCFile: Enable optimized reader",
                         config.isRcfileOptimizedReaderEnabled(),
-                        false));
+                        false),
+                booleanSessionProperty(
+                        MULTI_FILE_BUCKETING_ENABLED,
+                        "Allow multiple files per bucket for clustered table",
+                        config.isMultiFileBucketingEnabled(),
+                        true));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -149,6 +155,11 @@ public final class HiveSessionProperties
     public static boolean isRcfileOptimizedReaderEnabled(ConnectorSession session)
     {
         return session.getProperty(RCFILE_OPTIMIZED_READER_ENABLED, Boolean.class);
+    }
+
+    public static boolean isMultiFileBucketingEnabled(ConnectorSession session)
+    {
+        return session.getProperty(MULTI_FILE_BUCKETING_ENABLED, Boolean.class);
     }
 
     public static PropertyMetadata<DataSize> dataSizeSessionProperty(String name, String description, DataSize defaultValue, boolean hidden)
