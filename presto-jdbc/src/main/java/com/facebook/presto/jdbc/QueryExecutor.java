@@ -14,174 +14,18 @@
 package com.facebook.presto.jdbc;
 
 import com.facebook.presto.client.ClientSession;
-import com.facebook.presto.client.QueryResults;
 import com.facebook.presto.client.ServerInfo;
 import com.facebook.presto.client.StatementClient;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.client.jetty.JettyIoPool;
-import io.airlift.http.client.jetty.JettyIoPoolConfig;
-import io.airlift.json.JsonCodec;
-import io.airlift.units.Duration;
-
-import javax.annotation.Nullable;
 
 import java.io.Closeable;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.ProxySelector;
 import java.net.URI;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static java.util.Objects.requireNonNull;
-
-class QueryExecutor
-        implements Closeable
+public interface QueryExecutor
+        extends Closeable
 {
-    private static final JettyIoPool jettyIoPool;
+    void close();
 
-    private final JsonCodec<QueryResults> queryInfoCodec;
-    private final JsonCodec<ServerInfo> serverInfoCodec;
-    private final HttpClient httpClient;
+    StatementClient startQuery(ClientSession session, String query);
 
-    private AtomicInteger refcount = new AtomicInteger(0);
-    private final Optional<Consumer<QueryExecutor>> closer;
-    private Properties clientProperties;
-
-    static {
-        jettyIoPool = new JettyIoPool("presto-jdbc", new JettyIoPoolConfig());
-    }
-
-    private QueryExecutor(
-            JsonCodec<QueryResults> queryResultsCodec,
-            JsonCodec<ServerInfo> serverInfoCodec,
-            HttpClient httpClient,
-            Properties clientProperties,
-            Optional<Consumer<QueryExecutor>> closer)
-    {
-        this.queryInfoCodec = requireNonNull(queryResultsCodec, "queryResultsCodec is null");
-        this.serverInfoCodec = requireNonNull(serverInfoCodec, "serverInfoCodec is null");
-        this.httpClient = requireNonNull(httpClient, "httpClient is null");
-        this.clientProperties = requireNonNull(clientProperties, "clientProperties is null");
-        this.closer = requireNonNull(closer, "closer is null");
-    }
-
-    public StatementClient startQuery(ClientSession session, String query)
-    {
-        return new StatementClient(httpClient, queryInfoCodec, session, query);
-    }
-
-    @Override
-    public void close()
-    {
-        if (closer.isPresent()) {
-            closer.get().accept(this);
-        }
-        else {
-            closeHttpClient();
-        }
-    }
-
-    int reference()
-    {
-        return refcount.incrementAndGet();
-    }
-
-    int dereference()
-    {
-        return refcount.decrementAndGet();
-    }
-
-    void closeHttpClient()
-    {
-        httpClient.close();
-    }
-
-    public ServerInfo getServerInfo(URI server)
-    {
-        URI uri = uriBuilderFrom(server).replacePath("/v1/info").build();
-        Request request = prepareGet().setUri(uri).build();
-        return httpClient.execute(request, createJsonResponseHandler(serverInfoCodec));
-    }
-
-    public Properties getClientProperties()
-    {
-        return clientProperties;
-    }
-
-    // TODO: replace this with a phantom reference
-    @SuppressWarnings("FinalizeDeclaration")
-    @Override
-    protected void finalize()
-    {
-        close();
-    }
-
-    static Properties filterClientProperties(Properties connectionProperties)
-    {
-        /*
-         * TODO: once their are client-specific properties, return the subset of
-         * connectionProperties that is client-specific
-         */
-        return new Properties();
-    }
-
-    static QueryExecutor create(String userAgent, Properties clientProperties, Consumer<QueryExecutor> closer)
-    {
-        return create(new JettyHttpClient(
-                new HttpClientConfig()
-                        .setConnectTimeout(new Duration(10, TimeUnit.SECONDS))
-                        .setSocksProxy(getSystemSocksProxy()),
-                jettyIoPool,
-                ImmutableSet.of(new UserAgentRequestFilter(userAgent))),
-                clientProperties,
-                closer);
-    }
-
-    private static QueryExecutor create(HttpClient httpClient, Properties clientProperties, Consumer<QueryExecutor> closer)
-    {
-        return new QueryExecutor(
-                jsonCodec(QueryResults.class),
-                jsonCodec(ServerInfo.class),
-                httpClient,
-                clientProperties,
-                Optional.of(closer));
-    }
-
-    static QueryExecutor create(HttpClient httpClient)
-    {
-        return new QueryExecutor(
-                jsonCodec(QueryResults.class),
-                jsonCodec(ServerInfo.class),
-                httpClient,
-                new Properties(),
-                Optional.empty());
-    }
-
-    @Nullable
-    private static HostAndPort getSystemSocksProxy()
-    {
-        URI uri = URI.create("socket://0.0.0.0:80");
-        for (Proxy proxy : ProxySelector.getDefault().select(uri)) {
-            if (proxy.type() == Proxy.Type.SOCKS) {
-                if (proxy.address() instanceof InetSocketAddress) {
-                    InetSocketAddress address = (InetSocketAddress) proxy.address();
-                    return HostAndPort.fromParts(address.getHostString(), address.getPort());
-                }
-            }
-        }
-        return null;
-    }
+    ServerInfo getServerInfo(URI server);
 }
