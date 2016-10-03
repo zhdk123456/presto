@@ -151,7 +151,7 @@ public class AddExchanges
     public PlanNode optimize(PlanNode plan, Session session, Map<Symbol, Type> types, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator)
     {
         Context context = new Context(PreferredProperties.any(), false, ImmutableList.of());
-        PlanWithProperties result = plan.accept(new Rewriter(symbolAllocator, idAllocator, symbolAllocator,  session), context);
+        PlanWithProperties result = plan.accept(new Rewriter(idAllocator, symbolAllocator,  session), context);
         return result.getNode();
     }
 
@@ -204,7 +204,6 @@ public class AddExchanges
     private class Rewriter
             extends PlanVisitor<Context, PlanWithProperties>
     {
-        private final SymbolAllocator allocator;
         private final PlanNodeIdAllocator idAllocator;
         private final SymbolAllocator symbolAllocator;
         private final Session session;
@@ -213,9 +212,8 @@ public class AddExchanges
         private final boolean preferStreamingOperators;
         private final boolean redistributeWrites;
 
-        public Rewriter(SymbolAllocator allocator, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator, Session session)
+        public Rewriter(PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator, Session session)
         {
-            this.allocator = allocator;
             this.idAllocator = idAllocator;
             this.symbolAllocator = symbolAllocator;
             this.session = session;
@@ -354,7 +352,7 @@ public class AddExchanges
                 Signature signature = node.getFunctions().get(entry.getKey());
                 InternalAggregationFunction function = metadata.getFunctionRegistry().getAggregateFunctionImplementation(signature);
 
-                Symbol intermediateSymbol = allocator.newSymbol(signature.getName(), function.getIntermediateType());
+                Symbol intermediateSymbol = symbolAllocator.newSymbol(signature.getName(), function.getIntermediateType());
                 intermediateCalls.put(intermediateSymbol, entry.getValue());
                 intermediateFunctions.put(intermediateSymbol, signature);
                 if (masks.containsKey(entry.getKey())) {
