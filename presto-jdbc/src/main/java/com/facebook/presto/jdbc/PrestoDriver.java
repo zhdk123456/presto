@@ -36,6 +36,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -67,6 +70,7 @@ public class PrestoDriver
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private final JettyIoPool jettyIoPool;
+    private final ScheduledExecutorService queryExecutorCleanupService;
 
     private final LoadingCache<Map<Object, Object>, RefCountedQueryExecutor> queryExecutorCache;
     private final ReadWriteLock cacheLock;
@@ -213,6 +217,7 @@ public class PrestoDriver
     {
         this.jettyIoPool = new JettyIoPool("presto-jdbc", new JettyIoPoolConfig());
         this.cacheLock = new ReentrantReadWriteLock();
+        this.queryExecutorCleanupService = new ScheduledThreadPoolExecutor(1);
 
         this.queryExecutorCache = CacheBuilder.newBuilder()
                 .removalListener(new RemovalListener<Map<Object, Object>, RefCountedQueryExecutor>()
@@ -238,6 +243,7 @@ public class PrestoDriver
     public void close()
     {
         if (closed.compareAndSet(false, true)) {
+            queryExecutorCleanupService.shutdown();
             queryExecutorCache.invalidateAll();
             jettyIoPool.close();
         }
@@ -260,15 +266,24 @@ public class PrestoDriver
         @Override
         public void close()
         {
-            cacheLock.writeLock().lock();
-            try {
-                if (refcount.decrementAndGet() == 0) {
-                    queryExecutorCache.invalidate(clientProperties);
+            Runnable deferredClose = () -> {
+                cacheLock.writeLock().lock();
+                try {
+                    if (refcount.decrementAndGet() == 0) {
+                        queryExecutorCache.invalidate(clientProperties);
+                    }
                 }
-            }
-            finally {
-                cacheLock.writeLock().unlock();
-            }
+                finally {
+                    cacheLock.writeLock().unlock();
+                }
+            };
+
+            /*
+             * Defer cleanup into the future to avoid constantly creating and
+             * destroying QE's in the case where a single thread is repeatedly
+             * calling connect() and close() for the same server.
+             */
+            queryExecutorCleanupService.schedule(deferredClose, 5, TimeUnit.MINUTES);
         }
 
         @Override
