@@ -463,7 +463,6 @@ public class TestLogicalPlanner
                         ).withExactSymbol("partkey", "P").withExactSymbol("suppkey", "S")));
     }
 
-
     private void assertPlan(String sql, PlanMatchPattern pattern)
     {
         assertPlan(sql, LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED, false, pattern);
