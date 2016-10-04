@@ -191,7 +191,32 @@ Property Name                                      Description                  
 
 ``security.config-file``                           Path of config file to use when ``hive.security=file``.
                                                    See :ref:`hive-file-based-authorization` for details.
+
+``hive.multi-file-bucketing.enabled``              Enable support for multiple files per bucket for Hive        ``false``
+                                                   clustered tables. See :ref:`clustered-tables`
 ================================================== ============================================================ ==========
+
+.. _clustered-tables:
+
+Clustered Hive tables support
+-----------------------------
+
+By default Presto supports only one data file per bucket per partition for clustered tables (Hive tables declared with ``CLUSTERED BY`` clause).
+If number of files does not match number of buckets exception would be thrown.
+
+To enable support for cases where there are more than one file per bucket, when multiple INSERTs were done to a single partition of the clustered table, you can use:
+
+ * ``hive.multi-file-bucketing.enabled`` config property
+ * ``multi_file_bucketing_enabled`` session property (using ``SET SESSION <connector_name>.multi_file_bucketing_enabled``)
+
+Config property changes behaviour globally and session property can be used on per query basis.
+The default value of session property is taken from config property.
+
+If support for multiple files per bucket is enabled Presto will group the files in partition directory.
+It will sort filenames lexicographically. Then it will treat part of filename up to first underscore character as bucket key.
+This pattern matches naming convention of files in directory when Hive is used to inject data into table.
+
+Presto will still validate if number of file groups matches number of buckets declared for table and fail if it does not.
 
 Amazon S3 Configuration
 -----------------------
@@ -200,55 +225,6 @@ The Hive Connector can read and write tables that are stored in S3.
 This is accomplished by having a table or database location that
 uses an S3 prefix rather than an HDFS prefix.
 
-Presto uses its own S3 filesystem for the URI prefixes
-``s3://``, ``s3n://`` and  ``s3a://``. It also uses the ``s3bfs://``
-prefix for the legacy S3 block file system (not supported for
-``hive-hadoop2`` or ``hive-cdh5``).
-
-S3 Configuration Properties
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-============================================ =================================================================
-Property Name                                Description
-============================================ =================================================================
-``hive.s3.use-instance-credentials``         Use the EC2 metadata service to retrieve API credentials
-                                             (defaults to ``true``). This works with IAM roles in EC2.
-
-``hive.s3.aws-access-key``                   Default AWS access key to use.
-
-``hive.s3.aws-secret-key``                   Default AWS secret key to use.
-
-``hive.s3.endpoint``                         The S3 storage endpoint server. This can be used to
-                                             connect to an S3-compatible storage system instead
-                                             of AWS.
-
-``hive.s3.signer-type``                      Specify a different signer type for S3-compatible storage.
-                                             Example: ``S3SignerType`` for v2 signer type
-
-``hive.s3.staging-directory``                Local staging directory for data written to S3.
-                                             This defaults to the Java temporary directory specified
-                                             by the JVM system property ``java.io.tmpdir``.
-
-``hive.s3.pin-client-to-current-region``     Pin S3 requests to the same region as the EC2
-                                             instance where Presto is running (defaults to ``false``).
-
-``hive.s3.ssl.enabled``                      Use HTTPS to communicate with the S3 API (defaults to ``true``).
-
-``hive.s3.sse.enabled``                      Use S3 server-side encryption (defaults to ``false``).
-
-``hive.s3.kms-key-id``                       If set, use S3 client-side encryption and use the AWS
-                                             KMS to store encryption keys and use the value of
-                                             this property as the KMS Key ID for newly created
-                                             objects.
-
-``hive.s3.encryption-materials-provider``    If set, use S3 client-side encryption and use the
-                                             value of this property as the fully qualified name of
-                                             a Java class which implements the AWS SDK's
-                                             ``EncryptionMaterialsProvider`` interface.   If the
-                                             class also implements ``Configurable`` from the Hadoop
-                                             API, the Hadoop configuration will be passed in after
-                                             the object has been created.
-============================================ =================================================================
 
 S3 Credentials
 ^^^^^^^^^^^^^^
