@@ -162,7 +162,6 @@ public class PrestoConnection
             throws SQLException
     {
         closed.set(true);
-        queryExecutor.close();
     }
 
     @Override

@@ -117,7 +117,7 @@ public class TestProgressMonitor
             throws SQLException
     {
         HttpClient client = new TestingHttpClient(new TestingHttpClientProcessor(RESPONSES));
-        QueryExecutor testQueryExecutor = QueryExecutorImpl.create(client);
+        QueryExecutor testQueryExecutor = QueryExecutor.create(client);
         String uri = format("prestotest://%s", SERVER_ADDRESS);
         return new PrestoConnection(new PrestoDriverUri(uri), "test", testQueryExecutor);
     }
