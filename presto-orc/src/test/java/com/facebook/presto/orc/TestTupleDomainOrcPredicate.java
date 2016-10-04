@@ -212,6 +212,8 @@ public class TestTupleDomainOrcPredicate
         assertEquals(getDomain(CHAR, 0, stringColumnStats(0L, null, null)), none(CHAR));
         assertEquals(getDomain(CHAR, 0, stringColumnStats(0L, "taco      ", "taco      ")), none(CHAR));
 
+        assertEquals(getDomain(CHAR, 10, stringColumnStats(10L, "\0         ", "          ")), create(ValueSet.ofRanges(range(CHAR, utf8Slice("\0"), true, utf8Slice(""), true)), false));
+        assertEquals(getDomain(CHAR, 10, stringColumnStats(10L, "\0\0\0\0\0\0\0\0\0\0", "          ")), create(ValueSet.ofRanges(range(CHAR, utf8Slice("\0\0\0\0\0\0\0\0\0\0"), true, utf8Slice(""), true)), false));
         assertEquals(getDomain(CHAR, 10, stringColumnStats(0L, null, null)), onlyNull(CHAR));
         assertEquals(getDomain(CHAR, 10, stringColumnStats(10L, null, null)), notNull(CHAR));
 
