@@ -33,6 +33,9 @@ public class TestCharOperatorsNoPad
 
         assertFunction("cast('a' as char(2)) = cast('a ' as char(2))", BOOLEAN, true);
         assertFunction("cast('a ' as char(2)) = cast('a' as char(2))", BOOLEAN, true);
+        assertFunction("cast('a' as char(3)) = cast('a' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(3)) = cast('' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(2)) = cast('' as char(2))", BOOLEAN, true);
     }
 
     @Test
@@ -47,6 +50,9 @@ public class TestCharOperatorsNoPad
 
         assertFunction("cast('a' as char(2)) <> cast('a ' as char(2))", BOOLEAN, false);
         assertFunction("cast('a ' as char(2)) <> cast('a' as char(2))", BOOLEAN, false);
+        assertFunction("cast('a' as char(3)) <> cast('a' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(3)) <> cast('' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(2)) <> cast('' as char(2))", BOOLEAN, false);
     }
 
     @Test
@@ -58,6 +64,18 @@ public class TestCharOperatorsNoPad
         assertFunction("cast('foo' as char(5)) < cast('foo' as char(3))", BOOLEAN, false);
         assertFunction("cast('foo' as char(3)) < cast('bar' as char(3))", BOOLEAN, false);
         assertFunction("cast('bar' as char(3)) < cast('foo' as char(3))", BOOLEAN, true);
+        assertFunction("cast('foobar' as char(6)) < cast('foobaz' as char(6))", BOOLEAN, true);
+        assertFunction("cast('foob r' as char(6)) < cast('foobar' as char(6))", BOOLEAN, true);
+        assertFunction("cast('\0' as char(1)) < cast(' ' as char(1))", BOOLEAN, true);
+        assertFunction("cast('abc\0' as char(4)) < cast('abc' as char(4))", BOOLEAN, true); // 'abc' is implicitly padded with spaces -> 'abc' is greater
+        assertFunction("cast('\0' as char(1)) < cast('\0 ' as char(2))", BOOLEAN, true); // length mismatch, coercion to VARCHAR applies
+        assertFunction("cast('\0' as char(2)) < cast('\0 ' as char(2))", BOOLEAN, false); // '\0' is implicitly padded with spaces -> both are equal
+        assertFunction("cast('\0 a' as char(3)) < cast('\0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a\0' as char(2)) < cast('a \0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a ' as char(2)) < cast('a \0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a' as char(3)) < cast('a' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(3)) < cast('' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(2)) < cast('' as char(2))", BOOLEAN, false);
     }
 
     @Test
@@ -69,6 +87,18 @@ public class TestCharOperatorsNoPad
         assertFunction("cast('foo' as char(5)) <= cast('foo' as char(3))", BOOLEAN, false);
         assertFunction("cast('foo' as char(3)) <= cast('bar' as char(3))", BOOLEAN, false);
         assertFunction("cast('bar' as char(3)) <= cast('foo' as char(3))", BOOLEAN, true);
+        assertFunction("cast('foobar' as char(6)) <= cast('foobaz' as char(6))", BOOLEAN, true);
+        assertFunction("cast('foob r' as char(6)) <= cast('foobar' as char(6))", BOOLEAN, true);
+        assertFunction("cast('\0' as char(1)) <= cast(' ' as char(1))", BOOLEAN, true);
+        assertFunction("cast('abc\0' as char(4)) <= cast('abc' as char(4))", BOOLEAN, true); // 'abc' is implicitly padded with spaces -> 'abc' is greater
+        assertFunction("cast('\0' as char(1)) <= cast('\0 ' as char(2))", BOOLEAN, true); // length mismatch, coercion to VARCHAR applies
+        assertFunction("cast('\0' as char(2)) <= cast('\0 ' as char(2))", BOOLEAN, true); // '\0' is implicitly padded with spaces -> both are equal
+        assertFunction("cast('\0 a' as char(3)) <= cast('\0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a\0' as char(2)) <= cast('a \0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a ' as char(2)) <= cast('a \0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a' as char(3)) <= cast('a' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(3)) <= cast('' as char(2))", BOOLEAN, false);
+        assertFunction("cast('' as char(2)) <= cast('' as char(2))", BOOLEAN, true);
     }
 
     @Test
@@ -80,6 +110,18 @@ public class TestCharOperatorsNoPad
         assertFunction("cast('foo' as char(5)) > cast('foo' as char(3))", BOOLEAN, true);
         assertFunction("cast('foo' as char(3)) > cast('bar' as char(3))", BOOLEAN, true);
         assertFunction("cast('bar' as char(3)) > cast('foo' as char(3))", BOOLEAN, false);
+        assertFunction("cast('foobar' as char(6)) > cast('foobaz' as char(6))", BOOLEAN, false);
+        assertFunction("cast('foob r' as char(6)) > cast('foobar' as char(6))", BOOLEAN, false);
+        assertFunction("cast(' ' as char(1)) > cast('\0' as char(1))", BOOLEAN, true);
+        assertFunction("cast('abc' as char(4)) > cast('abc\0' as char(4))", BOOLEAN, true); // 'abc' is implicitly padded with spaces -> 'abc' is greater
+        assertFunction("cast('\0 ' as char(2)) > cast('\0' as char(1))", BOOLEAN, true); // length mismatch, coercion to VARCHAR applies
+        assertFunction("cast('\0 ' as char(2)) > cast('\0' as char(2))", BOOLEAN, false); // '\0' is implicitly padded with spaces -> both are equal
+        assertFunction("cast('\0 a' as char(3)) > cast('\0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a\0' as char(2)) > cast('a \0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a ' as char(2)) > cast('a \0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a' as char(3)) > cast('a' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(3)) > cast('' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(2)) > cast('' as char(2))", BOOLEAN, false);
     }
 
     @Test
@@ -91,6 +133,18 @@ public class TestCharOperatorsNoPad
         assertFunction("cast('foo' as char(5)) >= cast('foo' as char(3))", BOOLEAN, true);
         assertFunction("cast('foo' as char(3)) >= cast('bar' as char(3))", BOOLEAN, true);
         assertFunction("cast('bar' as char(3)) >= cast('foo' as char(3))", BOOLEAN, false);
+        assertFunction("cast('foobar' as char(6)) >= cast('foobaz' as char(6))", BOOLEAN, false);
+        assertFunction("cast('foob r' as char(6)) >= cast('foobar' as char(6))", BOOLEAN, false);
+        assertFunction("cast(' ' as char(1)) >= cast('\0' as char(1))", BOOLEAN, true);
+        assertFunction("cast('abc' as char(4)) >= cast('abc\0' as char(4))", BOOLEAN, true); // 'abc' is implicitly padded with spaces -> 'abc' is greater
+        assertFunction("cast('\0 ' as char(2)) >= cast('\0' as char(1))", BOOLEAN, true); // length mismatch, coercion to VARCHAR applies
+        assertFunction("cast('\0 ' as char(2)) >= cast('\0' as char(2))", BOOLEAN, true); // '\0' is implicitly padded with spaces -> both are equal
+        assertFunction("cast('\0 a' as char(3)) >= cast('\0' as char(3))", BOOLEAN, true);
+        assertFunction("cast('a\0' as char(2)) >= cast('a \0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a ' as char(2)) >= cast('a \0' as char(3))", BOOLEAN, false);
+        assertFunction("cast('a' as char(3)) >= cast('a' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(3)) >= cast('' as char(2))", BOOLEAN, true);
+        assertFunction("cast('' as char(2)) >= cast('' as char(2))", BOOLEAN, true);
     }
 
     @Test
@@ -110,6 +164,9 @@ public class TestCharOperatorsNoPad
         assertFunction("cast('bar' as char(3)) BETWEEN cast('bar' as char(3)) AND cast('foo' as char(3))", BOOLEAN, true);
         assertFunction("cast('bar' as char(3)) BETWEEN cast('bar' as char(3)) AND cast('bar' as char(3))", BOOLEAN, true);
 
+        assertFunction("cast('\0 a' as char(3)) BETWEEN cast('\0' as char(3)) AND cast('\0a' as char(3))", BOOLEAN, true);
+
+        // length based comparison
         assertFunction("cast('bar' as char(4)) BETWEEN cast('bar' as char(3)) AND cast('bar' as char(5))", BOOLEAN, true);
         assertFunction("cast('bar' as char(4)) BETWEEN cast('bar' as char(5)) AND cast('bar' as char(7))", BOOLEAN, false);
     }
