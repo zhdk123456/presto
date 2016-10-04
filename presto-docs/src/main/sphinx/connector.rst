@@ -1,8 +1,8 @@
-**********
-Connectors
-**********
+*****************************
+Teradata Supported Connectors
+*****************************
 
-This chapter describes the connectors available in Presto to access data
+This chapter describes the Teradata supported connectors available in Presto to access data
 from different data sources.
 
 .. toctree::
@@ -19,3 +19,5 @@ from different data sources.
     connector/memory
     connector/jmx
     connector/blackhole
+
+
