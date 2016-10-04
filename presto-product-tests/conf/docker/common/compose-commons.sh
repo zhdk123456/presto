@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # docker-compose has a limited understanding of relative paths and interprets them relative to
 # compose-file location. We can't guarantee the shape of the paths coming from env variables,
 # so we canonicalize them.
@@ -48,3 +46,5 @@ if [[ -z ${PRESTO_JDBC_DRIVER_JAR} ]]; then
     PRESTO_JDBC_DRIVER_JAR="${PROJECT_ROOT}/presto-jdbc/target/presto-jdbc-${PRESTO_VERSION}.jar"
 fi
 export PRESTO_JDBC_DRIVER_JAR=$(canonical_path ${PRESTO_JDBC_DRIVER_JAR})
+
+export HIVE_PROXY_PORT=${HIVE_PROXY_PORT:-1080}
