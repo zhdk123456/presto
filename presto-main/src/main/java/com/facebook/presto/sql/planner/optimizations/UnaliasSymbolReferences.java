@@ -81,7 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
@@ -161,7 +160,7 @@ public class UnaliasSymbolReferences
             PlanNode source = context.rewrite(node.getSource());
             List<List<Symbol>> groupingSetsSymbols = node.getGroupingSets().stream()
                     .map(this::canonicalize)
-                    .collect(Collectors.toList());
+                    .collect(toImmutableList());
 
             ImmutableMap.Builder<Symbol, Symbol> newPassthroughMap = ImmutableMap.builder();
             for (Symbol inputSymbol : node.getIdentityMappings().keySet()) {
@@ -260,6 +259,8 @@ public class UnaliasSymbolReferences
                     .map(context::rewrite)
                     .collect(toImmutableList());
 
+            mapExchangeNodeSymbols(node);
+
             List<List<Symbol>> inputs = new ArrayList<>();
             for (int i = 0; i < node.getInputs().size(); i++) {
                 inputs.add(new ArrayList<>());
@@ -285,6 +286,53 @@ public class UnaliasSymbolReferences
                     node.getPartitioningScheme().getBucketToPartition());
 
             return new ExchangeNode(node.getId(), node.getType(), node.getScope(), partitioningScheme, sources, inputs);
+        }
+
+        private void mapExchangeNodeSymbols(ExchangeNode node)
+        {
+            if (node.getInputs().size() == 1) {
+                for (int symbolIndex = 0; symbolIndex < node.getOutputSymbols().size(); symbolIndex++) {
+                    Symbol canonicalOutput = canonicalize(node.getOutputSymbols().get(symbolIndex));
+                    Symbol canonicalInput = canonicalize(node.getInputs().get(0).get(symbolIndex));
+
+                    if (!canonicalOutput.equals(canonicalInput)) {
+                        map(canonicalOutput, canonicalInput);
+                    }
+                }
+                return;
+            }
+
+            // Mapping from list [node.getInput(0).get(symbolIndex), node.getInput(1).get(symbolIndex), ...] to node.getOutputSymbols(symbolIndex).
+            // All symbols are canonical.
+            Map<List<Symbol>, Symbol> inputsToOutputs = new HashMap<>();
+            for (int symbolIndex = 0; symbolIndex < node.getOutputSymbols().size(); symbolIndex++) {
+                Symbol canonicalOutput = canonicalize(node.getOutputSymbols().get(symbolIndex));
+                List<Symbol> canonicalInputs = canonicalizeExchangeNodeInputs(node, symbolIndex);
+                Optional<Symbol> outputSymbolForInputSymbols = exchangeNodeOutputSymbolForInputSymbols(node, canonicalInputs, inputsToOutputs);
+
+                if (outputSymbolForInputSymbols.isPresent() && !canonicalOutput.equals(outputSymbolForInputSymbols.get())) {
+                    map(canonicalOutput, outputSymbolForInputSymbols.get());
+                }
+                else {
+                    inputsToOutputs.put(canonicalInputs, canonicalOutput);
+                }
+            }
+        }
+
+        private Optional<Symbol> exchangeNodeOutputSymbolForInputSymbols(ExchangeNode node, List<Symbol> canonicalInputs, Map<List<Symbol>, Symbol> inputsToOutputs)
+        {
+            if (node.getInputs().isEmpty() || !inputsToOutputs.containsKey(canonicalInputs)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(inputsToOutputs.get(canonicalInputs));
+        }
+
+        private List<Symbol> canonicalizeExchangeNodeInputs(ExchangeNode node, int symbolIndex)
+        {
+            return node.getInputs().stream()
+                    .map(input -> canonicalize(input.get(symbolIndex)))
+                    .collect(toImmutableList());
         }
 
         @Override
