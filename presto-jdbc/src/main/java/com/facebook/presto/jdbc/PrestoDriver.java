@@ -39,9 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -66,10 +68,8 @@ public class PrestoDriver
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private final JettyIoPool jettyIoPool;
-    private final ScheduledExecutorService queryExecutorCleanupService;
 
-    private final LoadingCache<Map<Object, Object>, QueryExecutorHolder> queryExecutorCache;
-    private final ReadWriteLock cacheLock;
+    private final ReferenceCountingLoadingCache<Map<Object, Object>, QueryExecutor> queryExecutorCache;
 
     static {
         try {
@@ -91,9 +91,9 @@ public class PrestoDriver
      * connection to a Presto server.
      * - A PrestoConnection contains a QueryExecutor, which is responsible
      * for actually executing queries against the Presto server.
-     * - QueryExecutor contains a driver-wide pool of execution resources,
-     * and an HTTP client that executes requests using the resources in that
-     * pool.
+     * - QueryExecutor contains a reference to a driver-wide pool of execution
+     * resources, and an HTTP client that executes requests using the resources
+     * in that pool.
      *
      * An HTTP client is expensive to create and destroy, and we would like to
      * share it across as many PrestoConnections as possible. If every
@@ -140,8 +140,8 @@ public class PrestoDriver
      *
      * The solution is to protect the refcounts with a read/write lock on the
      * cache:
-     * - get() operations on the cache are protected by a read lock. After the
-     * get(), the refcount on the returned QueryExecutor needs to be
+     * - get() operations on the cache are protected by a read lock. After
+     * the get(), the refcount on the returned QueryExecutor needs to be
      * incremented by calling queryExecutor.reference().
      * - close() operations on the queryExecutor take the write lock on the
      * cache to ensure that nobody is trying to simultaneously get() the same
@@ -149,29 +149,32 @@ public class PrestoDriver
      * refcount, and if it's zero, invalidates the cache entry.
      *
      * The last piece of the puzzle is that the refcount needs to be atomically
-     * incremented to handle multiple simultaneous get() operations happening
-     * under the read lock.
+     * incremented to handle multiple simultaneous acquire() operations
+     * happening under the read lock.
+     *
+     * This logic is encapsulated in ReferenceCountingLoadingCache. get() and
+     * close() operations call acquire() and release(), respectively.
      *
      * The locking hierarchy is as follows:
-     * 1) read/write lock on the cache in PrestoDriver
+     * 1) read/write lock on the cache
      * 2) <internal locking of com.google.common.cache.LoadingCache imlementation>
      *
      * With that in mind, the possible scenarios for multiple access are as follows:
      *
-     * 1) Multiple simultaneous get() operations happening, no close() operation.
+     * 1) Multiple simultaneous acquire() operations happening, no release() operation.
      *    a) No suitable cache entry:
-     *       All callers of get() obtain the read lock
-     *       The cache creates one new entry under its own locking and returns
-     *         it to all callers of get() in some arbitrary sequence.
+     *       All callers of acquire() obtain the read lock
+     *       The cache creates one new entry under its own lock and returns
+     *         it to all callers of acquire() in some arbitrary sequence.
      *       All callers atomically increment the refcount on the queryExecutor
      *    b) Suitable cache entry:
-     *       All callers of get() obtain the read lock
+     *       All callers of acquire() obtain the read lock
      *       The cache returns the existing QueryExecutor to all callers of
-     *         get() in some arbitrary sequence.
+     *         acquire() in some arbitrary sequence.
      *       All callers atomically increment the refcount on the queryExecutor
      *
-     * 2) Simultaneous close() operations happening, no get() operation.
-     *    Each thread calling close() gets the write lock in turn and:
+     * 2) Simultaneous release() operations happening, no acquire() operation.
+     *    Each thread calling release() gets the write lock in turn and:
      *       decrements the refcount
      *       checks to see if the refcount is zero.
      *       if so, invalidates the cache entry for the queryExecutor
@@ -180,96 +183,119 @@ public class PrestoDriver
      *       The RemovalListener is called, which closes the HTTP client
      *       releases the write lock
      *
-     * 3) Simultaneous get() and close(), get obtains read lock first
-     *    Caller of get() obtains read lock and:
+     * 3) Simultaneous acquire() and release(), acquire obtains read lock first
+     *    Caller of acquire() obtains read lock and:
      *       calls cache.get() which returns existing queryExecutor under the
      *          cache's own lock
      *       increments queryExecutor.refcount under readlock
      *       releases read lock
-     *    Caller of close() obtains write lock and:
+     *    Caller of release() obtains write lock and:
      *       decrements refcount
      *       refcount != 0
      *       releases write lock
      *
-     * 4) Simultaneous close() and get(), close() obtains write lock first
-     *    Caller of close() obtains write lock and:
+     * 4) Simultaneous release() and acquire(), release() obtains write lock first
+     *    Caller of release() obtains write lock and:
      *       decrements the refcount
      *       checks to see if the refcount is zero
      *       if so, invalidates cache, closing the HTTP client as in 2 above.
      *       releases write lock
-     *    Caller of get() obtains read lock and:
-     *       calls cache.get() which returns a new queryExecutor under the
+     *    Caller of acquire() obtains read lock and:
+     *       calls cache.acquire() which returns a new queryExecutor under the
      *          cache's own lock
      *       increments queryExecutor.refcount under readlock
      *       releases read lock
      *
      * The last case of interest is the process that is using PrestoDriver
      * calling prestoDriver.close(). This invalidates all of the cached
-     * QueryExecutors regardless of their refcount, and in doing so closes
-     * their HTTP clients. If anybody is still trying to use a
-     * PrestoConnection created by the driver, they're SOL.
+     * QueryExecutors regardless of their refcount by calling the cache's
+     * close() method, and in doing so closes their HTTP clients. If anybody is
+     * still trying to use a PrestoConnection created by the driver, they're
+     * SOL.
      */
-    public PrestoDriver()
+    private static class ReferenceCountingLoadingCache<K, V>
     {
-        this.jettyIoPool = new JettyIoPool("presto-jdbc", new JettyIoPoolConfig());
-        this.cacheLock = new ReentrantReadWriteLock();
-        this.queryExecutorCleanupService = new ScheduledThreadPoolExecutor(1);
+        private class Holder
+        {
+            private final V value;
+            private final AtomicInteger refcount = new AtomicInteger();
 
-        this.queryExecutorCache = CacheBuilder.newBuilder()
-                .removalListener(new RemovalListener<Map<Object, Object>, QueryExecutorHolder>() {
+            private Holder(V value)
+            {
+                this.value = requireNonNull(value);
+            }
+
+            private V get()
+            {
+                return value;
+            }
+
+            private int reference()
+            {
+                return refcount.incrementAndGet();
+            }
+
+            private int dereference()
+            {
+                return refcount.decrementAndGet();
+            }
+        }
+
+        private final ScheduledExecutorService valueCleanupService;
+        private final LoadingCache<K, Holder> backingCache;
+        private final ReadWriteLock cacheLock = new ReentrantReadWriteLock();
+        private final AtomicBoolean closed = new AtomicBoolean(false);
+
+        private ReferenceCountingLoadingCache(CacheLoader<K, V> loader, Consumer<V> disposer)
+        {
+            this.valueCleanupService = new ScheduledThreadPoolExecutor(1, daemonThreadsNamed("cache-cleanup-%s"));
+            this.backingCache = CacheBuilder.newBuilder()
+                    .removalListener(new RemovalListener<K, Holder>() {
                         @Override
-                        public void onRemoval(RemovalNotification<Map<Object, Object>, QueryExecutorHolder> notification)
+                        public void onRemoval(RemovalNotification<K, Holder> notification)
                         {
-                            notification.getValue().closeQueryExecutor();
+                            disposer.accept(notification.getValue().get());
                         }
                     })
-                .build(new CacheLoader<Map<Object, Object>, QueryExecutorHolder>() {
+                    .build(new CacheLoader<K, Holder>() {
                         @Override
-                        public QueryExecutorHolder load(Map<Object, Object> clientProperties)
+                        public Holder load(K key)
+                                throws Exception
                         {
-                            return new QueryExecutorHolder(
-                                    QueryExecutor.create(DRIVER_NAME + "/" + DRIVER_VERSION, jettyIoPool),
-                                    clientProperties);
+                            return new Holder(loader.load(key));
                         }
                     });
-    }
-
-    @Override
-    public void close()
-    {
-        if (closed.compareAndSet(false, true)) {
-            queryExecutorCleanupService.shutdown();
-            queryExecutorCache.invalidateAll();
-            jettyIoPool.close();
-        }
-    }
-
-    private class QueryExecutorHolder
-    {
-        private QueryExecutor queryExecutor;
-
-        private Map<Object, Object> clientProperties;
-
-        private AtomicInteger refcount = new AtomicInteger(0);
-
-        private QueryExecutorHolder(QueryExecutor queryExecutor, Map<Object, Object> clientProperties)
-        {
-            this.queryExecutor = requireNonNull(queryExecutor, "wrapped is null");
-            this.clientProperties = requireNonNull(clientProperties, "clientProperties is null");
         }
 
-        private void closeQueryExecutor()
+        private void close()
         {
-            queryExecutor.close();
+            if (closed.compareAndSet(false, true)) {
+                valueCleanupService.shutdownNow();
+                backingCache.invalidateAll();
+            }
         }
 
-        public void release()
+        private V acquire(K key)
         {
-            Runnable deferredClose = () -> {
-                cacheLock.writeLock().lock();
+            this.cacheLock.readLock().lock();
+            try {
+                Holder holder = backingCache.getUnchecked(key);
+                holder.reference();
+                return holder.get();
+            }
+            finally {
+                this.cacheLock.readLock().unlock();
+            }
+        }
+
+        private void release(K key)
+        {
+            Runnable deferredRelease = () -> {
+                this.cacheLock.writeLock().lock();
                 try {
-                    if (refcount.decrementAndGet() == 0) {
-                        queryExecutorCache.invalidate(clientProperties);
+                    Holder holder = backingCache.getUnchecked(key);
+                    if (holder.dereference() == 0) {
+                        backingCache.invalidate(key);
                     }
                 }
                 finally {
@@ -277,18 +303,37 @@ public class PrestoDriver
                 }
             };
 
-            /*
-             * Defer cleanup into the future to avoid constantly creating and
-             * destroying QE's in the case where a single thread is repeatedly
-             * calling connect() and close() for the same server.
-             */
-            queryExecutorCleanupService.schedule(deferredClose, 5, TimeUnit.MINUTES);
+            // TODO: Change to 30 seconds or so. 5 minutes for testing only.
+            valueCleanupService.schedule(deferredRelease, 5, TimeUnit.MINUTES);
         }
+    }
 
-        private QueryExecutor acquire()
-        {
-            refcount.incrementAndGet();
-            return queryExecutor;
+    public PrestoDriver()
+    {
+        this.jettyIoPool = new JettyIoPool("presto-jdbc", new JettyIoPoolConfig());
+        this.queryExecutorCache = new ReferenceCountingLoadingCache<>(
+                new CacheLoader<Map<Object, Object>, QueryExecutor>() {
+                    @Override
+                    public QueryExecutor load(Map<Object, Object> clientProperties)
+                    {
+                        return QueryExecutor.create(DRIVER_NAME + "/" + DRIVER_VERSION, jettyIoPool);
+                    }
+                },
+                new Consumer<QueryExecutor>() {
+                    @Override
+                    public void accept(QueryExecutor queryExecutor)
+                    {
+                        queryExecutor.close();
+                    }
+                });
+    }
+
+    @Override
+    public void close()
+    {
+        if (closed.compareAndSet(false, true)) {
+            queryExecutorCache.close();
+            jettyIoPool.close();
         }
     }
 
@@ -318,23 +363,17 @@ public class PrestoDriver
             throw new SQLException(format("Username property (%s) must be set", USER_PROPERTY));
         }
 
-        cacheLock.readLock().lock();
-        try {
-            QueryExecutorHolder queryExecutorHolder = queryExecutorCache.getUnchecked(
-                    filterClientProperties(connectionProperties));
-            return new PrestoConnection(new PrestoDriverUri(url), user, queryExecutorHolder.acquire()) {
-                @Override
-                public void close()
-                        throws SQLException
-                {
-                    queryExecutorHolder.release();
-                    super.close();
-                }
-            };
-        }
-        finally {
-            cacheLock.readLock().unlock();
-        }
+        Map<Object, Object> clientProperties = filterClientProperties(connectionProperties);
+        QueryExecutor queryExecutor = queryExecutorCache.acquire(clientProperties);
+        return new PrestoConnection(new PrestoDriverUri(url), user, queryExecutor) {
+            @Override
+            public void close()
+                    throws SQLException
+            {
+                queryExecutorCache.release(clientProperties);
+                super.close();
+            }
+        };
     }
 
     @Override
