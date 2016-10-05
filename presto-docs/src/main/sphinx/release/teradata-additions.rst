@@ -4,6 +4,11 @@ Teradata Additions
 
 The following are additions that Teradata has added on top Facebook's 0.148 release of Presto
 
+Bug Fixes
+---------
+* Fix issue "Hive table is corrupt. It is declared as being bucketed, but the files do not match the bucketing declaration. The number of files in the directory (1) does not match the declared." by fixing support for Hive bucketed tables. See option ``hive.multi-file-bucketing.enabled`` in the Presto Hive connector documentation.
+* Fix issue "low must be less than or equal to high" that can occur with ORC and Character data. 
+
 Prepared Statements
 -------------------
 Add support for Prepared statements and parameters via sql syntax.
