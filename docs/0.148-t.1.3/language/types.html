@@ -1,0 +1,437 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>15.1. Data Types &mdash; Teradata Distribution of Presto 0.148-t.1.3 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/teradata.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Teradata Distribution of Presto 0.148-t.1.3 Documentation" href="../index.html"/>
+        <link rel="up" title="15. SQL Language" href="../language.html"/>
+        <link rel="next" title="16. SQL Statement Syntax" href="../sql.html"/>
+        <link rel="prev" title="15. SQL Language" href="../language.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Teradata Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.148-t.1.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">3. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sandbox-vms.html">4. Presto Installation on a Sandbox VM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-automated.html">5. Presto Server Installation on a Cluster (Ambari)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-manual.html">6. Presto Server Installation on a Cluster (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-aws-emr-manual.html">7. Presto Server Installation on an AWS EMR (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">8. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/presto-admin/user-guide.html">9. Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../yarn.html">10. YARN Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">11. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">12. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">13. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">15. SQL Language</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">15.1. Data Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#boolean">BOOLEAN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tinyint">TINYINT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#smallint">SMALLINT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integer">INTEGER</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bigint">BIGINT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#float">FLOAT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#double">DOUBLE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#decimal">DECIMAL</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#decimal-limitations">Decimal Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#varchar">VARCHAR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#char">CHAR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#varbinary">VARBINARY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#json">JSON</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#date">DATE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#time">TIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#time-with-time-zone">TIME WITH TIME ZONE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timestamp">TIMESTAMP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timestamp-with-time-zone">TIMESTAMP WITH TIME ZONE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interval-year-to-month">INTERVAL YEAR TO MONTH</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interval-day-to-second">INTERVAL DAY TO SECOND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#array">ARRAY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#map">MAP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#row">ROW</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">18. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Teradata Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../language.html">15. SQL Language</a> &raquo;</li>
+      
+    <li>15.1. Data Types</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/language/types.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="data-types">
+<h1>15.1. Data Types</h1>
+<p>Presto currently supports a limited set of data types.
+These types can be used with the standard <code class="docutils literal"><span class="pre">CAST</span></code> operator.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Not every type has to be supported by every connector.</p>
+</div>
+<div class="section" id="boolean">
+<h2>BOOLEAN</h2>
+<blockquote>
+<div>This type captures boolean values <code class="docutils literal"><span class="pre">true</span></code> and <code class="docutils literal"><span class="pre">false</span></code>.</div></blockquote>
+</div>
+<div class="section" id="tinyint">
+<h2>TINYINT</h2>
+<blockquote>
+<div>A 8-bit signed two&#8217;s complement integer with a minimum value of
+<code class="docutils literal"><span class="pre">-2^7</span></code> and a maximum value of <code class="docutils literal"><span class="pre">2^7</span> <span class="pre">-</span> <span class="pre">1</span></code>.</div></blockquote>
+</div>
+<div class="section" id="smallint">
+<h2>SMALLINT</h2>
+<blockquote>
+<div>A 16-bit signed two&#8217;s complement integer with a minimum value of
+<code class="docutils literal"><span class="pre">-2^15</span></code> and a maximum value of <code class="docutils literal"><span class="pre">2^15</span> <span class="pre">-</span> <span class="pre">1</span></code>.</div></blockquote>
+</div>
+<div class="section" id="integer">
+<h2>INTEGER</h2>
+<blockquote>
+<div>A 32-bit signed two&#8217;s complement integer with a minimum value of
+<code class="docutils literal"><span class="pre">-2^31</span></code> and a maximum value of <code class="docutils literal"><span class="pre">2^31</span> <span class="pre">-</span> <span class="pre">1</span></code>.</div></blockquote>
+</div>
+<div class="section" id="bigint">
+<h2>BIGINT</h2>
+<blockquote>
+<div>A 64-bit signed two&#8217;s complement integer with a minimum value of
+<code class="docutils literal"><span class="pre">-2^63</span></code> and a maximum value of <code class="docutils literal"><span class="pre">2^63</span> <span class="pre">-</span> <span class="pre">1</span></code>.</div></blockquote>
+</div>
+<div class="section" id="float">
+<h2>FLOAT</h2>
+<blockquote>
+<div>A float is a 32-bit inexact, variable-precision implementing the
+IEEE Standard 754 for Binary Floating-Point Arithmetic.</div></blockquote>
+</div>
+<div class="section" id="double">
+<h2>DOUBLE</h2>
+<blockquote>
+<div>A double is a 64-bit inexact, variable-precision implementing the
+IEEE Standard 754 for Binary Floating-Point Arithmetic.</div></blockquote>
+</div>
+<div class="section" id="decimal">
+<h2>DECIMAL</h2>
+<blockquote>
+<div><p>A fixed precision decimal number. Precision up to 38 digits is supported
+but performance is best up to 17 digits.</p>
+<p>DECIMAL type takes two literal parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>precision</strong> - total number of digits</li>
+<li><strong>scale</strong> - number of digits in fractional part. Scale is optional and defaults to 0.</li>
+</ul>
+</div></blockquote>
+<p>Example type definitions: <code class="docutils literal"><span class="pre">DECIMAL(10,3)</span></code>, <code class="docutils literal"><span class="pre">DECIMAL(20)</span></code></p>
+<p>Example literals: <code class="docutils literal"><span class="pre">DECIMAL</span> <span class="pre">'10.3'</span></code>, <code class="docutils literal"><span class="pre">DECIMAL</span> <span class="pre">'1234567890'</span></code>, <code class="docutils literal"><span class="pre">1.1</span></code></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Decimal literals (e.g. <code class="docutils literal"><span class="pre">1.2</span></code>) are treated as the values of the <code class="docutils literal"><span class="pre">DECIMAL</span></code> type by default.</p>
+<dl class="last docutils">
+<dt>In order to keep compatibility with the previous versions of Presto set either:</dt>
+<dd><ul class="first last simple">
+<li>System wide property: <code class="docutils literal"><span class="pre">parse-decimal-literals-as-double=true</span></code></li>
+<li>Session wide property: <code class="docutils literal"><span class="pre">parse_decimal_literals_as_double=true</span></code></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div></blockquote>
+<div class="section" id="decimal-limitations">
+<h3>Decimal Limitations</h3>
+<blockquote>
+<div><p>Currently only Hive connector supports exposing <code class="docutils literal"><span class="pre">DECIMAL</span></code> columns.</p>
+<p>Performance of decimal types longer than 17 digits may be not satisfactory.</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="varchar">
+<h2>VARCHAR</h2>
+<blockquote>
+<div><p>Variable length character data with an optional maximum length.</p>
+<p>Example type definitions: <code class="docutils literal"><span class="pre">varchar</span></code>, <code class="docutils literal"><span class="pre">varchar(20)</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="char">
+<h2>CHAR</h2>
+<blockquote>
+<div><p>Fixed length character data. Char type without length specified has default length of 1.</p>
+<p>Example type definitions: <code class="docutils literal"><span class="pre">char</span></code>, <code class="docutils literal"><span class="pre">char(20)</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="varbinary">
+<h2>VARBINARY</h2>
+<blockquote>
+<div><p>Variable length binary data.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Binary strings with length are not yet supported: <code class="docutils literal"><span class="pre">varbinary(n)</span></code></p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="json">
+<h2>JSON</h2>
+<blockquote>
+<div>Variable length json data.</div></blockquote>
+</div>
+<div class="section" id="date">
+<h2>DATE</h2>
+<blockquote>
+<div><p>Calendar date (year, month, day).</p>
+<p>Example: <code class="docutils literal"><span class="pre">DATE</span> <span class="pre">'2001-08-22'</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="time">
+<h2>TIME</h2>
+<blockquote>
+<div><p>Time of day (hour, minute, second, millisecond) without a time zone.
+Values of this type are parsed and rendered in the session time zone.</p>
+<p>Example: <code class="docutils literal"><span class="pre">TIME</span> <span class="pre">'01:02:03.456'</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="time-with-time-zone">
+<h2>TIME WITH TIME ZONE</h2>
+<blockquote>
+<div><p>Time of day (hour, minute, second, millisecond) with a time zone.
+Values of this type are rendered using the time zone from the value.</p>
+<p>Example: <code class="docutils literal"><span class="pre">TIME</span> <span class="pre">'01:02:03.456</span> <span class="pre">America/Los_Angeles'</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="timestamp">
+<h2>TIMESTAMP</h2>
+<blockquote>
+<div><p>Instant in time that includes the date and time of day without a time zone.
+Values of this type are parsed and rendered in the session time zone.</p>
+<p>Example: <code class="docutils literal"><span class="pre">TIMESTAMP</span> <span class="pre">'2001-08-22</span> <span class="pre">03:04:05.321'</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="timestamp-with-time-zone">
+<h2>TIMESTAMP WITH TIME ZONE</h2>
+<blockquote>
+<div><p>Instant in time that includes the date and time of day with a time zone.
+Values of this type are rendered using the time zone from the value.</p>
+<p>Example: <code class="docutils literal"><span class="pre">TIMESTAMP</span> <span class="pre">'2001-08-22</span> <span class="pre">03:04:05.321</span> <span class="pre">America/Los_Angeles'</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="interval-year-to-month">
+<h2>INTERVAL YEAR TO MONTH</h2>
+<blockquote>
+<div><p>Span of years and months.</p>
+<p>Example: <code class="docutils literal"><span class="pre">INTERVAL</span> <span class="pre">'3'</span> <span class="pre">MONTH</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="interval-day-to-second">
+<h2>INTERVAL DAY TO SECOND</h2>
+<blockquote>
+<div><p>Span of days, hours, minutes, seconds and milliseconds.</p>
+<p>Example: <code class="docutils literal"><span class="pre">INTERVAL</span> <span class="pre">'2'</span> <span class="pre">DAY</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="array">
+<span id="array-type"></span><h2>ARRAY</h2>
+<blockquote>
+<div><p>An array of the given component type.</p>
+<p>Example: <code class="docutils literal"><span class="pre">ARRAY[1,</span> <span class="pre">2,</span> <span class="pre">3]</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="map">
+<span id="map-type"></span><h2>MAP</h2>
+<blockquote>
+<div><p>A map between the given component types.</p>
+<p>Example: <code class="docutils literal"><span class="pre">MAP(ARRAY['foo',</span> <span class="pre">'bar'],</span> <span class="pre">ARRAY[1,</span> <span class="pre">2])</span></code></p>
+</div></blockquote>
+</div>
+<div class="section" id="row">
+<span id="row-type"></span><h2>ROW</h2>
+<blockquote>
+<div><p>A structure made up of named fields. The fields may be of any SQL type, and are
+accessed with field reference operator <code class="docutils literal"><span class="pre">.</span></code></p>
+<p>Example: <code class="docutils literal"><span class="pre">my_column.my_field</span></code></p>
+</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../sql.html" class="btn btn-neutral float-right" title="16. SQL Statement Syntax" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../language.html" class="btn btn-neutral" title="15. SQL Language" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.148-t.1.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
