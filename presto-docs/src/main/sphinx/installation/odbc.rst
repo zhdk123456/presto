@@ -9,7 +9,7 @@ https://www.teradata.com/presto.
 
 For detailed Presto ODBC documentation, please see the `Teradata
 Presto ODBC Driver Install Guide
-<http://teradata-presto.s3.amazonaws.com/odbc-1.1.3.1007/TeradataODBCDriverPrestoInstallGuide_1_1_3.pdf>`_
+<http://teradata-presto.s3.amazonaws.com/ odbc-1.1.4.1011/TeradataODBCDriverPrestoInstallGuide_1_1_4.pdf>`_
 
 
 Version Compatibility
