@@ -1,8 +1,8 @@
-===================
-Release 0.152.1-t.1
-===================
+=====================
+Release 0.152.1-t.0.1
+=====================
 
-Presto 0.152.1-t.1 is equivalent to Presto release 0.152.1, with some additional features.
+Presto 0.152.1-t.0.1 is equivalent to Presto release 0.152.1, with some additional features.
 
 Security
 --------
@@ -147,7 +147,7 @@ MySQL catalog names are mapped to Presto schema names.
 
 Patches
 -------
-The following patches from 0.152.3 have been backported to 0.152.1-t.1:
+The following patches from 0.152.3 have been backported to 0.152.1-t.0.1:
 
 * https://github.com/prestodb/presto/commit/667ccb8d88324361753155f5b53e6428474c7032
 * https://github.com/prestodb/presto/commit/85d8ffd65ed13b5d87e1098c859babf3d172b276
