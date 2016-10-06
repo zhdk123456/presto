@@ -50,6 +50,7 @@ public class JoinNode
     private final Optional<Expression> filter;
     private final Optional<Symbol> leftHashSymbol;
     private final Optional<Symbol> rightHashSymbol;
+    private final Optional<DistributionType> distributionType;
 
     @JsonCreator
     public JoinNode(@JsonProperty("id") PlanNodeId id,
@@ -60,7 +61,8 @@ public class JoinNode
             @JsonProperty("outputSymbols") List<Symbol> outputSymbols,
             @JsonProperty("filter") Optional<Expression> filter,
             @JsonProperty("leftHashSymbol") Optional<Symbol> leftHashSymbol,
-            @JsonProperty("rightHashSymbol") Optional<Symbol> rightHashSymbol)
+            @JsonProperty("rightHashSymbol") Optional<Symbol> rightHashSymbol,
+            @JsonProperty("distributionType") Optional<DistributionType> distributionType)
     {
         super(id);
         requireNonNull(type, "type is null");
@@ -71,6 +73,7 @@ public class JoinNode
         requireNonNull(filter, "filter is null");
         requireNonNull(leftHashSymbol, "leftHashSymbol is null");
         requireNonNull(rightHashSymbol, "rightHashSymbol is null");
+        requireNonNull(distributionType, "distributionType is null");
 
         Set<Symbol> inputSymbols = ImmutableSet.<Symbol>builder()
                 .addAll(left.getOutputSymbols())
@@ -86,6 +89,13 @@ public class JoinNode
         this.filter = filter;
         this.leftHashSymbol = leftHashSymbol;
         this.rightHashSymbol = rightHashSymbol;
+        this.distributionType = distributionType;
+    }
+
+    public enum DistributionType
+    {
+        PARTITIONED,
+        REPLICATED
     }
 
     public enum Type
@@ -180,6 +190,12 @@ public class JoinNode
     public List<Symbol> getOutputSymbols()
     {
         return outputSymbols;
+    }
+
+    @JsonProperty("distributionType")
+    public Optional<DistributionType> getDistributionType()
+    {
+        return distributionType;
     }
 
     @Override

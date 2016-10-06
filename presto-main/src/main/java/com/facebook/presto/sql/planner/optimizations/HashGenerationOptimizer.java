@@ -345,7 +345,8 @@ public class HashGenerationOptimizer
                             outputSymbols,
                             node.getFilter(),
                             leftHashSymbol,
-                            rightHashSymbol),
+                            rightHashSymbol,
+                            node.getDistributionType()),
                     hashSymbolsWithParentPreferences);
         }
 
