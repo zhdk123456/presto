@@ -45,6 +45,8 @@ import java.util.stream.Stream;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.sql.planner.SystemPartitioningHandle.SINGLE_DISTRIBUTION;
 import static com.facebook.presto.sql.planner.SystemPartitioningHandle.SOURCE_DISTRIBUTION;
+import static com.facebook.presto.sql.planner.plan.JoinNode.DistributionType.PARTITIONED;
+import static com.facebook.presto.sql.planner.plan.JoinNode.DistributionType.REPLICATED;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.RIGHT;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
@@ -197,7 +199,8 @@ public class TestPhasedExecutionSchedule
                 ImmutableList.of(),
                 Optional.<Expression>empty(),
                 Optional.<Symbol>empty(),
-                Optional.<Symbol>empty());
+                Optional.<Symbol>empty(),
+                Optional.of(REPLICATED));
 
         return createFragment(join);
     }
@@ -212,7 +215,8 @@ public class TestPhasedExecutionSchedule
                 ImmutableList.of(),
                 Optional.empty(),
                 Optional.<Symbol>empty(),
-                Optional.<Symbol>empty());
+                Optional.<Symbol>empty(),
+               Optional.of(PARTITIONED));
 
         return createFragment(planNode);
     }

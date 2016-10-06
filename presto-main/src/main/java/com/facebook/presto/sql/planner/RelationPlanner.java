@@ -280,6 +280,7 @@ class RelationPlanner
                 equiClauses.build(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         if (node.getType() != INNER) {
@@ -311,6 +312,7 @@ class RelationPlanner
                     rightPlanBuilder.getRoot(),
                     equiClauses.build(),
                     Optional.of(rewritenFilterCondition),
+                    Optional.empty(),
                     Optional.empty(),
                     Optional.empty());
         }
