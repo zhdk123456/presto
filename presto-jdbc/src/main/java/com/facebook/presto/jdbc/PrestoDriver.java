@@ -33,15 +33,14 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.String.format;
@@ -138,73 +137,59 @@ public class PrestoDriver
      * going to get from get(), so the locking for the refcount has to be done
      * against the cache rather than individual QueryExecutors.
      *
-     * The solution is to protect the refcounts with a read/write lock on the
-     * cache:
-     * - get() operations on the cache are protected by a read lock. After
-     * the get(), the refcount on the returned QueryExecutor needs to be
-     * incremented by calling queryExecutor.reference().
-     * - close() operations on the queryExecutor take the write lock on the
-     * cache to ensure that nobody is trying to simultaneously get() the same
-     * queryExecutor and increase its refcount. close() decrements the
-     * refcount, and if it's zero, invalidates the cache entry.
-     *
-     * The last piece of the puzzle is that the refcount needs to be atomically
-     * incremented to handle multiple simultaneous acquire() operations
-     * happening under the read lock.
+     * The solution is to protect the refcounts by synchronizing on the cache
+     * and incrementing and decrementing the refcount while holding the cache's
+     * monitor.
      *
      * This logic is encapsulated in ReferenceCountingLoadingCache. get() and
      * close() operations call acquire() and release(), respectively.
      *
+     * The cleaner count handles the following situation:
+     * Thread T1 has a reference on V for key K.
+     * T1 calls release(K1) scheduling future F1 and increments cleaner count -> 1
+     * time passes.
+     * A daemon thread starts executing F1, but does not acquire the lock
+     * Thread T2 calls acquire() and acquires the lock.
+     *   acquire() increments the refcount
+     *   acquire tries, but fails to cancel F1
+     *   acquire() releases the lock
+     *
+     * At this point 2 things can happen
+     * 1) F1 resumes executing. At this point the refcount is sufficient to
+     *    ensure correctness
+     * 2) T2 calls release(K1)
+     *      release() acquires the lock.
+     *      release schedules a cleanup F2 and increments cleaner count -> 2
+     *      release fails to cancel F1
+     *      release() releases the lock.
+     *    F1 resumes executing and acquires the lock.
+     *      releaseForCleaning() decrements cleaner count -> 1
+     *      nothing further happens.
+     *    more time passes.
+     *    F2 executes
+     *      releaseForCleaning() decrements cleaner count -> 0
+     *      refcount is 0
+     *      K1 is invalidated from the cache, and V1 is disposed.
+     *
+     * Without the cleaner count, we run the risk that some thread T3 calls
+     * acquire(K1), loading V2 while more time passes. F2 is still using V1's
+     * Holder, which has a refcount of zero. F1 then invalidates K1, which
+     * disposes of V2 while it's still being used by T3. Havoc ensues.
+     *
+     * Instead of keeping a cleaner count, we could have a boolean flag in the
+     * Holder that tracks whether or not the value has been invalidated. The
+     * cleaner count has the advantage of ensuring the desired retention period
+     * as well as guarding against the above situation, so it's all around
+     * better.
+     *
+     * The other, other approach would be to set an 'invalidate after' time
+     * in the holder. Now we have to worry about clock resolution and
+     * monotonicity. No thanks; somebody did that work for the ScheduledFuture/
+     * ScheduledExecutorService, let's take advantage of that.
+     *
      * The locking hierarchy is as follows:
-     * 1) read/write lock on the cache
-     * 2) <internal locking of com.google.common.cache.LoadingCache imlementation>
-     *
-     * With that in mind, the possible scenarios for multiple access are as follows:
-     *
-     * 1) Multiple simultaneous acquire() operations happening, no release() operation.
-     *    a) No suitable cache entry:
-     *       All callers of acquire() obtain the read lock
-     *       The cache creates one new entry under its own lock and returns
-     *         it to all callers of acquire() in some arbitrary sequence.
-     *       All callers atomically increment the refcount on the queryExecutor
-     *    b) Suitable cache entry:
-     *       All callers of acquire() obtain the read lock
-     *       The cache returns the existing QueryExecutor to all callers of
-     *         acquire() in some arbitrary sequence.
-     *       All callers atomically increment the refcount on the queryExecutor
-     *
-     * 2) Simultaneous release() operations happening, no acquire() operation.
-     *    Each thread calling release() gets the write lock in turn and:
-     *       decrements the refcount
-     *       checks to see if the refcount is zero.
-     *       if so, invalidates the cache entry for the queryExecutor
-     *          The cache removes the queryExecutor under its own lock
-     *          and releases its own lock.
-     *       The RemovalListener is called, which closes the HTTP client
-     *       releases the write lock
-     *
-     * 3) Simultaneous acquire() and release(), acquire obtains read lock first
-     *    Caller of acquire() obtains read lock and:
-     *       calls cache.get() which returns existing queryExecutor under the
-     *          cache's own lock
-     *       increments queryExecutor.refcount under readlock
-     *       releases read lock
-     *    Caller of release() obtains write lock and:
-     *       decrements refcount
-     *       refcount != 0
-     *       releases write lock
-     *
-     * 4) Simultaneous release() and acquire(), release() obtains write lock first
-     *    Caller of release() obtains write lock and:
-     *       decrements the refcount
-     *       checks to see if the refcount is zero
-     *       if so, invalidates cache, closing the HTTP client as in 2 above.
-     *       releases write lock
-     *    Caller of acquire() obtains read lock and:
-     *       calls cache.acquire() which returns a new queryExecutor under the
-     *          cache's own lock
-     *       increments queryExecutor.refcount under readlock
-     *       releases read lock
+     * 1) The monitor on the ReferenceCountingLoadingCache
+     * 2) <internal locking of com.google.common.cache.LoadingCache>
      *
      * The last case of interest is the process that is using PrestoDriver
      * calling prestoDriver.close(). This invalidates all of the cached
@@ -218,7 +203,9 @@ public class PrestoDriver
         private class Holder
         {
             private final V value;
-            private final AtomicInteger refcount = new AtomicInteger();
+            private int refcount;
+            private int cleanerCount;
+            private ScheduledFuture oldCleanup;
 
             private Holder(V value)
             {
@@ -230,20 +217,55 @@ public class PrestoDriver
                 return value;
             }
 
+            private int getRefcount()
+            {
+                return refcount;
+            }
+
+            private int getCleanerCount()
+            {
+                return cleanerCount;
+            }
+
             private int reference()
             {
-                return refcount.incrementAndGet();
+                setCleanup(null);
+                return ++refcount;
             }
 
             private int dereference()
             {
-                return refcount.decrementAndGet();
+                return --refcount;
+            }
+
+            private void setCleanup(ScheduledFuture newCleanup)
+            {
+                if (oldCleanup != null && oldCleanup.cancel(false)) {
+                    --cleanerCount;
+                }
+                oldCleanup = newCleanup;
+            }
+
+            private void scheduleCleanup(
+                    ScheduledExecutorService cleanupService,
+                    Runnable cleanupTask,
+                    long delay,
+                    TimeUnit unit)
+            {
+                checkState(refcount == 0, "non-zero refcount in scheduleCleanup");
+                ++cleanerCount;
+                ScheduledFuture newCleanup = cleanupService.schedule(cleanupTask, delay, unit);
+                setCleanup(newCleanup);
+            }
+
+            private void releaseForCleaning()
+            {
+                --cleanerCount;
             }
         }
 
         private final ScheduledExecutorService valueCleanupService;
         private final LoadingCache<K, Holder> backingCache;
-        private final ReadWriteLock cacheLock = new ReentrantReadWriteLock();
         private final AtomicBoolean closed = new AtomicBoolean(false);
 
         private ReferenceCountingLoadingCache(CacheLoader<K, V> loader, Consumer<V> disposer)
@@ -254,7 +276,17 @@ public class PrestoDriver
                         @Override
                         public void onRemoval(RemovalNotification<K, Holder> notification)
                         {
-                            disposer.accept(notification.getValue().get());
+                            Holder holder = notification.getValue();
+                            /*
+                             * The docs say that both the key and value may be
+                             * null if they've already been garbage collected.
+                             * We aren't using weak or soft keys or values, so
+                             * this shouldn't apply.
+                             */
+                            requireNonNull(holder, format("holder is null while removing key %s", notification.getKey()));
+                            checkState(holder.getRefcount() == 0, "Non-zero refcount disposing %s", notification.getKey());
+                            checkState(holder.getCleanerCount() == 0, "Non-zero refcount disposing %s", notification.getKey());
+                            disposer.accept(holder.get());
                         }
                     })
                     .build(new CacheLoader<K, Holder>() {
@@ -277,34 +309,39 @@ public class PrestoDriver
 
         private V acquire(K key)
         {
-            this.cacheLock.readLock().lock();
-            try {
+            synchronized (this) {
                 Holder holder = backingCache.getUnchecked(key);
                 holder.reference();
                 return holder.get();
-            }
-            finally {
-                this.cacheLock.readLock().unlock();
             }
         }
 
         private void release(K key)
         {
+            /*
+             * Access through the Map interface to avoid creating a Holder and immediately
+             * scheduling it for cleanup.
+             */
+            Holder holder = backingCache.asMap().get(key);
+            if (holder == null) {
+                return;
+            }
+
             Runnable deferredRelease = () -> {
-                this.cacheLock.writeLock().lock();
-                try {
-                    Holder holder = backingCache.getUnchecked(key);
-                    if (holder.dereference() == 0) {
+                synchronized (this) {
+                    holder.releaseForCleaning();
+                    if (holder.getCleanerCount() ==  0 && holder.getRefcount() == 0) {
                         backingCache.invalidate(key);
                     }
                 }
-                finally {
-                    cacheLock.writeLock().unlock();
-                }
             };
 
-            // TODO: Change to 30 seconds or so. 5 minutes for testing only.
-            valueCleanupService.schedule(deferredRelease, 5, TimeUnit.MINUTES);
+            synchronized (this) {
+                if (holder.dereference() == 0) {
+                    // TODO: shorter retention.
+                    holder.scheduleCleanup(valueCleanupService, deferredRelease, 2, TimeUnit.MINUTES);
+                }
+            }
         }
     }
 
@@ -319,13 +356,7 @@ public class PrestoDriver
                         return QueryExecutor.create(DRIVER_NAME + "/" + DRIVER_VERSION, jettyIoPool);
                     }
                 },
-                new Consumer<QueryExecutor>() {
-                    @Override
-                    public void accept(QueryExecutor queryExecutor)
-                    {
-                        queryExecutor.close();
-                    }
-                });
+                QueryExecutor::close);
     }
 
     @Override
