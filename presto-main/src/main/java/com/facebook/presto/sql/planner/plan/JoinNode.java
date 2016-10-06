@@ -25,6 +25,7 @@ import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Optional;
 
+import static com.facebook.presto.sql.planner.plan.JoinNode.Method.DISTRIBUTED;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +40,7 @@ public class JoinNode
     private final Optional<Expression> filter;
     private final Optional<Symbol> leftHashSymbol;
     private final Optional<Symbol> rightHashSymbol;
+    private final Optional<Method> method;
 
     @JsonCreator
     public JoinNode(@JsonProperty("id") PlanNodeId id,
@@ -48,7 +50,8 @@ public class JoinNode
             @JsonProperty("criteria") List<EquiJoinClause> criteria,
             @JsonProperty("filter") Optional<Expression> filter,
             @JsonProperty("leftHashSymbol") Optional<Symbol> leftHashSymbol,
-            @JsonProperty("rightHashSymbol") Optional<Symbol> rightHashSymbol)
+            @JsonProperty("rightHashSymbol") Optional<Symbol> rightHashSymbol,
+            @JsonProperty("method") Optional<Method> method)
     {
         super(id);
         requireNonNull(type, "type is null");
@@ -58,6 +61,7 @@ public class JoinNode
         requireNonNull(filter, "filter is null");
         requireNonNull(leftHashSymbol, "leftHashSymbol is null");
         requireNonNull(rightHashSymbol, "rightHashSymbol is null");
+        requireNonNull(method, "method is null");
 
         this.type = type;
         this.left = left;
@@ -68,6 +72,13 @@ public class JoinNode
         this.rightHashSymbol = rightHashSymbol;
 
         checkState(leftHashSymbol.isPresent() == rightHashSymbol.isPresent(), "Either none or both hash symbols should be provided");
+        this.method = method;
+    }
+
+    public enum Method
+    {
+        BROADCAST,
+        DISTRIBUTED
     }
 
     public enum Type
@@ -165,6 +176,18 @@ public class JoinNode
                 .addAll(left.getOutputSymbols())
                 .addAll(right.getOutputSymbols())
                 .build();
+    }
+
+    @JsonProperty("method")
+    public Optional<Method> getMethod()
+    {
+        return method;
+    }
+
+    public boolean isDistributed()
+    {
+        checkState(method.isPresent(), "join method not yet set");
+        return method.get() == DISTRIBUTED;
     }
 
     @Override

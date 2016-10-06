@@ -538,7 +538,16 @@ public class UnaliasSymbolReferences
                         .forEach(equiJoinClause -> map(equiJoinClause.getRight(), equiJoinClause.getLeft()));
             }
 
-            return new JoinNode(node.getId(), node.getType(), left, right, canonicalCriteria, canonicalFilter, canonicalLeftHashSymbol, canonicalRightHashSymbol);
+            return new JoinNode(
+                    node.getId(),
+                    node.getType(),
+                    left,
+                    right,
+                    canonicalCriteria,
+                    canoninicalFilter,
+                    canonicalLeftHashSymbol,
+                    canonicalRightHashSymbol,
+                    node.getMethod());
         }
 
         @Override
