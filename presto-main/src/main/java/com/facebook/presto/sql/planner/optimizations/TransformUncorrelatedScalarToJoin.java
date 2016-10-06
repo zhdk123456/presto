@@ -61,6 +61,7 @@ public class TransformUncorrelatedScalarToJoin
                         ImmutableList.of(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         Optional.empty());
             }
             return rewrittenNode;
