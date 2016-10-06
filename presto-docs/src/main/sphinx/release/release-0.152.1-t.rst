@@ -1,8 +1,8 @@
-=====================
-Release 0.152.1-t.0.1
-=====================
+=================
+Release 0.152.1-t
+=================
 
-Presto 0.152.1-t.0.1 is equivalent to Presto release 0.152.1, with some additional features.
+Presto 0.152.1-t is equivalent to Presto release 0.152.1, with some additional features and patches.
 
 Security
 --------
@@ -33,6 +33,7 @@ Performance
 * Move certain filters in the WHERE clauses to be executed as part of the INNER JOIN rather than a filter after the join. For example: ``SELECT * FROM t t1 JOIN t t2 ON t1.a = t2.a WHERE (t1.b+t2.b)*5 > 100000000``
 * Code generation for joins with filters
 * Merge non-identical windows (for the same `partition by` and `order by` but different frame)
+
 * Add support for running regular expression functions using the more efficent re2j-td library by setting the session variable ``regex_library`` to RE2J.  The memory footprint can be adjusted by setting ``re2j_dfa_states_limit``. Additionally, the number of times the re2j library falls back from its DFA algorithm to the NFA algorithm (due to hitting the states limit) before immediately starting with the NFA algorithm can be set with the ``re2j_dfa_retries`` session variable.
 
 Unsupported Functionality
@@ -145,10 +146,38 @@ MySQL Catalogs
 MySQL catalog names are mapped to Presto schema names.
 
 
+=====================
+Release 0.152.1-t.0.1
+=====================
+
 Patches
 -------
-The following patches from 0.152.3 have been backported to 0.152.1-t.0.1:
+
+The following has been added to 0.152.1-t.0.1:
 
 * https://github.com/prestodb/presto/commit/667ccb8d88324361753155f5b53e6428474c7032
 * https://github.com/prestodb/presto/commit/85d8ffd65ed13b5d87e1098c859babf3d172b276
 * https://github.com/prestodb/presto/commit/d3d398e467a5a887edd03c7bdca1cece24e378f6
+
+=====================
+Release 0.152.1-t.0.2
+=====================
+
+The following has been added to 0.152.1-t.0.2:
+
+* Optimize execution order of Windowing functions to minimize the number of times data is repartitioned. For example:
+
+``wfunc1() OVER (PARTITION BY A ORDER BY B)``
+
+``wfunc2() OVER (PARTITION BY C ORDER BY D)`` 
+
+``wfunc3() OVER (PARTITION BY A ORDER BY B)``
+
+If the execution order is as written in the query, it results in partitioning the data 3 times.
+If we rearrange to execute wfunc1 -> wfunc3 -> wfunc2 then data is only partitioned twice.
+
+* RPM to include installation of the Memory connector.
+
+  
+
+  
