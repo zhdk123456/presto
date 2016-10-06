@@ -718,6 +718,7 @@ public class TestEffectivePredicateExtractor
                 filter(baseTableScan, greaterThan(AE, bigintLiteral(5))),
                 A, B, C,
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         Expression effectivePredicate = EffectivePredicateExtractor.extract(node, TYPES);
