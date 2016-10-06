@@ -361,7 +361,7 @@ public class HashGenerationOptimizer
                             node.getSemiJoinOutput(),
                             Optional.of(sourceHashSymbol),
                             Optional.of(filteringSourceHashSymbol),
-                            node.getMethod()),
+                            node.getDistributionType()),
                     source.getHashSymbols());
         }
 
