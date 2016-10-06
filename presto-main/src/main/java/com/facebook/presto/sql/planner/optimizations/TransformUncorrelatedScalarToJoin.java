@@ -67,6 +67,7 @@ public class TransformUncorrelatedScalarToJoin
                                 .build(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         Optional.empty());
             }
             return rewrittenNode;
