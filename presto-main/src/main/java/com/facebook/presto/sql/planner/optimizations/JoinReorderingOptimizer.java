@@ -106,7 +106,8 @@ public class JoinReorderingOptimizer
                         node.getOutputSymbols(),
                         node.getFilter(),
                         node.getRightHashSymbol(),
-                        node.getLeftHashSymbol());
+                        node.getLeftHashSymbol(),
+                        node.getDistributionType());
             }
 
             if (leftRewritten != node.getLeft() || rightRewritten != node.getRight()) {
@@ -118,7 +119,8 @@ public class JoinReorderingOptimizer
                         node.getOutputSymbols(),
                         node.getFilter(),
                         node.getLeftHashSymbol(),
-                        node.getRightHashSymbol());
+                        node.getRightHashSymbol(),
+                        node.getDistributionType());
             }
 
             return node;
