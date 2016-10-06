@@ -295,7 +295,8 @@ public class HashGenerationOptimizer
                                 node.getCriteria(),
                                 node.getFilter(),
                                 Optional.empty(),
-                                Optional.empty()),
+                                Optional.empty(),
+                                node.getDistributionType()),
                         allHashSymbols);
             }
 
@@ -329,7 +330,9 @@ public class HashGenerationOptimizer
                             node.getCriteria(),
                             node.getFilter(),
                             Optional.of(leftHashSymbol),
-                            Optional.of(rightHashSymbol)),
+                            Optional.of(rightHashSymbol),
+                            node.getDistributionType()
+                    ),
                     allHashSymbols);
         }
 

@@ -183,6 +183,7 @@ public class EliminateCrossJoins
                         criteria.build(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         Optional.empty());
             }
 
