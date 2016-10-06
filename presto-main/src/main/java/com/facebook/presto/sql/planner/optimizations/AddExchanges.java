@@ -833,7 +833,8 @@ public class AddExchanges
                     node.getCriteria(),
                     node.getFilter(),
                     node.getLeftHashSymbol(),
-                    node.getRightHashSymbol());
+                    node.getRightHashSymbol(),
+                    node.getDistributionType());
 
             return new PlanWithProperties(result, deriveProperties(result, ImmutableList.of(left.getProperties(), right.getProperties())));
         }

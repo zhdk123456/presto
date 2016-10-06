@@ -294,7 +294,8 @@ public class HashGenerationOptimizer
                                 node.getCriteria(),
                                 node.getFilter(),
                                 Optional.empty(),
-                                Optional.empty()),
+                                Optional.empty(),
+                                node.getDistributionType()),
                         allHashSymbols);
             }
 
@@ -328,7 +329,9 @@ public class HashGenerationOptimizer
                             node.getCriteria(),
                             node.getFilter(),
                             Optional.of(leftHashSymbol),
-                            Optional.of(rightHashSymbol)),
+                            Optional.of(rightHashSymbol),
+                            node.getDistributionType()
+                    ),
                     allHashSymbols);
         }
 
@@ -357,7 +360,8 @@ public class HashGenerationOptimizer
                             node.getFilteringSourceJoinSymbol(),
                             node.getSemiJoinOutput(),
                             Optional.of(sourceHashSymbol),
-                            Optional.of(filteringSourceHashSymbol)),
+                            Optional.of(filteringSourceHashSymbol),
+                            node.getMethod()),
                     source.getHashSymbols());
         }
 

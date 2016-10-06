@@ -449,6 +449,7 @@ public class TestEffectivePredicateExtractor
                 criteria,
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         Expression effectivePredicate = EffectivePredicateExtractor.extract(node, TYPES);
@@ -507,6 +508,7 @@ public class TestEffectivePredicateExtractor
                 criteria,
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         Expression effectivePredicate = EffectivePredicateExtractor.extract(node, TYPES);
@@ -557,6 +559,7 @@ public class TestEffectivePredicateExtractor
                                 lessThan(CE, bigintLiteral(10)))),
                 filter(rightScan, FALSE_LITERAL),
                 criteria,
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty());
@@ -614,6 +617,7 @@ public class TestEffectivePredicateExtractor
                 criteria,
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         Expression effectivePredicate = EffectivePredicateExtractor.extract(node, TYPES);
@@ -664,6 +668,7 @@ public class TestEffectivePredicateExtractor
                                 equals(DE, EE),
                                 lessThan(FE, bigintLiteral(100)))),
                 criteria,
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty());
