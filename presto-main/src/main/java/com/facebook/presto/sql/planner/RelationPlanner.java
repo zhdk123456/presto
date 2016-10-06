@@ -305,6 +305,7 @@ class RelationPlanner
                         .build(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         if (node.getType() != INNER) {
@@ -340,6 +341,7 @@ class RelationPlanner
                             .addAll(rightPlanBuilder.getRoot().getOutputSymbols())
                             .build(),
                     Optional.of(rewritenFilterCondition),
+                    Optional.empty(),
                     Optional.empty(),
                     Optional.empty());
         }
