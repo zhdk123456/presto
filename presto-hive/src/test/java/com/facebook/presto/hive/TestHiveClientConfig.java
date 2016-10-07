@@ -105,7 +105,7 @@ public class TestHiveClientConfig
                 .setBucketExecutionEnabled(true)
                 .setForceIntegralToBigint(false)
                 .setBucketWritingEnabled(true)
-                .setMultiFileBucketingEnabled(false));
+                .setEmptyBucketedPartitionsEnabled(false));
     }
 
     @Test
@@ -182,6 +182,7 @@ public class TestHiveClientConfig
                 .put("deprecated.hive.integral-types-as-bigint", "true")
                 .put("hive.bucket-writing", "false")
                 .put("hive.multi-file-bucketing.enabled", "true")
+                .put("hive.empty-bucketed-partitions.enabled", "true")
                 .build();
 
         HiveClientConfig expected = new HiveClientConfig()
@@ -254,7 +255,8 @@ public class TestHiveClientConfig
                 .setBucketExecutionEnabled(false)
                 .setForceIntegralToBigint(true)
                 .setBucketWritingEnabled(false)
-                .setMultiFileBucketingEnabled(true);
+                .setMultiFileBucketingEnabled(true)
+                .setEmptyBucketedPartitionsEnabled(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
