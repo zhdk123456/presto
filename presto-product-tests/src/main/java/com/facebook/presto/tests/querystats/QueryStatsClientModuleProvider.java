@@ -50,11 +50,11 @@ public class QueryStatsClientModuleProvider
             @Inject
             @Provides
             @Exposed
-            QueryStatsClient getQueryStatsClient(ObjectMapper objectMapper, @Named("presto_rest.base_uri") String prestoRestInterfaceBaseUri)
+            QueryStatsClient getQueryStatsClient(ObjectMapper objectMapper, @Named("databases.presto.server_address") String serverAddress)
             {
                 // @Singleton does not work due: https://github.com/prestodb/tempto/issues/94
                 if (httpQueryStatsClient == null) {
-                    httpQueryStatsClient = new HttpQueryStatsClient(new JettyHttpClient(), objectMapper, URI.create(prestoRestInterfaceBaseUri));
+                    httpQueryStatsClient = new HttpQueryStatsClient(new JettyHttpClient(), objectMapper, URI.create(serverAddress));
                 }
                 return httpQueryStatsClient;
             }
