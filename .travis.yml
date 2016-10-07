@@ -43,7 +43,7 @@ script:
   - |
     test ! -v PRODUCT_TESTS ||
       presto-product-tests/bin/run_on_docker.sh \
-        singlenode-kerberos-hdfs-impersonation -g storage_formats,cli,hdfs_impersonation,authorization
+        singlenode-kerberos-hdfs-impersonation -g storage_formats,cli,hdfs_impersonation,authorization -x quarantine
   - |
     test ! -v PRODUCT_TESTS ||
       presto-product-tests/bin/run_on_docker.sh \
