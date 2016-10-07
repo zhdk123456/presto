@@ -99,7 +99,7 @@ public class PrestoDriver
      * connection could use the same HTTP client, life would be simple.
      * Unfortunately, some things that can be specified at the PrestoConnection
      * level must be configured at the HTTP client level. The obvious case of
-     * this is the SSL/TLS trust store configuraion: An HTTP client has to be
+     * this is the SSL/TLS trust store configuration: An HTTP client has to be
      * configured with the appropriate trust store to make SSL connections to a
      * Presto server.
      *
@@ -144,14 +144,22 @@ public class PrestoDriver
      * This logic is encapsulated in ReferenceCountingLoadingCache. get() and
      * close() operations call acquire() and release(), respectively.
      *
+     * The last wrinkle is that we need to retain released() QueryExecutors
+     * for some short time period to handle cases where somebody releases the
+     * last reference to a QE, but is going to reacquire it immediately. This
+     * requires scheduling cache invalidation into the future, which adds yet
+     * more joy to our lives, as detailed below.
+     *
      * The cleaner count handles the following situation:
+     *
      * Thread T1 has a reference on V for key K.
      * T1 calls release(K1) scheduling future F1 and increments cleaner count -> 1
      * time passes.
      * A daemon thread starts executing F1, but does not acquire the lock
      * Thread T2 calls acquire() and acquires the lock.
      *   acquire() increments the refcount
-     *   acquire tries, but fails to cancel F1
+     *   acquire tries, but fails to cancel F1 because F1 isn't is running
+     *     but is not interruptible.
      *   acquire() releases the lock
      *
      * At this point 2 things can happen
@@ -160,7 +168,7 @@ public class PrestoDriver
      * 2) T2 calls release(K1)
      *      release() acquires the lock.
      *      release schedules a cleanup F2 and increments cleaner count -> 2
-     *      release fails to cancel F1
+     *      release fails to cancel F1 for the same reason acquire did.
      *      release() releases the lock.
      *    F1 resumes executing and acquires the lock.
      *      releaseForCleaning() decrements cleaner count -> 1
@@ -183,7 +191,7 @@ public class PrestoDriver
      * better.
      *
      * The other, other approach would be to set an 'invalidate after' time
-     * in the holder. Now we have to worry about clock resolution and
+     * in the holder. Now we have to worry about clock resolution, jitter, and
      * monotonicity. No thanks; somebody did that work for the ScheduledFuture/
      * ScheduledExecutorService, let's take advantage of that.
      *
@@ -205,11 +213,11 @@ public class PrestoDriver
             private final V value;
             private int refcount;
             private int cleanerCount;
-            private ScheduledFuture oldCleanup;
+            private ScheduledFuture currentCleanup;
 
             private Holder(V value)
             {
-                this.value = requireNonNull(value);
+                this.value = requireNonNull(value, "value is null");
             }
 
             private V get()
@@ -238,12 +246,18 @@ public class PrestoDriver
                 return --refcount;
             }
 
-            private void setCleanup(ScheduledFuture newCleanup)
+            private void setCleanup(ScheduledFuture cleanup)
             {
-                if (oldCleanup != null && oldCleanup.cancel(false)) {
+                if (currentCleanup != null && currentCleanup.cancel(false)) {
                     --cleanerCount;
                 }
-                oldCleanup = newCleanup;
+
+                checkState(cleanerCount >= 0, "Negative cleanerCount in setCleanup");
+
+                currentCleanup = cleanup;
+                if (cleanup != null) {
+                    ++cleanerCount;
+                }
             }
 
             private void scheduleCleanup(
@@ -253,20 +267,24 @@ public class PrestoDriver
                     TimeUnit unit)
             {
                 checkState(refcount == 0, "non-zero refcount in scheduleCleanup");
-                ++cleanerCount;
-                ScheduledFuture newCleanup = cleanupService.schedule(cleanupTask, delay, unit);
-                setCleanup(newCleanup);
+                ScheduledFuture cleanup = cleanupService.schedule(cleanupTask, delay, unit);
+                setCleanup(cleanup);
             }
 
             private void releaseForCleaning()
             {
                 --cleanerCount;
+                checkState(cleanerCount >= 0, "Negative cleanerCount in releaseForCleaning");
             }
         }
 
         private final ScheduledExecutorService valueCleanupService;
         private final LoadingCache<K, Holder> backingCache;
         private final AtomicBoolean closed = new AtomicBoolean(false);
+
+        // TODO: This is probably on the long side. Maybe change to 30 seconds?
+        private static final long retentionPeriod = 2;
+        private static final TimeUnit retentionUnit = TimeUnit.MINUTES;
 
         private ReferenceCountingLoadingCache(CacheLoader<K, V> loader, Consumer<V> disposer)
         {
@@ -338,8 +356,7 @@ public class PrestoDriver
 
             synchronized (this) {
                 if (holder.dereference() == 0) {
-                    // TODO: shorter retention.
-                    holder.scheduleCleanup(valueCleanupService, deferredRelease, 2, TimeUnit.MINUTES);
+                    holder.scheduleCleanup(valueCleanupService, deferredRelease, retentionPeriod, retentionUnit);
                 }
             }
         }

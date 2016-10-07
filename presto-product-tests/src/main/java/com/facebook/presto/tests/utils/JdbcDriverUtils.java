@@ -78,11 +78,7 @@ public class JdbcDriverUtils
 
     public static boolean usingPrestoJdbcDriver(Connection connection)
     {
-        String canonicalClassName = getClassNameForJdbcDriver(connection);
-        if (canonicalClassName == null) {
-            canonicalClassName = connection.getClass().getSuperclass().getCanonicalName();
-        }
-        return canonicalClassName.equals("com.facebook.presto.jdbc.PrestoConnection");
+        return connection instanceof PrestoConnection;
     }
 
     public static boolean usingTeradataJdbcDriver(Connection connection)
