@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.spi.block;
 
+import io.airlift.slice.Slice;
 import org.openjdk.jol.info.ClassLayout;
 
 import java.util.Arrays;
@@ -59,6 +60,13 @@ public class LongArrayBlockBuilder
 
         positionCount++;
         blockBuilderStatus.addBytes(Byte.BYTES + Long.BYTES);
+        return this;
+    }
+
+    @Override
+    public BlockBuilder writeBytes(Slice source, int sourceIndex, int length)
+    {
+        writeLong(source.getLong(sourceIndex));
         return this;
     }
 

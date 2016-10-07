@@ -20,6 +20,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
+import com.facebook.presto.type.RowType;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -132,7 +133,7 @@ public class UnnestOperator
     {
         ImmutableList.Builder<Type> builder = ImmutableList.builder();
         for (Type type : types) {
-            checkArgument(type instanceof ArrayType || type instanceof MapType, "Can only unnest map and array types");
+            checkArgument(type instanceof ArrayType || type instanceof MapType || type instanceof RowType, "Can only unnest map, array and row types");
             builder.addAll(type.getTypeParameters());
         }
         return builder.build();
@@ -196,6 +197,9 @@ public class UnnestOperator
             }
             else if (type instanceof MapType) {
                 unnesters.add(new MapUnnester((MapType) type, block));
+            }
+            else if (type instanceof RowType) {
+                unnesters.add(new RowUnnester((RowType) type, block));
             }
             else {
                 throw new IllegalArgumentException("Cannot unnest type: " + type);

@@ -447,6 +447,11 @@ class StatementAnalyzer
                 outputFields.add(Field.newUnqualified(Optional.empty(), ((MapType) expressionType).getKeyType()));
                 outputFields.add(Field.newUnqualified(Optional.empty(), ((MapType) expressionType).getValueType()));
             }
+            else if (expressionType instanceof RowType) {
+                ((RowType) expressionType).getFields().forEach(field -> {
+                    outputFields.add(Field.newUnqualified(Optional.empty(), field.getType()));
+                });
+            }
             else {
                 throw new PrestoException(INVALID_FUNCTION_ARGUMENT, "Cannot unnest type: " + expressionType);
             }

@@ -66,6 +66,7 @@ import com.facebook.presto.sql.tree.Unnest;
 import com.facebook.presto.sql.tree.Values;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
+import com.facebook.presto.type.RowType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -385,6 +386,9 @@ class RelationPlanner
             else if (type instanceof MapType) {
                 unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
             }
+            else if (type instanceof RowType) {
+                unnestSymbols.put(inputSymbol, ((RowType) type).getFields().stream().map(f -> unnestedSymbolsIterator.next()).collect(toImmutableList()));
+            }
             else {
                 throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
             }
@@ -487,6 +491,9 @@ class RelationPlanner
             }
             else if (type instanceof MapType) {
                 unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
+            }
+            else if (type instanceof RowType) {
+                unnestSymbols.put(inputSymbol, ((RowType) type).getFields().stream().map(f -> unnestedSymbolsIterator.next()).collect(toImmutableList()));
             }
             else {
                 throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
