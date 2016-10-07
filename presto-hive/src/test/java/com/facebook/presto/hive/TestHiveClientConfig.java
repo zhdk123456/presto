@@ -105,6 +105,7 @@ public class TestHiveClientConfig
                 .setBucketExecutionEnabled(true)
                 .setForceIntegralToBigint(false)
                 .setBucketWritingEnabled(true)
+                .setMultiFileBucketingEnabled(false)
                 .setEmptyBucketedPartitionsEnabled(false));
     }
 
