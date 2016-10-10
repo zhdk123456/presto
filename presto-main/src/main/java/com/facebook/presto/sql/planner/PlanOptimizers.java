@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.cost.CostCalculator;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
@@ -69,12 +71,12 @@ public class PlanOptimizers
     private final List<PlanOptimizer> optimizers;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, GlobalProperties globalProperties)
     {
-        this(metadata, sqlParser, featuresConfig, false);
+        this(metadata, sqlParser, featuresConfig, costCalculator, globalProperties, false);
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, boolean forceSingleNode)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, GlobalProperties globalProperties, boolean forceSingleNode)
     {
         ImmutableList.Builder<PlanOptimizer> builder = ImmutableList.builder();
 
