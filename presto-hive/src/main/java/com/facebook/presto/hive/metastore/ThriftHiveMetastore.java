@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.AlreadyExistsException;
+import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.HiveObjectPrivilege;
 import org.apache.hadoop.hive.metastore.api.HiveObjectRef;
@@ -75,6 +76,7 @@ import static com.google.common.collect.Sets.newHashSet;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.hadoop.hive.metastore.api.HiveObjectType.DATABASE;
 import static org.apache.hadoop.hive.metastore.api.HiveObjectType.TABLE;
@@ -286,6 +288,57 @@ public class ThriftHiveMetastore
                             return ImmutableSet.copyOf(client.getRoleNames());
                         }
                     }));
+        }
+        catch (TException e) {
+            throw new PrestoException(HIVE_METASTORE_ERROR, e);
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public Optional<Set<ColumnStatisticsObj>> getTableColumnStatistics(String databaseName, String tableName, Set<String> columnNames)
+    {
+        try {
+            return retry()
+                    .stopOn(NoSuchObjectException.class, HiveViewNotSupportedException.class)
+                    .stopOnIllegalExceptions()
+                    .run("getTableColumnStatistics", stats.getGetTableColumnStatistics().wrap(() -> {
+                        try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                            return Optional.of(ImmutableSet.copyOf(client.getTableColumnStatistics(databaseName, tableName, ImmutableList.copyOf(columnNames))));
+                        }
+                    }));
+        }
+        catch (NoSuchObjectException e) {
+            return Optional.empty();
+        }
+        catch (TException e) {
+            throw new PrestoException(HIVE_METASTORE_ERROR, e);
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public Optional<Map<String, Set<ColumnStatisticsObj>>> getPartitionColumnStatistics(String databaseName, String tableName, Set<String> partitionValues, Set<String> columnNames)
+    {
+        try {
+            return retry()
+                    .stopOn(NoSuchObjectException.class, HiveViewNotSupportedException.class)
+                    .stopOnIllegalExceptions()
+                    .run("getPartitionColumnStatistics", stats.getGetPartitionColumnStatistics().wrap(() -> {
+                        try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                            Map<String, List<ColumnStatisticsObj>> partitionColumnStatistics = client.getPartitionColumnStatistics(databaseName, tableName, ImmutableList.copyOf(columnNames), ImmutableList.copyOf(partitionValues));
+                            return Optional.of(partitionColumnStatistics.entrySet()
+                                    .stream()
+                                    .collect(toMap(
+                                            Map.Entry::getKey,
+                                            entry -> ImmutableSet.copyOf(entry.getValue()))));
+                        }
+                    }));
+        }
+        catch (NoSuchObjectException e) {
+            return Optional.empty();
         }
         catch (TException e) {
             throw new PrestoException(HIVE_METASTORE_ERROR, e);
