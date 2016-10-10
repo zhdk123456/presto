@@ -15,6 +15,7 @@ package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
@@ -52,7 +53,8 @@ public class EliminateCrossJoins
             Session session,
             Map<Symbol, Type> types,
             SymbolAllocator symbolAllocator,
-            PlanNodeIdAllocator idAllocator)
+            PlanNodeIdAllocator idAllocator,
+            GlobalProperties globalProperties)
     {
         if (!SystemSessionProperties.isJoinReorderingEnabled(session)) {
             return plan;
