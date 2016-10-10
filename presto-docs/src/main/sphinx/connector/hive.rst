@@ -316,7 +316,7 @@ Similarly by default empty partitions (partitions with no files) are not allowed
 To enable support for empty paritions you can use:
 
  * ``hive.empty-bucketed-partitions.enabled`` config property
- * ``empty_bucketed_partitions_enabled`` session property (using ``SET SESSION <connector_name>.empty_buckets_enabled``)
+ * ``empty_bucketed_partitions_enabled`` session property (using ``SET SESSION <connector_name>.empty_bucketed_partitions_enabled``)
 
 .. _tuning-pref-hive:
 
