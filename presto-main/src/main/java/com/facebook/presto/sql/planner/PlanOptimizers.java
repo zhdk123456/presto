@@ -23,6 +23,7 @@ import com.facebook.presto.sql.planner.optimizations.CanonicalizeExpressions;
 import com.facebook.presto.sql.planner.optimizations.CountConstantOptimizer;
 import com.facebook.presto.sql.planner.optimizations.CrossJoinsElimination;
 import com.facebook.presto.sql.planner.optimizations.DesugaringOptimizer;
+import com.facebook.presto.sql.planner.optimizations.DetermineJoinMethod;
 import com.facebook.presto.sql.planner.optimizations.EmptyDeleteOptimizer;
 import com.facebook.presto.sql.planner.optimizations.EvaluateConstantApply;
 import com.facebook.presto.sql.planner.optimizations.HashGenerationOptimizer;
@@ -109,6 +110,7 @@ public class PlanOptimizers
         }
 
         if (!forceSingleNode) {
+            builder.add(new DetermineJoinMethod()); // Must run before AddExchanges
             builder.add(new PushTableWriteThroughUnion()); // Must run before AddExchanges
             builder.add(new AddExchanges(metadata, sqlParser));
         }
