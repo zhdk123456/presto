@@ -157,10 +157,10 @@ public class TestMathFunctions
         assertFunction("ceiling(12300000000)", BIGINT, 12300000000L);
         assertFunction("ceiling(-12300000000)", BIGINT, -12300000000L);
         assertFunction("ceiling(CAST(NULL AS BIGINT))", BIGINT, null);
-        assertFunction("ceiling(123.0)", DOUBLE, 123.0);
-        assertFunction("ceiling(-123.0)", DOUBLE, -123.0);
-        assertFunction("ceiling(123.45)", DOUBLE, 124.0);
-        assertFunction("ceiling(-123.45)", DOUBLE, -123.0);
+        assertFunction("ceiling(123.0)", createDecimalType(4, 0), SqlDecimal.of("123"));
+        assertFunction("ceiling(-123.0)", createDecimalType(4, 0), SqlDecimal.of("-123"));
+        assertFunction("ceiling(123.45)", createDecimalType(4, 0), SqlDecimal.of("124"));
+        assertFunction("ceiling(-123.45)", createDecimalType(4, 0), SqlDecimal.of("-123"));
         assertFunction("ceiling(REAL '123.0')", REAL, 123.0f);
         assertFunction("ceiling(REAL '-123.0')", REAL, -123.0f);
         assertFunction("ceiling(REAL '123.45')", REAL, 124.0f);
@@ -307,10 +307,10 @@ public class TestMathFunctions
         assertFunction("floor(12300000000)", BIGINT, 12300000000L);
         assertFunction("floor(-12300000000)", BIGINT, -12300000000L);
         assertFunction("floor(CAST(NULL as BIGINT))", BIGINT, null);
-        assertFunction("floor(123.0)", DOUBLE, 123.0);
-        assertFunction("floor(-123.0)", DOUBLE, -123.0);
-        assertFunction("floor(123.45)", DOUBLE, 123.0);
-        assertFunction("floor(-123.45)", DOUBLE, -124.0);
+        assertFunction("floor(123.0)", createDecimalType(4, 0), SqlDecimal.of("123"));
+        assertFunction("floor(-123.0)", createDecimalType(4, 0), SqlDecimal.of("-123"));
+        assertFunction("floor(123.45)", createDecimalType(4, 0), SqlDecimal.of("123"));
+        assertFunction("floor(-123.45)", createDecimalType(4, 0), SqlDecimal.of("-124"));
 
         assertFunction("floor(REAL '123.0')", REAL, 123.0f);
         assertFunction("floor(REAL '-123.0')", REAL, -123.0f);
@@ -440,8 +440,8 @@ public class TestMathFunctions
             }
         }
 
-        assertFunction("mod(5.0, NULL)", DOUBLE, null);
-        assertFunction("mod(NULL, 5.0)", DOUBLE, null);
+        assertFunction("mod(5.0, NULL)", createDecimalType(2, 1), null);
+        assertFunction("mod(NULL, 5.0)", createDecimalType(2, 1), null);
 
         assertFunction("mod(DECIMAL '0.0', DECIMAL '2.0')", createDecimalType(1, 1), SqlDecimal.of("0.0"));
         assertFunction("mod(DECIMAL '13.0', DECIMAL '5.0')", createDecimalType(2, 1), SqlDecimal.of("3.0"));
