@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>12.2. Hive Connector &mdash; Teradata Distribution of Presto 0.148-t.1.3 Documentation</title>
+  <title>12.2. Hive Connector &mdash; Teradata Distribution of Presto 0.148-t.1.4 Documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="Teradata Distribution of Presto 0.148-t.1.3 Documentation" href="../index.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.148-t.1.4 Documentation" href="../index.html"/>
         <link rel="up" title="12. Connectors" href="../connector.html"/>
         <link rel="next" title="12.3. Hive Security Configuration" href="hive-security.html"/>
         <link rel="prev" title="12.1. Teradata Connector" href="teradata.html"/> 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.148-t.1.3
+                0.148-t.1.4
               </div>
             
           
@@ -416,6 +416,11 @@ to HDFS.</td>
 clustered tables. See <a class="reference internal" href="#clustered-tables"><span class="std std-ref">Clustered hive tables support</span></a></td>
 <td><code class="docutils literal"><span class="pre">false</span></code></td>
 </tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.empty-bucketed-partitions.enabled</span></code></td>
+<td>Enable support for clustered tables with empty partitions.
+See <a class="reference internal" href="#clustered-tables"><span class="std std-ref">Clustered hive tables support</span></a></td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -584,6 +589,14 @@ The default value of session property is taken from config property.</p>
 It will sort filenames lexicographically. Then it will treat part of filename up to first underscore character as bucket key.
 This pattern matches naming convention of files in directory when Hive is used to inject data into table.</p>
 <p>Presto will still validate if number of file groups matches number of buckets declared for table and fail if it does not.</p>
+<p>Similarly by default empty partitions (partitions with no files) are not allowed for clustered Hive tables.
+To enable support for empty paritions you can use:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">hive.empty-bucketed-partitions.enabled</span></code> config property</li>
+<li><code class="docutils literal"><span class="pre">empty_bucketed_partitions_enabled</span></code> session property (using <code class="docutils literal"><span class="pre">SET</span> <span class="pre">SESSION</span> <span class="pre">&lt;connector_name&gt;.empty_buckets_enabled</span></code>)</li>
+</ul>
+</div></blockquote>
 </div>
 <div class="section" id="tuning">
 <span id="tuning-pref-hive"></span><h2>Tuning</h2>
@@ -875,7 +888,7 @@ This pattern matches naming convention of files in directory when Hive is used t
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.148-t.1.3',
+            VERSION:'0.148-t.1.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
