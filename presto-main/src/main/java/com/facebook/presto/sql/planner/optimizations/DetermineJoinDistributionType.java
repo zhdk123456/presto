@@ -70,6 +70,7 @@ public class DetermineJoinDistributionType
                     leftRewritten,
                     rightRewritten,
                     node.getCriteria(),
+                    node.getOutputSymbols(),
                     node.getFilter(),
                     node.getLeftHashSymbol(),
                     node.getRightHashSymbol(),

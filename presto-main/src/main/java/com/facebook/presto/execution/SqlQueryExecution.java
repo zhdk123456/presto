@@ -140,7 +140,7 @@ public final class SqlQueryExecution
             this.nodeTaskMap = requireNonNull(nodeTaskMap, "nodeTaskMap is null");
             this.executionPolicy = requireNonNull(executionPolicy, "executionPolicy is null");
             this.queryExplainer = requireNonNull(queryExplainer, "queryExplainer is null");
-            this.parameters = requireNonNull(parameters);
+            this.parameters = requireNonNull(parameters, "parameters is null");
             this.schedulerStats = requireNonNull(schedulerStats, "schedulerStats is null");
 
             checkArgument(scheduleSplitBatchSize > 0, "scheduleSplitBatchSize must be greater than 0");
@@ -566,7 +566,12 @@ public final class SqlQueryExecution
         }
 
         @Override
-        public SqlQueryExecution createQueryExecution(QueryId queryId, String query, Session session, Statement statement, List<Expression> parameters)
+        public SqlQueryExecution createQueryExecution(
+                QueryId queryId,
+                String query,
+                Session session,
+                Statement statement,
+                List<Expression> parameters)
         {
             String executionPolicyName = SystemSessionProperties.getExecutionPolicy(session);
             ExecutionPolicy executionPolicy = executionPolicies.get(executionPolicyName);
@@ -594,7 +599,8 @@ public final class SqlQueryExecution
                     queryExplainer,
                     executionPolicy,
                     parameters,
-                    schedulerStats);
+                    schedulerStats
+            );
         }
     }
 }
