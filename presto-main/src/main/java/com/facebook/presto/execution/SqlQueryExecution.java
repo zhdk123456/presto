@@ -24,6 +24,7 @@ import com.facebook.presto.execution.scheduler.NodeScheduler;
 import com.facebook.presto.execution.scheduler.SplitSchedulerStats;
 import com.facebook.presto.execution.scheduler.SqlQueryScheduler;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.QualifiedObjectName;
 import com.facebook.presto.metadata.TableHandle;
@@ -107,6 +108,7 @@ public final class SqlQueryExecution
     private final SplitSchedulerStats schedulerStats;
 
     private Set<ConnectorId> connectors;
+    private final GlobalProperties globalProperties;
 
     public SqlQueryExecution(QueryId queryId,
             String query,
@@ -129,7 +131,8 @@ public final class SqlQueryExecution
             QueryExplainer queryExplainer,
             ExecutionPolicy executionPolicy,
             List<Expression> parameters,
-            SplitSchedulerStats schedulerStats)
+            SplitSchedulerStats schedulerStats,
+            GlobalProperties globalProperties)
     {
         try (SetThreadName ignored = new SetThreadName("Query-%s", queryId)) {
             this.statement = requireNonNull(statement, "statement is null");
@@ -145,8 +148,9 @@ public final class SqlQueryExecution
             this.nodeTaskMap = requireNonNull(nodeTaskMap, "nodeTaskMap is null");
             this.executionPolicy = requireNonNull(executionPolicy, "executionPolicy is null");
             this.queryExplainer = requireNonNull(queryExplainer, "queryExplainer is null");
-            this.parameters = requireNonNull(parameters);
+            this.parameters = requireNonNull(parameters, "parameters is null");
             this.schedulerStats = requireNonNull(schedulerStats, "schedulerStats is null");
+            this.globalProperties = requireNonNull(globalProperties, "globalProperties is null");
 
             checkArgument(scheduleSplitBatchSize > 0, "scheduleSplitBatchSize must be greater than 0");
             this.scheduleSplitBatchSize = scheduleSplitBatchSize;
@@ -301,7 +305,7 @@ public final class SqlQueryExecution
 
         // plan query
         PlanNodeIdAllocator idAllocator = new PlanNodeIdAllocator();
-        LogicalPlanner logicalPlanner = new LogicalPlanner(stateMachine.getSession(), planOptimizers, idAllocator, metadata, sqlParser);
+        LogicalPlanner logicalPlanner = new LogicalPlanner(stateMachine.getSession(), planOptimizers, idAllocator, metadata, sqlParser, globalProperties);
         Plan plan = logicalPlanner.plan(analysis);
 
         // extract inputs
@@ -530,6 +534,7 @@ public final class SqlQueryExecution
         private final ExecutorService executor;
         private final NodeTaskMap nodeTaskMap;
         private final Map<String, ExecutionPolicy> executionPolicies;
+        private final GlobalProperties globalProperties;
 
         @Inject
         SqlQueryExecutionFactory(QueryManagerConfig config,
@@ -548,7 +553,8 @@ public final class SqlQueryExecution
                 NodeTaskMap nodeTaskMap,
                 QueryExplainer queryExplainer,
                 Map<String, ExecutionPolicy> executionPolicies,
-                SplitSchedulerStats schedulerStats)
+                SplitSchedulerStats schedulerStats,
+                GlobalProperties globalProperties)
         {
             requireNonNull(config, "config is null");
             this.schedulerStats = requireNonNull(schedulerStats, "schedulerStats is null");
@@ -569,12 +575,18 @@ public final class SqlQueryExecution
             this.queryExplainer = requireNonNull(queryExplainer, "queryExplainer is null");
 
             this.executionPolicies = requireNonNull(executionPolicies, "schedulerPolicies is null");
+            this.globalProperties = requireNonNull(globalProperties, "globalProperties is null");
 
             this.planOptimizers = planOptimizers.get();
         }
 
         @Override
-        public SqlQueryExecution createQueryExecution(QueryId queryId, String query, Session session, Statement statement, List<Expression> parameters)
+        public SqlQueryExecution createQueryExecution(
+                QueryId queryId,
+                String query,
+                Session session,
+                Statement statement,
+                List<Expression> parameters)
         {
             String executionPolicyName = SystemSessionProperties.getExecutionPolicy(session);
             ExecutionPolicy executionPolicy = executionPolicies.get(executionPolicyName);
@@ -602,7 +614,8 @@ public final class SqlQueryExecution
                     queryExplainer,
                     executionPolicy,
                     parameters,
-                    schedulerStats);
+                    schedulerStats,
+                    globalProperties);
         }
     }
 }
