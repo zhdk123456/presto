@@ -52,6 +52,7 @@ public final class TestGroups
     public static final String POST_HIVE_1_0_1 = "post_hive_1_0_1";
     public static final String LDAP = "ldap";
     public static final String LDAP_CLI = "ldap_cli";
+    public static final String TLS = "tls";
 
     private TestGroups() {}
 }
