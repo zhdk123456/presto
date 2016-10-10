@@ -133,7 +133,8 @@ public class TestSimplifyExpressions
                 TEST_SESSION,
                 booleanSymbolTypeMapFor(expression),
                 new SymbolAllocator(),
-                planNodeIdAllocator);
+                planNodeIdAllocator
+        );
         return simplifiedNode.getPredicate();
     }
 

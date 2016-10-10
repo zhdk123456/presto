@@ -54,6 +54,7 @@ import com.facebook.presto.execution.scheduler.NodeSchedulerConfig;
 import com.facebook.presto.index.IndexManager;
 import com.facebook.presto.memory.MemoryManagerConfig;
 import com.facebook.presto.metadata.CatalogManager;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.InMemoryNodeManager;
 import com.facebook.presto.metadata.Metadata;
@@ -713,7 +714,7 @@ public class LocalQueryRunner
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
-        PlanOptimizers planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, forceSingleNode, new MBeanExporter(new TestingMBeanServer()));
+        PlanOptimizers planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, forceSingleNode, new MBeanExporter(new TestingMBeanServer()), costCalculator, new GlobalProperties());
         return createPlan(session, sql, planOptimizers.get(), stage);
     }
 
@@ -744,7 +745,8 @@ public class LocalQueryRunner
                 accessControl,
                 sqlParser,
                 costCalculator,
-                dataDefinitionTask);
+                dataDefinitionTask
+        );
         Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(queryExplainer), parameters);
 
         LogicalPlanner logicalPlanner = new LogicalPlanner(session, optimizers, idAllocator, metadata, sqlParser);

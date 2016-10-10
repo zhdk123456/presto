@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.cost.CostCalculator;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
@@ -97,9 +99,9 @@ public class PlanOptimizers
     private final MBeanExporter exporter;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, MBeanExporter exporter)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, MBeanExporter exporter, CostCalculator costCalculator, GlobalProperties globalProperties)
     {
-        this(metadata, sqlParser, featuresConfig, false, exporter);
+        this(metadata, sqlParser, featuresConfig, false, exporter, costCalculator, globalProperties);
     }
 
     @PostConstruct
@@ -114,7 +116,7 @@ public class PlanOptimizers
         stats.unexport(exporter);
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, boolean forceSingleNode, MBeanExporter exporter)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, boolean forceSingleNode, MBeanExporter exporter, CostCalculator costCalculator, GlobalProperties globalProperties)
     {
         this.exporter = exporter;
         ImmutableList.Builder<PlanOptimizer> builder = ImmutableList.builder();

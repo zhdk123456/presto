@@ -63,7 +63,8 @@ public class QueryExplainer
                 accessControl,
                 sqlParser,
                 costCalculator,
-                dataDefinitionTask);
+                dataDefinitionTask
+        );
     }
 
     public QueryExplainer(

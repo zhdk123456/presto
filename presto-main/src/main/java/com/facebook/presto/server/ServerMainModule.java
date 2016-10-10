@@ -63,6 +63,7 @@ import com.facebook.presto.memory.ReservedSystemMemoryConfig;
 import com.facebook.presto.metadata.CatalogManager;
 import com.facebook.presto.metadata.DiscoveryNodeManager;
 import com.facebook.presto.metadata.ForNodeManager;
+import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.metadata.HandleJsonModule;
 import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
@@ -302,6 +303,8 @@ public class ServerMainModule
 
         // memory revoking scheduler
         binder.bind(MemoryRevokingScheduler.class).in(Scopes.SINGLETON);
+
+        binder.bind(GlobalProperties.class).in(Scopes.SINGLETON);
 
         // workaround for CodeCache GC issue
         if (JavaVersion.current().getMajor() == 8) {
