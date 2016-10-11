@@ -44,6 +44,16 @@ public interface LookupSource
     @Override
     void close();
 
+    default long getJoinPositionFromVlaue(long probeValue)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getNextJoinPosition(int currentJoinPosition)
+    {
+        throw new UnsupportedOperationException();
+    }
+
     interface OuterPositionIterator
     {
         boolean appendToNext(PageBuilder pageBuilder, int outputChannelOffset);

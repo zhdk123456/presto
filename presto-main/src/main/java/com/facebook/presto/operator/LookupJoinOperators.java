@@ -13,13 +13,17 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.gen.BigintMultiJoinProbeCompiler;
 import com.facebook.presto.sql.gen.JoinProbeCompiler;
 import com.facebook.presto.sql.gen.MultiJoinProbeCompiler;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 
 import java.util.List;
 import java.util.Optional;
+
+import static jersey.repackaged.com.google.common.base.Preconditions.checkArgument;
 
 public class LookupJoinOperators
 {
@@ -36,6 +40,7 @@ public class LookupJoinOperators
 
     private static final JoinProbeCompiler JOIN_PROBE_COMPILER = new JoinProbeCompiler();
     private static final MultiJoinProbeCompiler MULTI_JOIN_PROBE_COMPILER = new MultiJoinProbeCompiler();
+    private static final BigintMultiJoinProbeCompiler BIGINT_MULTI_JOIN_PROBE_COMPILER = new BigintMultiJoinProbeCompiler();
 
     public static OperatorFactory innerJoin(int operatorId, PlanNodeId planNodeId, LookupSourceSupplier lookupSourceSupplier, List<? extends Type> probeTypes, List<Integer> probeJoinChannel, Optional<Integer> probeHashChannel, boolean filterFunctionPresent)
     {
@@ -80,4 +85,26 @@ public class LookupJoinOperators
 
     }
 
+    public static OperatorFactory bigintMultiJoin(
+            int operatorId,
+            PlanNodeId planNodeId,
+            LookupSourceSupplier lookupSourceSupplier1,
+            LookupSourceSupplier lookupSourceSupplier2,
+            List<? extends Type> probeTypes,
+            List<Integer> probeJoinChannel,
+            Optional<Integer> probeHashChannel,
+            boolean filterFunctionPresent)
+    {
+        checkArgument(probeJoinChannel.size() == 1 && probeTypes.get(probeJoinChannel.get(0)).equals(BigintType.BIGINT));
+        return BIGINT_MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
+                operatorId,
+                planNodeId,
+                lookupSourceSupplier1,
+                lookupSourceSupplier2,
+                probeTypes,
+                probeJoinChannel.get(0),
+                probeHashChannel,
+                JoinType.INNER,
+                filterFunctionPresent);
+    }
 }

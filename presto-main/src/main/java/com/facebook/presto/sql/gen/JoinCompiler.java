@@ -190,6 +190,7 @@ public class JoinCompiler
         generateGetChannelCountMethod(classDefinition, channelFields);
         generateGetSizeInBytesMethod(classDefinition, sizeField);
         generateAppendToMethod(classDefinition, callSiteBinder, types, channelFields);
+        generateGetLongValueMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, hashChannelField);
         generateHashPositionMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, hashChannelField);
         generateHashRowMethod(classDefinition, callSiteBinder, joinChannelTypes);
         generateRowEqualsRowMethod(classDefinition, callSiteBinder, joinChannelTypes);
@@ -365,6 +366,34 @@ public class JoinCompiler
         isPositionNullMethod
                 .getBody()
                 .append(constantFalse().ret());
+    }
+
+    private static void generateGetLongValueMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<Type> joinChannelTypes, List<FieldDefinition> joinChannelFields, FieldDefinition hashChannelField)
+    {
+        Parameter blockIndex = arg("blockIndex", int.class);
+        Parameter blockPosition = arg("blockPosition", int.class);
+        MethodDefinition getLongValueMethod = classDefinition.declareMethod(
+                a(PUBLIC),
+                "getLongValue",
+                type(long.class),
+                blockIndex,
+                blockPosition);
+
+        BytecodeExpression bigintType = constantType(callSiteBinder, BigintType.BIGINT);
+        BytecodeExpression block = getLongValueMethod
+                .getThis()
+                .getField(joinChannelFields.get(0))
+                .invoke("get", Object.class, blockIndex)
+                .cast(Block.class);
+
+        getLongValueMethod
+                .getBody()
+                .append(bigintType.invoke(
+                        "getLong",
+                        long.class,
+                        block,
+                        blockPosition)
+                        .ret());
     }
 
     private static void generateHashPositionMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<Type> joinChannelTypes, List<FieldDefinition> joinChannelFields, FieldDefinition hashChannelField)

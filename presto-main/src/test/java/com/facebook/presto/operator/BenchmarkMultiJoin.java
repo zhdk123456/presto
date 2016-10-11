@@ -255,6 +255,15 @@ public class BenchmarkMultiJoin
             }
             return probePagesBuilder.build();
         }
+
+        public List<Type> getResultTypes()
+        {
+            List<Type> resultTypes = new ArrayList<>();
+            resultTypes.addAll(getTypes());
+            resultTypes.addAll(getTypes());
+            resultTypes.addAll(getTypes());
+            return resultTypes;
+        }
     }
 
     @Benchmark
@@ -313,6 +322,27 @@ public class BenchmarkMultiJoin
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
     }
 
+    @Benchmark
+    public List<Page> handcodedBigintMultiJoin(JoinContext joinContext)
+    {
+        HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+
+        OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.bigintMultiJoin(
+                HASH_JOIN_OPERATOR_ID,
+                TEST_PLAN_NODE_ID,
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                joinContext.getTypes(),
+                joinContext.getHashChannels(),
+                joinContext.getHashChannel(),
+                false);
+
+        feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+    }
+
     @Test
     public void testBaseline()
     {
@@ -335,16 +365,28 @@ public class BenchmarkMultiJoin
         List<Page> handcodedPages = handcodedMultiJoin(joinContext);
         List<Page> baselinePages = baselineMultiJoin(joinContext);
 
-        assertEquals(baselinePages.size(), handcodedPages.size());
-        List<Type> expectedTypes = new ArrayList<>();
-        expectedTypes.addAll(joinContext.getTypes());
-        expectedTypes.addAll(joinContext.getTypes());
-        expectedTypes.addAll(joinContext.getTypes());
+        assertPages(joinContext.getResultTypes(), baselinePages, handcodedPages);
+    }
 
-        for (int i = 0; i < handcodedPages.size(); i++) {
-            Page handcodedPage = handcodedPages.get(i);
-            Page baselinePage = baselinePages.get(i);
-            assertPageEquals(expectedTypes, baselinePage, handcodedPage);
+    @Test
+    public void testHandcodedBigintMultiJoin()
+    {
+        JoinContext joinContext = new JoinContext();
+        joinContext.setup();
+        List<Page> handcodedPages = handcodedBigintMultiJoin(joinContext);
+        List<Page> baselinePages = baselineMultiJoin(joinContext);
+
+        assertPages(joinContext.getResultTypes(), baselinePages, handcodedPages);
+    }
+
+    private void assertPages(List<Type> types, List<Page> expectedPages, List<Page> actualPages)
+    {
+        assertEquals(expectedPages.size(), actualPages.size());
+
+        for (int i = 0; i < actualPages.size(); i++) {
+            Page handcodedPage = actualPages.get(i);
+            Page baselinePage = expectedPages.get(i);
+            assertPageEquals(types, baselinePage, handcodedPage);
         }
     }
 

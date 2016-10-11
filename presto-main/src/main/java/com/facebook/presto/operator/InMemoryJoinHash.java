@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
+import com.facebook.presto.spi.type.BigintType;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
 import it.unimi.dsi.fastutil.HashCommon;
@@ -166,6 +167,22 @@ public final class InMemoryJoinHash
     }
 
     @Override
+    public long getJoinPositionFromVlaue(long probeValue)
+    {
+        long rawHash = BigintType.hash(probeValue);
+        int pos = getHashPosition(rawHash, mask);
+
+        while (key[pos] != -1) {
+            if (positionEqualsCurrentRowIgnoreNulls(key[pos], (byte) rawHash, probeValue)) {
+                return key[pos];
+            }
+            // increment position and mask to handler wrap around
+            pos = (pos + 1) & mask;
+        }
+        return -1;
+    }
+
+    @Override
     public final long getNextJoinPosition(long currentJoinPosition, int probePosition, Page allProbeChannelsPage)
     {
         return getNextJoinPositionFrom(positionLinks[Ints.checkedCast(currentJoinPosition)], probePosition, allProbeChannelsPage);
@@ -178,6 +195,12 @@ public final class InMemoryJoinHash
             currentJoinPosition = positionLinks[Ints.checkedCast(currentJoinPosition)];
         }
         return currentJoinPosition;
+    }
+
+    @Override
+    public final long getNextJoinPosition(int currentJoinPosition)
+    {
+        return positionLinks[currentJoinPosition];
     }
 
     @Override
@@ -211,6 +234,17 @@ public final class InMemoryJoinHash
         int blockPosition = decodePosition(pageAddress);
 
         return pagesHashStrategy.hashPosition(blockIndex, blockPosition);
+    }
+
+    private boolean positionEqualsCurrentRowIgnoreNulls(int leftPosition, byte rawHash, long probeValue)
+    {
+        if (positionToHashes[leftPosition] != rawHash) {
+            return false;
+        }
+        long pageAddress = addresses.getLong(leftPosition);
+        int blockIndex = decodeSliceIndex(pageAddress);
+        int blockPosition = decodePosition(pageAddress);
+        return pagesHashStrategy.getLongValue(blockIndex, blockPosition) == probeValue;
     }
 
     private boolean positionEqualsCurrentRowIgnoreNulls(int leftPosition, byte rawHash, int rightPosition, Page rightPage)

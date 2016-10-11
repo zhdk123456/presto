@@ -34,6 +34,8 @@ public interface PagesHashStrategy
      */
     void appendTo(int blockIndex, int position, PageBuilder pageBuilder, int outputChannelOffset);
 
+    long getLongValue(int blockIndex, int position);
+
     /**
      * Calculates the hash code the hashed columns in this PagesHashStrategy at the specified position.
      */
@@ -68,7 +70,7 @@ public interface PagesHashStrategy
      *
      * This method does not perform any null checks.
      */
-    boolean positionEqualsRowIgnoreNulls(int leftBlockIndex, int leftPosition, int rightPosition, Page rightPage);
+    boolean  positionEqualsRowIgnoreNulls(int leftBlockIndex, int leftPosition, int rightPosition, Page rightPage);
 
     /**
      * Compares the hashed columns in this PagesHashStrategy to the hashed columns in the Page. The

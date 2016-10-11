@@ -78,6 +78,12 @@ public class SimplePagesHashStrategy
     }
 
     @Override
+    public long getLongValue(int blockIndex, int position)
+    {
+        return BIGINT.getLong(channels.get(hashChannels.get(0)).get(blockIndex), position);
+    }
+
+    @Override
     public long hashPosition(int blockIndex, int position)
     {
         if (precomputedHashChannel != null) {

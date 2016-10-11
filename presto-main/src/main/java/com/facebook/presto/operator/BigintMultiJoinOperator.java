@@ -27,7 +27,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static java.util.Objects.requireNonNull;
 
-public class MultiJoinOperator
+public class BigintMultiJoinOperator
         implements Operator, Closeable
 {
     private final OperatorContext operatorContext;
@@ -39,20 +39,22 @@ public class MultiJoinOperator
 
     private final PageBuilder pageBuilder;
 
+    private final Integer probeJoinChannel;
+
     private LookupSource lookupSource1;
     private LookupSource lookupSource2;
-    private JoinProbe probe1;
-    private JoinProbe probe2;
+    private JoinProbe probe;
 
     private boolean closed;
     private boolean finishing;
     private long joinPosition1 = -1;
     private long joinPosition2 = -1;
 
-    public MultiJoinOperator(
+    public BigintMultiJoinOperator(
             OperatorContext operatorContext,
             List<Type> types,
             JoinType joinType,
+            int probeJoinChannel,
             ListenableFuture<LookupSource> lookupSourceFuture1,
             ListenableFuture<LookupSource> lookupSourceFuture2,
             JoinProbeFactory joinProbeFactory,
@@ -62,7 +64,9 @@ public class MultiJoinOperator
         this.types = ImmutableList.copyOf(requireNonNull(types, "types is null"));
 
         requireNonNull(joinType, "joinType is null");
+        // Cannot use switch case here, because javac will synthesize an inner class and cause IllegalAccessError
 
+        this.probeJoinChannel = requireNonNull(probeJoinChannel, "probeJoinChannel is null");
         this.lookupSourceFuture1 = requireNonNull(lookupSourceFuture1, "lookupSourceFuture1 is null");
         this.lookupSourceFuture2 = requireNonNull(lookupSourceFuture2, "lookupSourceFuture2 is null");
         this.joinProbeFactory = requireNonNull(joinProbeFactory, "joinProbeFactory is null");
@@ -92,7 +96,7 @@ public class MultiJoinOperator
     @Override
     public boolean isFinished()
     {
-        boolean finished = finishing && probe1 == null && probe2 == null && pageBuilder.isEmpty();
+        boolean finished = finishing && probe == null && pageBuilder.isEmpty();
 
         // if finished drop references so memory is freed early
         if (finished) {
@@ -123,7 +127,7 @@ public class MultiJoinOperator
         if (lookupSource2 == null) {
             lookupSource2 = tryGetFutureValue(lookupSourceFuture2).orElse(null);
         }
-        return lookupSource1 != null && lookupSource2 != null && probe1 == null && probe2 == null;
+        return lookupSource1 != null && lookupSource2 != null && probe == null;
     }
 
     @Override
@@ -133,11 +137,10 @@ public class MultiJoinOperator
         checkState(!finishing, "Operator is finishing");
         checkState(lookupSource1 != null, "Lookup source 1 has not been built yet");
         checkState(lookupSource2 != null, "Lookup source 2 has not been built yet");
-        checkState(probe1 == null, "Current page has not been completely processed yet");
+        checkState(probe == null, "Current page has not been completely processed yet");
 
         // create probe
-        probe1 = joinProbeFactory.createJoinProbe(lookupSource1, page);
-        probe2 = joinProbeFactory.createJoinProbe(lookupSource2, page);
+        probe = joinProbeFactory.createJoinProbe(lookupSource1, page);
 
         // initialize to invalid join position to force output code to advance the cursors
         joinPosition1 = -1;
@@ -152,7 +155,7 @@ public class MultiJoinOperator
         }
 
         // join probe page with the lookup source
-        if (probe1 != null) {
+        if (probe != null) {
             while (joinCurrentPosition()) {
                 if (!advanceProbePosition()) {
                     break;
@@ -161,7 +164,7 @@ public class MultiJoinOperator
         }
 
         // only flush full pages unless we are done
-        if (pageBuilder.isFull() || (finishing && !pageBuilder.isEmpty() && probe1 == null && probe2 == null)) {
+        if (pageBuilder.isFull() || (finishing && !pageBuilder.isEmpty() && probe == null)) {
             Page page = pageBuilder.build();
             pageBuilder.reset();
             return page;
@@ -178,8 +181,7 @@ public class MultiJoinOperator
             return;
         }
         closed = true;
-        probe1 = null;
-        probe2 = null;
+        probe = null;
         pageBuilder.reset();
         onClose.run();
         // closing lookup source is only here for index join
@@ -201,16 +203,16 @@ public class MultiJoinOperator
                 pageBuilder.declarePosition();
 
                 // write probe columns
-                probe1.appendTo(pageBuilder);
+                probe.appendTo(pageBuilder);
 
                 // write build columns
-                lookupSource1.appendTo(joinPosition1, pageBuilder, probe1.getChannelCount());
-                lookupSource2.appendTo(joinPosition2, pageBuilder, probe1.getChannelCount() + lookupSource1.getChannelCount());
+                lookupSource1.appendTo(joinPosition1, pageBuilder, probe.getChannelCount());
+                lookupSource2.appendTo(joinPosition2, pageBuilder, probe.getChannelCount() + lookupSource1.getChannelCount());
 
                 // get next join position for this row
-                joinPosition2 = lookupSource1.getNextJoinPosition(joinPosition2, probe1.getPosition(), probe1.getPage());
+                joinPosition2 = lookupSource2.getNextJoinPosition(joinPosition2, probe.getPosition(), probe.getPage());
             }
-            joinPosition1 = lookupSource1.getNextJoinPosition(joinPosition1, probe1.getPosition(), probe1.getPage());
+            joinPosition1 = lookupSource1.getNextJoinPosition(joinPosition1, probe.getPosition(), probe.getPage());
 
             if (pageBuilder.isFull()) {
                 joinPosition2 = startingJoinPosition2; // revert join
@@ -222,18 +224,16 @@ public class MultiJoinOperator
 
     private boolean advanceProbePosition()
     {
-        boolean hasNext1 = probe1.advanceNextPosition();
-        boolean hasNext2 = probe2.advanceNextPosition();
-        checkState(hasNext1 == hasNext2);
-        if (!hasNext1) {
-            probe1 = null;
-            probe2 = null;
+        if (!probe.advanceNextPosition()) {
+            probe = null;
             return false;
         }
+        int probePosition = probe.getPosition();
+        long probeValue = probe.getPage().getBlock(probeJoinChannel).getLong(probePosition, 0);
 
-        // update join position
-        joinPosition1 = probe1.getCurrentJoinPosition();
-        joinPosition2 = probe2.getCurrentJoinPosition();
+        joinPosition1 = lookupSource1.getJoinPositionFromVlaue(probeValue);
+        joinPosition2 = lookupSource2.getJoinPositionFromVlaue(probeValue);
+
         return true;
     }
 }
