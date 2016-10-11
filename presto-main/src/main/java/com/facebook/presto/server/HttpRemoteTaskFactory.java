@@ -48,7 +48,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.concurrent.Threads.prioritizedDaemonThreadsNamed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
@@ -89,13 +89,13 @@ public class HttpRemoteTaskFactory
         this.minErrorDuration = config.getRemoteTaskMinErrorDuration();
         this.taskStatusRefreshMaxWait = taskConfig.getStatusRefreshMaxWait();
         this.taskInfoUpdateInterval = taskConfig.getInfoUpdateInterval();
-        this.coreExecutor = newCachedThreadPool(daemonThreadsNamed("remote-task-callback-%s"));
+        this.coreExecutor = newCachedThreadPool(prioritizedDaemonThreadsNamed("remote-task-callback-%s", Thread.MAX_PRIORITY));
         this.executor = new BoundedExecutor(coreExecutor, config.getRemoteTaskMaxCallbackThreads());
         this.executorMBean = new ThreadPoolExecutorMBean((ThreadPoolExecutor) coreExecutor);
         this.stats = requireNonNull(stats, "stats is null");
 
-        this.updateScheduledExecutor = newSingleThreadScheduledExecutor(daemonThreadsNamed("task-info-update-scheduler-%s"));
-        this.errorScheduledExecutor = newSingleThreadScheduledExecutor(daemonThreadsNamed("remote-task-error-delay-%s"));
+        this.updateScheduledExecutor = newSingleThreadScheduledExecutor(prioritizedDaemonThreadsNamed("task-info-update-scheduler-%s", Thread.MAX_PRIORITY));
+        this.errorScheduledExecutor = newSingleThreadScheduledExecutor(prioritizedDaemonThreadsNamed("remote-task-error-delay-%s", Thread.MAX_PRIORITY));
     }
 
     @Managed

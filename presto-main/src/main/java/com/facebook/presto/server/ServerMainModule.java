@@ -137,6 +137,7 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.reflect.Reflection.newProxy;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.concurrent.Threads.prioritizedDaemonThreadsNamed;
 import static io.airlift.configuration.ConditionalModule.installModuleIf;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
@@ -421,7 +422,7 @@ public class ServerMainModule
     @ForAsyncHttp
     public static ExecutorService createAsyncHttpResponseCoreExecutor()
     {
-        return newCachedThreadPool(daemonThreadsNamed("async-http-response-%s"));
+        return newCachedThreadPool(prioritizedDaemonThreadsNamed("async-http-response-%s", Thread.MAX_PRIORITY));
     }
 
     @Provides
@@ -437,7 +438,7 @@ public class ServerMainModule
     @ForAsyncHttp
     public static ScheduledExecutorService createAsyncHttpTimeoutExecutor(TaskManagerConfig config)
     {
-        return newScheduledThreadPool(config.getHttpTimeoutThreads(), daemonThreadsNamed("async-http-timeout-%s"));
+        return newScheduledThreadPool(config.getHttpTimeoutThreads(), prioritizedDaemonThreadsNamed("async-http-timeout-%s", Thread.MAX_PRIORITY));
     }
 
     @Provides
