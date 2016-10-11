@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 
 import static com.facebook.presto.RowPagesBuilder.rowPagesBuilder;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
+import static com.facebook.presto.operator.PageAssertions.assertPageEquals;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.util.Threads.checkNotSameThreadExecutor;
@@ -291,6 +292,27 @@ public class BenchmarkMultiJoin
         return feed(joinContext, joinOperatorFactory2, joinContext.getProbePages2().iterator());
     }
 
+    @Benchmark
+    public List<Page> handcodedMultiJoin(JoinContext joinContext)
+    {
+        HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+
+        OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.multiJoin(
+                HASH_JOIN_OPERATOR_ID,
+                TEST_PLAN_NODE_ID,
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                joinContext.getTypes(),
+                joinContext.getHashChannels(),
+                joinContext.getHashChannel(),
+                false);
+
+        feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+    }
+
     @Test
     public void testBaseline()
     {
@@ -303,6 +325,27 @@ public class BenchmarkMultiJoin
             assertEquals(joinContext.getTypes().size() * 3, page.getBlocks().length);
         }
         assertEquals(699_999, totalPositions);
+    }
+
+    @Test
+    public void testHandcodedMultiJoin()
+    {
+        JoinContext joinContext = new JoinContext();
+        joinContext.setup();
+        List<Page> handcodedPages = handcodedMultiJoin(joinContext);
+        List<Page> baselinePages = baselineMultiJoin(joinContext);
+
+        assertEquals(baselinePages.size(), handcodedPages.size());
+        List<Type> expectedTypes = new ArrayList<>();
+        expectedTypes.addAll(joinContext.getTypes());
+        expectedTypes.addAll(joinContext.getTypes());
+        expectedTypes.addAll(joinContext.getTypes());
+
+        for (int i = 0; i < handcodedPages.size(); i++) {
+            Page handcodedPage = handcodedPages.get(i);
+            Page baselinePage = baselinePages.get(i);
+            assertPageEquals(expectedTypes, baselinePage, handcodedPage);
+        }
     }
 
     private static List<Page> feed(JoinContext joinContext, OperatorFactory factory, Iterator<Page> input)

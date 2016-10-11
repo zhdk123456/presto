@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.JoinProbeCompiler;
+import com.facebook.presto.sql.gen.MultiJoinProbeCompiler;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class LookupJoinOperators
     }
 
     private static final JoinProbeCompiler JOIN_PROBE_COMPILER = new JoinProbeCompiler();
+    private static final MultiJoinProbeCompiler MULTI_JOIN_PROBE_COMPILER = new MultiJoinProbeCompiler();
 
     public static OperatorFactory innerJoin(int operatorId, PlanNodeId planNodeId, LookupSourceSupplier lookupSourceSupplier, List<? extends Type> probeTypes, List<Integer> probeJoinChannel, Optional<Integer> probeHashChannel, boolean filterFunctionPresent)
     {
@@ -54,4 +56,28 @@ public class LookupJoinOperators
     {
         return JOIN_PROBE_COMPILER.compileJoinOperatorFactory(operatorId, planNodeId, lookupSourceSupplier, probeTypes, probeJoinChannel, probeHashChannel, JoinType.FULL_OUTER, filterFunctionPresent);
     }
+
+    public static OperatorFactory multiJoin(
+            int operatorId,
+            PlanNodeId planNodeId,
+            LookupSourceSupplier lookupSourceSupplier1,
+            LookupSourceSupplier lookupSourceSupplier2,
+            List<? extends Type> probeTypes,
+            List<Integer> probeJoinChannel,
+            Optional<Integer> probeHashChannel,
+            boolean filterFunctionPresent)
+    {
+        return MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
+                operatorId,
+                planNodeId,
+                lookupSourceSupplier1,
+                lookupSourceSupplier2,
+                probeTypes,
+                probeJoinChannel,
+                probeHashChannel,
+                JoinType.INNER,
+                filterFunctionPresent);
+
+    }
+
 }
