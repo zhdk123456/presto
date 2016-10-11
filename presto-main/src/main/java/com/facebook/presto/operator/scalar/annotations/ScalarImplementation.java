@@ -312,7 +312,11 @@ public class ScalarImplementation
 
             SqlType returnType = method.getAnnotation(SqlType.class);
             checkArgument(returnType != null, format("Method [%s] is missing @SqlType annotation", method));
-            this.returnType = parseTypeSignature(returnType.value(), literalParameters);
+            String retType = returnType.value();
+            if (returnType.tableType().length > 0) {
+                retType = format("array(row(%s))", String.join(",", returnType.tableType()));
+            }
+            this.returnType = parseTypeSignature(retType, literalParameters);
 
             Class<?> actualReturnType = method.getReturnType();
             if (Primitives.isWrapperType(actualReturnType)) {
