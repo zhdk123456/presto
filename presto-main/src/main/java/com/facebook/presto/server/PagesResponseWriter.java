@@ -18,8 +18,10 @@ import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.BlockEncodingSerde;
 import com.google.common.base.Throwables;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.RateLimiter;
 import io.airlift.slice.OutputStreamSliceOutput;
 import io.airlift.slice.RuntimeIOException;
+import io.airlift.slice.Slice;
 import io.airlift.slice.SliceOutput;
 
 import javax.inject.Inject;
@@ -32,12 +34,15 @@ import javax.ws.rs.ext.Provider;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import static com.facebook.presto.PrestoMediaTypes.PRESTO_PAGES;
+import static java.util.Objects.requireNonNull;
 
 @Provider
 @Produces(PRESTO_PAGES)
@@ -89,7 +94,9 @@ public class PagesResponseWriter
             throws IOException, WebApplicationException
     {
         try {
-            SliceOutput sliceOutput = new OutputStreamSliceOutput(output);
+            OutputStream throttledStream = new ThrottlingOutputStream(output);
+            SliceOutput sliceOutput = new OutputStreamSliceOutput(throttledStream);
+
             PagesSerde.writePages(blockEncodingSerde, sliceOutput, pages);
             // We use flush instead of close, because the underlying stream would be closed and that is not allowed.
             sliceOutput.flush();
@@ -100,6 +107,41 @@ public class PagesResponseWriter
             if (!(e.getCause() instanceof EOFException)) {
                 throw e;
             }
+        }
+    }
+
+    static class ThrottlingOutputStream
+        extends OutputStream
+    {
+        private final OutputStream delegate;
+        private final RateLimiter rateLimiter;
+
+        ThrottlingOutputStream(OutputStream delegate)
+        {
+            this.delegate = requireNonNull(delegate, "SliceOutput is null");
+            rateLimiter = RateLimiter.create(1024*1024*10); // FIXME make it configurable
+        }
+
+        @Override
+        public void flush()
+                throws IOException
+        {
+            delegate.flush();
+        }
+
+        @Override
+        public void close()
+                throws IOException
+        {
+            delegate.close();
+        }
+
+        @Override
+        public void write(int b)
+                throws IOException
+        {
+            rateLimiter.acquire();
+            delegate.write(b);
         }
     }
 }

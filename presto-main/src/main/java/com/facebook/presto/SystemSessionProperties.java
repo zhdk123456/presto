@@ -63,6 +63,7 @@ public final class SystemSessionProperties
     public static final String QUERY_PRIORITY = "query_priority";
     public static final String SPILL_ENABLED = "spill_enabled";
     public static final String OPERATOR_MEMORY_LIMIT_BEFORE_SPILL = "operator_memory_limit_before_spill";
+    public static final String THROTTLE_THROUGHPUT = "max_throughput";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -247,7 +248,12 @@ public final class SystemSessionProperties
                         featuresConfig.getOperatorMemoryLimitBeforeSpill(),
                         false,
                         value -> DataSize.valueOf((String) value),
-                        DataSize::toString));
+                        DataSize::toString),
+                integerSessionProperty(
+                        THROTTLE_THROUGHPUT,
+                        "Experimental: throttle throughput (in Kbps)",
+                        taskManagerConfig.getMaxThroughput(),
+                        false));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()

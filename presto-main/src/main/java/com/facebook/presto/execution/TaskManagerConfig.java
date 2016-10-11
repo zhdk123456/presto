@@ -59,6 +59,7 @@ public class TaskManagerConfig
     private int httpTimeoutThreads = 3;
 
     private int taskNotificationThreads = 5;
+    private int maxThroughput = 1024*1024*10; // 10 Gbps
 
     @MinDuration("1ms")
     @MaxDuration("10s")
@@ -359,6 +360,20 @@ public class TaskManagerConfig
     public TaskManagerConfig setTaskNotificationThreads(int taskNotificationThreads)
     {
         this.taskNotificationThreads = taskNotificationThreads;
+        return this;
+    }
+
+    @Min(1)
+    public int getMaxThroughput()
+    {
+        return maxThroughput;
+    }
+
+    @Config("task.throttle-throughput")
+    @ConfigDescription("Limit Presto's throughput in Kbps per node")
+    public TaskManagerConfig setThroughput(int throughput)
+    {
+        this.maxThroughput =  throughput;
         return this;
     }
 }
