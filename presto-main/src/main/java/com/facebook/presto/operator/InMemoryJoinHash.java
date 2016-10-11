@@ -145,6 +145,21 @@ public final class InMemoryJoinHash
         return size;
     }
 
+    public int getPos(long rawHash)
+    {
+        return getHashPosition(rawHash, mask);
+    }
+
+    public long getJoinPositionFromPos(int pos)
+    {
+        return key[pos];
+    }
+
+    public int incrementJoinPosition(int pos)
+    {
+        return (pos + 1) & mask;
+    }
+
     @Override
     public long getJoinPosition(int position, Page hashChannelsPage, Page allChannelsPage)
     {

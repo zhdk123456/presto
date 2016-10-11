@@ -13,12 +13,16 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.BigintMultiJoinProbeCompiler;
+import com.facebook.presto.sql.gen.CrossCompiledJoinProbeCompiler;
 import com.facebook.presto.sql.gen.JoinProbeCompiler;
 import com.facebook.presto.sql.gen.MultiJoinProbeCompiler;
+import com.facebook.presto.sql.gen.cross.CrossCompiledOperatorFactory;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +45,7 @@ public class LookupJoinOperators
     private static final JoinProbeCompiler JOIN_PROBE_COMPILER = new JoinProbeCompiler();
     private static final MultiJoinProbeCompiler MULTI_JOIN_PROBE_COMPILER = new MultiJoinProbeCompiler();
     private static final BigintMultiJoinProbeCompiler BIGINT_MULTI_JOIN_PROBE_COMPILER = new BigintMultiJoinProbeCompiler();
+    private static final CrossCompiledJoinProbeCompiler CROSS_COMPILED_JOIN_PROBE_COMPILER = new CrossCompiledJoinProbeCompiler();
 
     public static OperatorFactory innerJoin(int operatorId, PlanNodeId planNodeId, LookupSourceSupplier lookupSourceSupplier, List<? extends Type> probeTypes, List<Integer> probeJoinChannel, Optional<Integer> probeHashChannel, boolean filterFunctionPresent)
     {
@@ -107,4 +112,42 @@ public class LookupJoinOperators
                 JoinType.INNER,
                 filterFunctionPresent);
     }
+
+    public static OperatorFactory xcompiledMultiJoin(
+            int operatorId,
+            PlanNodeId planNodeId,
+            LookupSourceSupplier lookupSourceSupplier1,
+            LookupSourceSupplier lookupSourceSupplier2,
+            List<? extends Type> probeTypes,
+            List<Integer> probeJoinChannel,
+            Optional<Integer> probeHashChannel,
+            boolean filterFunctionPresent)
+    {
+        ImmutableList.Builder<CrossCompiledOperatorFactory> factories = ImmutableList.builder();
+
+        factories.add(CROSS_COMPILED_JOIN_PROBE_COMPILER.xcompiledMultiJoinOperatorFactory(
+                operatorId,
+                planNodeId,
+                lookupSourceSupplier1,
+                probeTypes,
+                probeJoinChannel,
+                probeHashChannel,
+                JoinType.INNER));
+
+        factories.add(CROSS_COMPILED_JOIN_PROBE_COMPILER.xcompiledMultiJoinOperatorFactory(
+                operatorId,
+                planNodeId,
+                lookupSourceSupplier2,
+                probeTypes,
+                probeJoinChannel,
+                probeHashChannel,
+                JoinType.INNER));
+
+        return new CombinedOperatorFactory(
+                MetadataManager.createTestMetadataManager(),
+                factories.build(),
+                ImmutableList.copyOf(probeTypes));
+
+    }
+
 }

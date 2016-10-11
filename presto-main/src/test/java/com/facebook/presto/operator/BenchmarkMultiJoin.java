@@ -343,6 +343,27 @@ public class BenchmarkMultiJoin
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
     }
 
+    @Benchmark
+    public List<Page> xcompiledMultiJoin(JoinContext joinContext)
+    {
+        HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+
+        OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.xcompiledMultiJoin(
+                HASH_JOIN_OPERATOR_ID,
+                TEST_PLAN_NODE_ID,
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                joinContext.getTypes(),
+                joinContext.getHashChannels(),
+                joinContext.getHashChannel(),
+                false);
+
+        feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+    }
+
     @Test
     public void testBaseline()
     {
