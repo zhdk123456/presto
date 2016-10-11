@@ -114,12 +114,16 @@ public class PagesResponseWriter
         extends OutputStream
     {
         private final OutputStream delegate;
-        private final RateLimiter rateLimiter;
+        private static final RateLimiter rateLimiter;
+
+        static
+        {
+            rateLimiter = RateLimiter.create(512 * 1024*1024); // 512 Mbps, FIXME: make it configurable
+        }
 
         ThrottlingOutputStream(OutputStream delegate)
         {
             this.delegate = requireNonNull(delegate, "SliceOutput is null");
-            rateLimiter = RateLimiter.create(1024*1024*10); // FIXME make it configurable
         }
 
         @Override
