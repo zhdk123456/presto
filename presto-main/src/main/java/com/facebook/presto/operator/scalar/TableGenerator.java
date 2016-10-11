@@ -50,11 +50,14 @@ public class TableGenerator
         for (int i = 0; i < objects.length; ++i) {
             if (objects[i] instanceof String) {
                 assert rowType.getTypeParameters().get(i).equals(VarcharType.VARCHAR);
-            } else if (objects[i] instanceof Float) {
+            }
+            else if (objects[i] instanceof Float) {
                 assert rowType.getTypeParameters().get(i).equals(RealType.REAL);
-            } else if (objects[i] instanceof Integer) {
+            }
+            else if (objects[i] instanceof Integer) {
                 assert rowType.getTypeParameters().get(i).equals(IntegerType.INTEGER);
-            } else {
+            }
+            else {
                 assert Primitives.wrap(rowType.getTypeParameters().get(i).getJavaType()).isInstance(objects[i]);
             }
         }
@@ -82,6 +85,9 @@ public class TableGenerator
                 }
                 else if (obj instanceof Float) {
                     bb.writeInt(floatToRawIntBits((Float) obj));
+                }
+                else if (obj instanceof Boolean) {
+                    bb.writeByte(((Boolean) obj) ? 1 : 0);
                 }
                 else if (obj instanceof String) {
                     bb.writeBytes(Slices.utf8Slice((String) obj), 0, ((String) obj).length());

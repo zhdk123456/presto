@@ -21,6 +21,11 @@ import com.facebook.presto.spi.function.SqlType;
 import javax.annotation.Nullable;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
+import static com.facebook.presto.spi.type.IntegerType.INTEGER;
+import static com.facebook.presto.spi.type.RealType.REAL;
+import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 
 public final class TableFunctions
 {
@@ -29,7 +34,7 @@ public final class TableFunctions
     @Description("tsequence")
     @ScalarFunction
     @Nullable
-    @SqlType(tableType={"x bigint"})
+    @SqlType(tableType = {"x bigint"})
     public static Block tsequence(@SqlType("bigint") long a, @SqlType("bigint") long b)
     {
         TableGenerator tg = new TableGenerator(BIGINT);
@@ -52,6 +57,19 @@ public final class TableFunctions
             for (long x = x1; x < x2; ++x) {
                 tg.addRow(x, y);
             }
+        }
+        return tg.buildBlock();
+    }
+
+    @Description("tall")
+    @ScalarFunction
+    @Nullable
+    @SqlType(tableType = {"x bigint", "y integer", "z double", "a real", "b varchar", "c boolean"})
+    public static Block tall()
+    {
+        TableGenerator tg = new TableGenerator(BIGINT, INTEGER, DOUBLE, REAL, VARCHAR, BOOLEAN);
+        for (int i = 0; i < 3; ++i) {
+            tg.addRow(1L + i, 2 + i, 1.0 + i, 2.0f + i, "i = " + i, i % 2 == 0);
         }
         return tg.buildBlock();
     }
