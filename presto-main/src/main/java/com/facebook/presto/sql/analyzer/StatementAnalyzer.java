@@ -449,7 +449,7 @@ class StatementAnalyzer
             }
             else if (expressionType instanceof RowType) {
                 ((RowType) expressionType).getFields().forEach(field -> {
-                    outputFields.add(Field.newUnqualified(Optional.empty(), field.getType()));
+                    outputFields.add(Field.newUnqualified(field.getName(), field.getType()));
                 });
             }
             else {

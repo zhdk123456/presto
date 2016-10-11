@@ -15,35 +15,26 @@ package com.facebook.presto.operator.scalar;
 
 import com.facebook.presto.operator.aggregation.TypedSet;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.block.ArrayBlockBuilder;
 import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.block.BlockBuilderStatus;
-import com.facebook.presto.spi.block.FixedWidthBlockBuilder;
 import com.facebook.presto.spi.function.Description;
 import com.facebook.presto.spi.function.ScalarFunction;
 import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.type.RowType;
-import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slice;
 
 import javax.annotation.Nullable;
 
-import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
 import static com.facebook.presto.spi.StandardErrorCode.NUMERIC_VALUE_OUT_OF_RANGE;
-import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.util.Failures.checkCondition;
-import static io.airlift.slice.SizeOf.SIZE_OF_LONG;
 import static io.airlift.slice.Slices.utf8Slice;
 import static java.lang.Character.MAX_RADIX;
 import static java.lang.Character.MIN_RADIX;
-import static java.lang.Double.doubleToRawLongBits;
 import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.intBitsToFloat;
 import static java.lang.String.format;
@@ -800,24 +791,6 @@ public final class MathFunctions
         double dotProduct = mapDotProduct(leftMap, rightMap);
 
         return dotProduct / (normLeftMap * normRightMap);
-    }
-
-    @Description("cosine similarity between the given sparse vectors")
-    @ScalarFunction
-    @Nullable
-    @SqlType("array<row<double,bigint,bigint>('nx','ny','nz')>")
-    public static Block cosineSimilarity(@SqlType("double") double x, @SqlType("bigint") long y)
-    {
-        RowType type = new RowType(ImmutableList.of(DOUBLE, BIGINT, BIGINT), Optional.of(ImmutableList.of("nx", "ny", "nz")));
-        ArrayBlockBuilder arrayBuilder = new ArrayBlockBuilder(type, new BlockBuilderStatus(), 2, 3*SIZE_OF_LONG);
-        for (int i = 0; i < 2; ++i) {
-            FixedWidthBlockBuilder builder = new FixedWidthBlockBuilder(SIZE_OF_LONG, 3);
-            builder.writeLong(doubleToRawLongBits(x + 1)).closeEntry();
-            builder.writeLong(y + 1).closeEntry();
-            builder.writeLong(17).closeEntry();
-            arrayBuilder.writeObject(builder.build()).closeEntry();
-        }
-        return arrayBuilder.build();
     }
 
     private static double mapDotProduct(Block leftMap, Block rightMap)
