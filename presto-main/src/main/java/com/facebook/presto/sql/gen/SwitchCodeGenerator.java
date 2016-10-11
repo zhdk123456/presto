@@ -98,7 +98,7 @@ public class SwitchCodeGenerator
         Variable tempVariable = scope.createTempVariable(valueType);
         BytecodeBlock block = new BytecodeBlock()
                 .append(valueBytecode)
-                .append(BytecodeUtils.ifWasNullClearPopAndGoto(scope, nullValue, void.class, valueType))
+                .append(BytecodeUtils.ifWasNullClearPopAndGoto(scope, generatorContext.wasNull(), nullValue, void.class, valueType))
                 .putVariable(tempVariable);
 
         BytecodeNode getTempVariableNode = VariableInstruction.loadVariable(tempVariable);

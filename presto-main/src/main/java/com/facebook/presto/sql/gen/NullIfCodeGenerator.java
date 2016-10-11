@@ -47,7 +47,7 @@ public class NullIfCodeGenerator
         BytecodeBlock block = new BytecodeBlock()
                 .comment("check if first arg is null")
                 .append(generatorContext.generate(first))
-                .append(BytecodeUtils.ifWasNullPopAndGoto(scope, notMatch, void.class));
+                .append(BytecodeUtils.ifWasNullPopAndGoto(scope, generatorContext.wasNull(), notMatch, void.class));
 
         Type firstType = first.getType();
         Type secondType = second.getType();
@@ -64,7 +64,7 @@ public class NullIfCodeGenerator
 
         BytecodeBlock conditionBlock = new BytecodeBlock()
                 .append(equalsCall)
-                .append(BytecodeUtils.ifWasNullClearPopAndGoto(scope, notMatch, void.class, boolean.class));
+                .append(BytecodeUtils.ifWasNullClearPopAndGoto(scope, generatorContext.wasNull(), notMatch, void.class, boolean.class));
 
         // if first and second are equal, return null
         BytecodeBlock trueBlock = new BytecodeBlock()

@@ -147,7 +147,7 @@ public class RowToRowCast
                 continue;
             }
             BytecodeExpression fromElement = constantType(binder, currentFromType).getValue(value, constantInt(i));
-            BytecodeExpression toElement = invokeFunction(scope, cachedInstanceBinder, signature.getName(), function, fromElement);
+            BytecodeExpression toElement = invokeFunction(scope, wasNull, cachedInstanceBinder, signature.getName(), function, fromElement);
             IfStatement ifElementNull = new IfStatement("if the element in the row type is null...");
 
             ifElementNull.condition(value.invoke("isNull", boolean.class, constantInt(i)))

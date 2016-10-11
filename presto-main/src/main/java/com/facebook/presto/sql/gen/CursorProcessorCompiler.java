@@ -204,7 +204,8 @@ public class CursorProcessorCompiler
                     cachedInstanceBinder,
                     fieldReferenceCompiler(cursor, wasNull),
                     metadata.getFunctionRegistry(),
-                    tryMethodMap.build());
+                    tryMethodMap.build(),
+                    wasNull);
 
             MethodDefinition tryMethod = defineTryMethod(
                     innerExpressionVisitor,
@@ -240,7 +241,8 @@ public class CursorProcessorCompiler
                 cachedInstanceBinder,
                 fieldReferenceCompiler(cursor, wasNullVariable),
                 metadata.getFunctionRegistry(),
-                tryMethodMap);
+                tryMethodMap,
+                wasNullVariable);
 
         LabelNode end = new LabelNode("end");
         method.getBody()
@@ -280,7 +282,8 @@ public class CursorProcessorCompiler
                 cachedInstanceBinder,
                 fieldReferenceCompiler(cursor, wasNullVariable),
                 metadata.getFunctionRegistry(),
-                tryMethodMap);
+                tryMethodMap,
+                wasNullVariable);
 
         body.getVariable(output)
                 .comment("evaluate projection: " + projection.toString())

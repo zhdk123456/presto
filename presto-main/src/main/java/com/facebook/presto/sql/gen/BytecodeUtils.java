@@ -52,29 +52,28 @@ public final class BytecodeUtils
     {
     }
 
-    public static BytecodeNode ifWasNullPopAndGoto(Scope scope, LabelNode label, Class<?> returnType, Class<?>... stackArgsToPop)
+    public static BytecodeNode ifWasNullPopAndGoto(Scope scope, Variable wasNull, LabelNode label, Class<?> returnType, Class<?>... stackArgsToPop)
     {
-        return handleNullValue(scope, label, returnType, ImmutableList.copyOf(stackArgsToPop), false);
+        return handleNullValue(scope, wasNull, label, returnType, ImmutableList.copyOf(stackArgsToPop), false);
     }
 
-    public static BytecodeNode ifWasNullPopAndGoto(Scope scope, LabelNode label, Class<?> returnType, Iterable<? extends Class<?>> stackArgsToPop)
+    public static BytecodeNode ifWasNullPopAndGoto(Scope scope, Variable wasNull, LabelNode label, Class<?> returnType, Iterable<? extends Class<?>> stackArgsToPop)
     {
-        return handleNullValue(scope, label, returnType, ImmutableList.copyOf(stackArgsToPop), false);
+        return handleNullValue(scope, wasNull, label, returnType, ImmutableList.copyOf(stackArgsToPop), false);
     }
 
-    public static BytecodeNode ifWasNullClearPopAndGoto(Scope scope, LabelNode label, Class<?> returnType, Class<?>... stackArgsToPop)
+    public static BytecodeNode ifWasNullClearPopAndGoto(Scope scope, Variable wasNull, LabelNode label, Class<?> returnType, Class<?>... stackArgsToPop)
     {
-        return handleNullValue(scope, label, returnType, ImmutableList.copyOf(stackArgsToPop), true);
+        return handleNullValue(scope, wasNull, label, returnType, ImmutableList.copyOf(stackArgsToPop), true);
     }
 
     public static BytecodeNode handleNullValue(Scope scope,
+            Variable wasNull,
             LabelNode label,
             Class<?> returnType,
             List<Class<?>> stackArgsToPop,
             boolean clearNullFlag)
     {
-        Variable wasNull = scope.getVariable("wasNull");
-
         BytecodeBlock nullCheck = new BytecodeBlock()
                 .setDescription("ifWasNullGoto")
                 .append(wasNull);
@@ -157,7 +156,7 @@ public final class BytecodeUtils
                 binding.getType().returnType());
     }
 
-    public static BytecodeNode generateInvocation(Scope scope, String name, ScalarFunctionImplementation function, Optional<BytecodeNode> instance, List<BytecodeNode> arguments, Binding binding)
+    public static BytecodeNode generateInvocation(Scope scope, Variable wasNull, String name, ScalarFunctionImplementation function, Optional<BytecodeNode> instance, List<BytecodeNode> arguments, Binding binding)
     {
         MethodType methodType = binding.getType();
 
@@ -192,17 +191,17 @@ public final class BytecodeUtils
                 block.append(arguments.get(realParameterIndex));
                 if (!function.getNullableArguments().get(realParameterIndex)) {
                     checkArgument(!Primitives.isWrapperType(type), "Non-nullable argument must not be primitive wrapper type");
-                    block.append(ifWasNullPopAndGoto(scope, end, unboxedReturnType, Lists.reverse(stackTypes)));
+                    block.append(ifWasNullPopAndGoto(scope, wasNull, end, unboxedReturnType, Lists.reverse(stackTypes)));
                 }
                 else {
                     if (function.getNullFlags().get(realParameterIndex)) {
-                        block.append(scope.getVariable("wasNull"));
+                        block.append(wasNull);
                         currentParameterIndex++;
                     }
                     else {
                         block.append(boxPrimitiveIfNecessary(scope, type));
                     }
-                    block.append(scope.getVariable("wasNull").set(constantFalse()));
+                    block.append(wasNull.set(constantFalse()));
                 }
                 realParameterIndex++;
             }
@@ -303,7 +302,7 @@ public final class BytecodeUtils
         return invoke(binding, signature.getName());
     }
 
-    public static BytecodeNode generateWrite(CallSiteBinder callSiteBinder, Scope scope, Variable wasNullVariable, Type type)
+    public static BytecodeNode generateWrite(CallSiteBinder callSiteBinder, Scope scope, BytecodeExpression wasNullVariable, Type type)
     {
         if (type.getJavaType() == void.class) {
             return new BytecodeBlock().comment("output.appendNull();")

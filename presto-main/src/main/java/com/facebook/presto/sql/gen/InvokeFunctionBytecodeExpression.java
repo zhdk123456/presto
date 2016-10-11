@@ -17,6 +17,7 @@ import com.facebook.presto.bytecode.BytecodeNode;
 import com.facebook.presto.bytecode.FieldDefinition;
 import com.facebook.presto.bytecode.MethodGenerationContext;
 import com.facebook.presto.bytecode.Scope;
+import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.operator.scalar.ScalarFunctionImplementation;
 import com.google.common.base.Joiner;
@@ -33,12 +34,12 @@ import static java.util.Objects.requireNonNull;
 public class InvokeFunctionBytecodeExpression
         extends BytecodeExpression
 {
-    public static BytecodeExpression invokeFunction(Scope scope, CachedInstanceBinder cachedInstanceBinder, String name, ScalarFunctionImplementation function, BytecodeExpression... parameters)
+    public static BytecodeExpression invokeFunction(Scope scope, Variable wasNull, CachedInstanceBinder cachedInstanceBinder, String name, ScalarFunctionImplementation function, BytecodeExpression... parameters)
     {
-        return invokeFunction(scope, cachedInstanceBinder, name, function, ImmutableList.copyOf(parameters));
+        return invokeFunction(scope, wasNull, cachedInstanceBinder, name, function, ImmutableList.copyOf(parameters));
     }
 
-    public static BytecodeExpression invokeFunction(Scope scope, CachedInstanceBinder cachedInstanceBinder, String name, ScalarFunctionImplementation function, List<BytecodeExpression> parameters)
+    public static BytecodeExpression invokeFunction(Scope scope, Variable wasNull, CachedInstanceBinder cachedInstanceBinder, String name, ScalarFunctionImplementation function, List<BytecodeExpression> parameters)
     {
         requireNonNull(scope, "scope is null");
         requireNonNull(function, "function is null");
@@ -49,7 +50,7 @@ public class InvokeFunctionBytecodeExpression
             FieldDefinition field = cachedInstanceBinder.getCachedInstance(function.getInstanceFactory().get());
             instance = Optional.of(scope.getThis().getField(field));
         }
-        return new InvokeFunctionBytecodeExpression(scope, binding, name, function, instance, parameters);
+        return new InvokeFunctionBytecodeExpression(scope, wasNull, binding, name, function, instance, parameters);
     }
 
     private final BytecodeNode invocation;
@@ -57,6 +58,7 @@ public class InvokeFunctionBytecodeExpression
 
     private InvokeFunctionBytecodeExpression(
             Scope scope,
+            Variable wasNull,
             Binding binding,
             String name,
             ScalarFunctionImplementation function,
@@ -65,7 +67,7 @@ public class InvokeFunctionBytecodeExpression
     {
         super(type(function.getMethodHandle().type().returnType()));
 
-        this.invocation = generateInvocation(scope, name, function, instance, parameters.stream().map(BytecodeNode.class::cast).collect(toImmutableList()), binding);
+        this.invocation = generateInvocation(scope, wasNull, name, function, instance, parameters.stream().map(BytecodeNode.class::cast).collect(toImmutableList()), binding);
         this.oneLineDescription = name + "(" + Joiner.on(", ").join(parameters) + ")";
     }
 

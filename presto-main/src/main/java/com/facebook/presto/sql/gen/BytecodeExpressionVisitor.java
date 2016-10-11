@@ -17,6 +17,7 @@ import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.BytecodeNode;
 import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.Scope;
+import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.metadata.FunctionRegistry;
 import com.facebook.presto.sql.relational.CallExpression;
 import com.facebook.presto.sql.relational.ConstantExpression;
@@ -52,19 +53,22 @@ public class BytecodeExpressionVisitor
     private final RowExpressionVisitor<Scope, BytecodeNode> fieldReferenceCompiler;
     private final FunctionRegistry registry;
     private final Map<CallExpression, MethodDefinition> tryExpressionsMap;
+    private final Variable wasNull;
 
     public BytecodeExpressionVisitor(
             CallSiteBinder callSiteBinder,
             CachedInstanceBinder cachedInstanceBinder,
             RowExpressionVisitor<Scope, BytecodeNode> fieldReferenceCompiler,
             FunctionRegistry registry,
-            Map<CallExpression, MethodDefinition> tryExpressionsMap)
+            Map<CallExpression, MethodDefinition> tryExpressionsMap,
+            Variable wasNull)
     {
         this.callSiteBinder = callSiteBinder;
         this.cachedInstanceBinder = cachedInstanceBinder;
         this.fieldReferenceCompiler = fieldReferenceCompiler;
         this.registry = registry;
         this.tryExpressionsMap = tryExpressionsMap;
+        this.wasNull = wasNull;
     }
 
     @Override
@@ -128,7 +132,8 @@ public class BytecodeExpressionVisitor
                 scope,
                 callSiteBinder,
                 cachedInstanceBinder,
-                registry);
+                registry,
+                wasNull);
 
         return generator.generateExpression(call.getSignature(), generatorContext, call.getType(), call.getArguments());
     }
@@ -142,7 +147,7 @@ public class BytecodeExpressionVisitor
         BytecodeBlock block = new BytecodeBlock();
         if (value == null) {
             return block.comment("constant null")
-                    .append(scope.getVariable("wasNull").set(constantTrue()))
+                    .append(wasNull.set(constantTrue()))
                     .pushJavaDefault(javaType);
         }
 

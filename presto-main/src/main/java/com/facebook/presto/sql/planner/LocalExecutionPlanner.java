@@ -23,6 +23,7 @@ import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.operator.AggregationOperator.AggregationOperatorFactory;
 import com.facebook.presto.operator.AssignUniqueIdOperator;
+import com.facebook.presto.operator.CombinedOperatorFactory;
 import com.facebook.presto.operator.CursorProcessor;
 import com.facebook.presto.operator.DeleteOperator.DeleteOperatorFactory;
 import com.facebook.presto.operator.DriverFactory;
@@ -98,6 +99,7 @@ import com.facebook.presto.split.PageSinkManager;
 import com.facebook.presto.split.PageSourceProvider;
 import com.facebook.presto.sql.gen.ExpressionCompiler;
 import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler;
+import com.facebook.presto.sql.gen.cross.CrossCompiledOperatorFactory;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.Partitioning.ArgumentBinding;
 import com.facebook.presto.sql.planner.optimizations.IndexJoinOptimizer;
@@ -360,10 +362,10 @@ public class LocalExecutionPlanner
         DriverFactory driverFactory = new DriverFactory(
                 context.isInputDriver(),
                 true,
-                ImmutableList.<OperatorFactory>builder()
+                crossCompileOperators(ImmutableList.<OperatorFactory>builder()
                         .addAll(physicalOperation.getOperatorFactories())
                         .add(outputOperatorFactory.createOutputOperator(context.getNextOperatorId(), plan.getId(), outputTypes, pagePreprocessor))
-                        .build(),
+                        .build()),
                 context.getDriverInstanceCount());
         context.addDriverFactory(driverFactory);
 
@@ -380,7 +382,38 @@ public class LocalExecutionPlanner
         return new LocalExecutionPlan(context.getDriverFactories());
     }
 
-    private static void addLookupOuterDrivers(LocalExecutionPlanContext context)
+    private static int combinedOperatorId = 666;
+    private List<OperatorFactory> crossCompileOperators(List<OperatorFactory> operatorFactories)
+    {
+        List<OperatorFactory> newOperatorFactories = new ArrayList<>();
+        List<Type> inputTypes = operatorFactories.get(0).getTypes();
+        newOperatorFactories.add(operatorFactories.get(0));
+        List<CrossCompiledOperatorFactory> crossCompiledOperatorFactories = new ArrayList<>();
+        for (int i = 1; i < operatorFactories.size(); ++i) {
+            OperatorFactory operatorFactory = operatorFactories.get(i);
+            if (operatorFactory instanceof CrossCompiledOperatorFactory) {
+                crossCompiledOperatorFactories.add((CrossCompiledOperatorFactory) operatorFactory);
+            }
+            else if (crossCompiledOperatorFactories.size() <= 0) {
+                newOperatorFactories.addAll(crossCompiledOperatorFactories);
+                crossCompiledOperatorFactories.clear();
+
+                inputTypes = operatorFactory.getTypes();
+                newOperatorFactories.add(operatorFactory);
+            }
+            else {
+                CombinedOperatorFactory combinedOperatorFactory = new CombinedOperatorFactory(combinedOperatorId++, new PlanNodeId("CROSS"), metadata, ImmutableList.copyOf(crossCompiledOperatorFactories), inputTypes);
+                newOperatorFactories.add(combinedOperatorFactory);
+                crossCompiledOperatorFactories.clear();
+
+                inputTypes = operatorFactory.getTypes();
+                newOperatorFactories.add(operatorFactory);
+            }
+        }
+        return newOperatorFactories;
+    }
+
+    private void addLookupOuterDrivers(LocalExecutionPlanContext context)
     {
         // For an outer join on the lookup side (RIGHT or FULL) add an additional
         // driver to output the unused rows in the lookup source
@@ -404,7 +437,7 @@ public class LocalExecutionPlanner
                             .map(OperatorFactory::duplicate)
                             .forEach(newOperators::add);
 
-                    context.addDriverFactory(new DriverFactory(false, factory.isOutputDriver(), newOperators.build(), OptionalInt.of(1)));
+                    context.addDriverFactory(new DriverFactory(false, factory.isOutputDriver(), crossCompileOperators(newOperators.build()), OptionalInt.of(1)));
                 }
             }
         }
@@ -1043,7 +1076,8 @@ public class LocalExecutionPlanner
                             context.getNextOperatorId(),
                             planNodeId,
                             processor,
-                            Lists.transform(rewrittenProjections, forMap(expressionTypes)));
+                            Lists.transform(rewrittenProjections, forMap(expressionTypes)),
+                            translatedFilter, translatedProjections);
 
                     return new PhysicalOperation(operatorFactory, outputMappings, source);
                 }
@@ -1444,10 +1478,10 @@ public class LocalExecutionPlanner
             context.addDriverFactory(new DriverFactory(
                     buildContext.isInputDriver(),
                     false,
-                    ImmutableList.<OperatorFactory>builder()
+                    crossCompileOperators(ImmutableList.<OperatorFactory>builder()
                             .addAll(buildSource.getOperatorFactories())
                             .add(nestedLoopBuildOperatorFactory)
-                            .build(),
+                            .build()),
                     buildContext.getDriverInstanceCount()));
 
             NestedLoopJoinPagesSupplier nestedLoopJoinPagesSupplier = nestedLoopBuildOperatorFactory.getNestedLoopJoinPagesSupplier();
@@ -1544,10 +1578,10 @@ public class LocalExecutionPlanner
             context.addDriverFactory(new DriverFactory(
                     buildContext.isInputDriver(),
                     false,
-                    ImmutableList.<OperatorFactory>builder()
+                    crossCompileOperators(ImmutableList.<OperatorFactory>builder()
                             .addAll(buildSource.getOperatorFactories())
                             .add(operatorFactory)
-                            .build(),
+                            .build()),
                     buildContext.getDriverInstanceCount()));
 
             return lookupSourceSupplier;
@@ -1643,10 +1677,10 @@ public class LocalExecutionPlanner
             DriverFactory buildDriverFactory = new DriverFactory(
                     buildContext.isInputDriver(),
                     false,
-                    ImmutableList.<OperatorFactory>builder()
+                    crossCompileOperators(ImmutableList.<OperatorFactory>builder()
                             .addAll(buildSource.getOperatorFactories())
                             .add(setBuilderOperatorFactory)
-                            .build(),
+                            .build()),
                     buildContext.getDriverInstanceCount());
             context.addDriverFactory(buildDriverFactory);
 
@@ -1799,7 +1833,7 @@ public class LocalExecutionPlanner
                 Function<Page, Page> pagePreprocessor = enforceLayoutProcessor(expectedLayout, source.getLayout());
                 operatorFactories.add(new LocalExchangeSinkOperatorFactory(subContext.getNextOperatorId(), node.getId(), localExchange.createSinkFactory(), pagePreprocessor));
 
-                DriverFactory driverFactory = new DriverFactory(subContext.isInputDriver(), false, operatorFactories, subContext.getDriverInstanceCount());
+                DriverFactory driverFactory = new DriverFactory(subContext.isInputDriver(), false, crossCompileOperators(operatorFactories), subContext.getDriverInstanceCount());
                 context.addDriverFactory(driverFactory);
             }
 

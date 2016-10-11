@@ -109,7 +109,7 @@ public class ArrayToArrayCast
         Type fromElementType = typeManager.getType(elementCastSignature.getArgumentTypes().get(0));
         Type toElementType = typeManager.getType(elementCastSignature.getReturnType());
         CachedInstanceBinder cachedInstanceBinder = new CachedInstanceBinder(definition, binder);
-        ArrayMapBytecodeExpression newArray = ArrayGeneratorUtils.map(scope, cachedInstanceBinder, fromElementType, toElementType, value, elementCastSignature.getName(), elementCast);
+        ArrayMapBytecodeExpression newArray = ArrayGeneratorUtils.map(scope, wasNull, cachedInstanceBinder, fromElementType, toElementType, value, elementCastSignature.getName(), elementCast);
 
         // return the block
         body.append(newArray.ret());

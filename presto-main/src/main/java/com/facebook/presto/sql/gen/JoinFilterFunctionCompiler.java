@@ -174,7 +174,8 @@ public class JoinFilterFunctionCompiler
                 cachedInstanceBinder,
                 fieldReferenceCompiler(callSiteBinder, leftPosition, leftBlocks, rightPosition, rightBlocks, leftBlocksSize, wasNullVariable),
                 metadata.getFunctionRegistry(),
-                tryMethodMap);
+                tryMethodMap,
+                wasNullVariable);
 
         BytecodeNode visitorBody = filter.accept(visitor, scope);
 
@@ -214,7 +215,8 @@ public class JoinFilterFunctionCompiler
                     cachedInstanceBinder,
                     fieldReferenceCompiler(callSiteBinder, leftPosition, leftBlocks, rightPosition, rightBlocks, leftBlocksSize, wasNullVariable),
                     metadata.getFunctionRegistry(),
-                    tryMethodMap.build());
+                    tryMethodMap.build(),
+                    wasNullVariable);
 
             List<Parameter> inputParameters = ImmutableList.<Parameter>builder()
                     .add(session)

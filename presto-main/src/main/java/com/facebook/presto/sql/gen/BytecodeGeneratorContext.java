@@ -41,7 +41,8 @@ public class BytecodeGeneratorContext
             Scope scope,
             CallSiteBinder callSiteBinder,
             CachedInstanceBinder cachedInstanceBinder,
-            FunctionRegistry registry)
+            FunctionRegistry registry,
+            Variable wasNull)
     {
         requireNonNull(bytecodeGenerator, "bytecodeGenerator is null");
         requireNonNull(cachedInstanceBinder, "cachedInstanceBinder is null");
@@ -54,7 +55,7 @@ public class BytecodeGeneratorContext
         this.callSiteBinder = callSiteBinder;
         this.cachedInstanceBinder = cachedInstanceBinder;
         this.registry = registry;
-        this.wasNull = scope.getVariable("wasNull");
+        this.wasNull = wasNull;
     }
 
     public Scope getScope()
@@ -88,7 +89,7 @@ public class BytecodeGeneratorContext
             FieldDefinition field = cachedInstanceBinder.getCachedInstance(function.getInstanceFactory().get());
             instance = Optional.of(scope.getThis().getField(field));
         }
-        return generateInvocation(scope, name, function, instance, arguments, binding);
+        return generateInvocation(scope, wasNull, name, function, instance, arguments, binding);
     }
 
     public Variable wasNull()

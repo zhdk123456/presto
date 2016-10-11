@@ -240,7 +240,7 @@ public class InCodeGenerator
         BytecodeBlock block = new BytecodeBlock()
                 .comment("IN")
                 .append(value)
-                .append(ifWasNullPopAndGoto(scope, end, boolean.class, javaType))
+                .append(ifWasNullPopAndGoto(scope, generatorContext.wasNull(), end, boolean.class, javaType))
                 .append(switchBlock)
                 .append(defaultCaseBlock);
 
