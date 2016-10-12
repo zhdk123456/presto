@@ -63,7 +63,7 @@ public class Scope
         this.relation = requireNonNull(relation, "relation is null");
         this.namedQueries = ImmutableMap.copyOf(requireNonNull(namedQueries, "namedQueries is null"));
         this.approximate = approximate;
-        this.queryBoundary = queryBoundary;
+        this.queryBoundary = true;
     }
 
     public RelationType getRelationType()
