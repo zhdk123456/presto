@@ -487,7 +487,12 @@ class RelationPlanner
             Symbol inputSymbol = symbolAllocator.newSymbol(expression, type);
             argumentSymbols.add(inputSymbol);
             if (type instanceof ArrayType) {
-                unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
+                if (((ArrayType) type).getElementType() instanceof RowType) {
+                    unnestSymbols.put(inputSymbol, ((RowType) ((ArrayType) type).getElementType()).getFields().stream().map(f -> unnestedSymbolsIterator.next()).collect(toImmutableList()));
+                }
+                else {
+                    unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
+                }
             }
             else if (type instanceof MapType) {
                 unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));

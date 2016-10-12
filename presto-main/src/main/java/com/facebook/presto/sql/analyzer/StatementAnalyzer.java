@@ -441,7 +441,15 @@ class StatementAnalyzer
             ExpressionAnalysis expressionAnalysis = analyzeExpression(expression, scope);
             Type expressionType = expressionAnalysis.getType(expression);
             if (expressionType instanceof ArrayType) {
-                outputFields.add(Field.newUnqualified(Optional.empty(), ((ArrayType) expressionType).getElementType()));
+                Type elementType = ((ArrayType) expressionType).getElementType();
+                if (elementType instanceof RowType) {
+                    ((RowType) elementType).getFields().forEach(field -> {
+                        outputFields.add(Field.newUnqualified(field.getName(), field.getType()));
+                    });
+                }
+                else {
+                    outputFields.add(Field.newUnqualified(Optional.empty(), elementType));
+                }
             }
             else if (expressionType instanceof MapType) {
                 outputFields.add(Field.newUnqualified(Optional.empty(), ((MapType) expressionType).getKeyType()));

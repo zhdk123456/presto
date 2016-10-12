@@ -134,7 +134,12 @@ public class UnnestOperator
         ImmutableList.Builder<Type> builder = ImmutableList.builder();
         for (Type type : types) {
             checkArgument(type instanceof ArrayType || type instanceof MapType || type instanceof RowType, "Can only unnest map, array and row types");
-            builder.addAll(type.getTypeParameters());
+            if (type instanceof ArrayType && ((ArrayType) type).getElementType() instanceof RowType) {
+                builder.addAll(((ArrayType) type).getElementType().getTypeParameters());
+            }
+            else {
+                builder.addAll(type.getTypeParameters());
+            }
         }
         return builder.build();
     }
@@ -193,7 +198,12 @@ public class UnnestOperator
                 block = (Block) type.getObject(currentPage.getBlock(channel), currentPosition);
             }
             if (type instanceof ArrayType) {
-                unnesters.add(new ArrayUnnester((ArrayType) type, block));
+                if (((ArrayType) type).getElementType() instanceof RowType) {
+                    unnesters.add(new ArrayOfRowsUnnester((ArrayType) type, block));
+                }
+                else {
+                    unnesters.add(new ArrayUnnester((ArrayType) type, block));
+                }
             }
             else if (type instanceof MapType) {
                 unnesters.add(new MapUnnester((MapType) type, block));
