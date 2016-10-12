@@ -24,6 +24,7 @@ import com.facebook.presto.sql.gen.cross.CrossCompiledOperatorFactory;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,16 +135,21 @@ public class LookupJoinOperators
                 probeHashChannel,
                 JoinType.INNER));
 
+        List<Type> join2ProbeTypes = new ArrayList<>();
+        join2ProbeTypes.addAll(probeTypes);
+        join2ProbeTypes.addAll(lookupSourceSupplier1.getTypes());
         factories.add(CROSS_COMPILED_JOIN_PROBE_COMPILER.xcompiledMultiJoinOperatorFactory(
-                operatorId,
+                operatorId + 15,
                 planNodeId,
                 lookupSourceSupplier2,
-                probeTypes,
+                join2ProbeTypes,
                 probeJoinChannel,
                 probeHashChannel,
                 JoinType.INNER));
 
         return new CombinedOperatorFactory(
+                operatorId + 42,
+                planNodeId,
                 MetadataManager.createTestMetadataManager(),
                 factories.build(),
                 ImmutableList.copyOf(probeTypes));

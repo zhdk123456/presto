@@ -59,7 +59,7 @@ import static org.testng.AssertJUnit.assertEquals;
 @State(Thread)
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
-@Fork(3)
+@Fork(1)
 @Warmup(iterations = 10)
 @Measurement(iterations = 10)
 public class BenchmarkMultiJoin
@@ -431,6 +431,9 @@ public class BenchmarkMultiJoin
 
         boolean finishing = false;
         for (int loops = 0; !joinOperator.isFinished() && loops < 1_000_000; loops++) {
+            if (!joinOperator.isBlocked().isDone()) {
+                continue;
+            }
             if (joinOperator.needsInput()) {
                 if (input.hasNext()) {
                     Page inputPage = input.next();

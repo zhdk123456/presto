@@ -154,12 +154,13 @@ public class JoinCompiler
     {
         Class<? extends PagesHashStrategy> pagesHashStrategyClass = internalCompileHashStrategy(types, joinChannels);
 
+        /*
         Class<? extends LookupSource> lookupSourceClass = IsolatedClass.isolateClass(
                 new DynamicClassLoader(getClass().getClassLoader()),
                 LookupSource.class,
-                InMemoryJoinHash.class);
+                InMemoryJoinHash.class);*/
 
-        return new LookupSourceFactory(lookupSourceClass, new PagesHashStrategyFactory(pagesHashStrategyClass));
+        return new LookupSourceFactory(InMemoryJoinHash.class, new PagesHashStrategyFactory(pagesHashStrategyClass));
     }
 
     private Class<? extends PagesHashStrategy> internalCompileHashStrategy(List<Type> types, List<Integer> joinChannels)
@@ -191,7 +192,7 @@ public class JoinCompiler
         generateGetChannelCountMethod(classDefinition, channelFields);
         generateGetSizeInBytesMethod(classDefinition, sizeField);
         generateAppendToMethod(classDefinition, callSiteBinder, types, channelFields);
-        generateGetLongValueMethod(classDefinition, callSiteBinder, channelFields);
+        generateGetLongValueMethod(classDefinition, callSiteBinder, joinChannelFields);
         generateGetBlockMethod(classDefinition, callSiteBinder, channelFields);
         generateHashPositionMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, hashChannelField);
         generateHashRowMethod(classDefinition, callSiteBinder, joinChannelTypes);
@@ -370,7 +371,7 @@ public class JoinCompiler
                 .append(constantFalse().ret());
     }
 
-    private static void generateGetLongValueMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<FieldDefinition> channelFields)
+    private static void generateGetLongValueMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<FieldDefinition> joinChannelFields)
     {
         Parameter blockIndex = arg("blockIndex", int.class);
         Parameter blockPosition = arg("blockPosition", int.class);
@@ -384,7 +385,7 @@ public class JoinCompiler
         BytecodeExpression bigintType = constantType(callSiteBinder, BigintType.BIGINT);
         BytecodeExpression block = getLongValueMethod
                 .getThis()
-                .getField(channelFields.get(0))
+                .getField(joinChannelFields.get(0))
                 .invoke("get", Object.class, blockIndex)
                 .cast(Block.class);
 
@@ -402,6 +403,7 @@ public class JoinCompiler
     {
         Parameter channel = arg("channel", int.class);
         Parameter blockIndex = arg("blockIndex", int.class);
+
         MethodDefinition getBlockMethod = classDefinition.declareMethod(
                 a(PUBLIC),
                 "getBlock",
@@ -409,12 +411,21 @@ public class JoinCompiler
                 channel,
                 blockIndex);
 
+        //Variable thisVariable = getBlockMethod.getThis();
+        //BytecodeBlock appendToBody = getBlockMethod.getBody();
+
         for (int i = 0; i < channelFields.size(); i++) {
             getBlockMethod.getBody()
                     .append(new IfStatement()
-                            .condition(BytecodeExpressions.equal(blockIndex, constantInt(i)))
-                            .ifTrue(new BytecodeBlock().getField(channelFields.get(i)).ret()));
+                            .condition(BytecodeExpressions.equal(channel, constantInt(i)))
+                            .ifTrue(getBlockMethod
+                                    .getThis()
+                                    .getField(channelFields.get(i))
+                                    .invoke("get", Object.class, blockIndex)
+                                    .cast(Block.class)
+                                    .ret()));
         }
+        getBlockMethod.getBody().append(BytecodeExpressions.constantNull(Block.class).ret());
     }
 
     private static void generateHashPositionMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<Type> joinChannelTypes, List<FieldDefinition> joinChannelFields, FieldDefinition hashChannelField)

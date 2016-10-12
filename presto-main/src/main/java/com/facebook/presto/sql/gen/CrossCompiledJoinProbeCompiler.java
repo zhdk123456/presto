@@ -24,7 +24,6 @@ import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.instruction.JumpInstruction;
 import com.facebook.presto.bytecode.instruction.LabelNode;
-import com.facebook.presto.operator.CrossCompiledMultiJoinOperator;
 import com.facebook.presto.operator.CrossCompiledMultiJoinOperatorFactory;
 import com.facebook.presto.operator.JoinProbe;
 import com.facebook.presto.operator.JoinProbeFactory;
@@ -140,13 +139,13 @@ public class CrossCompiledJoinProbeCompiler
             }
         }
 
-        Class<? extends CrossCompiledOperatorFactory> operatorFactoryClass = IsolatedClass.isolateClass(
+        /*Class<? extends CrossCompiledOperatorFactory> operatorFactoryClass = IsolatedClass.isolateClass(
                 classLoader,
                 CrossCompiledOperatorFactory.class,
                 CrossCompiledMultiJoinOperatorFactory.class,
-                CrossCompiledMultiJoinOperator.class);
+                CrossCompiledMultiJoinOperator.class);*/
 
-        return new HashJoinOperatorFactoryFactory(joinProbeFactory, operatorFactoryClass);
+        return new HashJoinOperatorFactoryFactory(joinProbeFactory, CrossCompiledMultiJoinOperatorFactory.class);
     }
 
     @VisibleForTesting

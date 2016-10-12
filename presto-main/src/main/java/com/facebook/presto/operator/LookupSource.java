@@ -49,7 +49,7 @@ public interface LookupSource
         throw new UnsupportedOperationException();
     }
 
-    default long getNextJoinPosition(int currentJoinPosition)
+    default long getNextJoinPosition(long currentJoinPosition)
     {
         throw new UnsupportedOperationException();
     }
