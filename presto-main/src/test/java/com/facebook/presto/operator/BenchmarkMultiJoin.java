@@ -400,6 +400,17 @@ public class BenchmarkMultiJoin
         assertPages(joinContext.getResultTypes(), baselinePages, handcodedPages);
     }
 
+    @Test
+    public void testXcompiledMultiJoin()
+    {
+        JoinContext joinContext = new JoinContext();
+        joinContext.setup();
+        List<Page> xcompiledPages = xcompiledMultiJoin(joinContext);
+        List<Page> baselinePages = baselineMultiJoin(joinContext);
+
+        assertPages(joinContext.getResultTypes(), baselinePages, xcompiledPages);
+    }
+
     private void assertPages(List<Type> types, List<Page> expectedPages, List<Page> actualPages)
     {
         assertEquals(expectedPages.size(), actualPages.size());

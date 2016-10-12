@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
+import com.facebook.presto.spi.block.Block;
 
 public interface PagesHashStrategy
 {
@@ -28,6 +29,8 @@ public interface PagesHashStrategy
      * Get the total of allocated size
      */
     long getSizeInBytes();
+
+    Block getBlock(int channel, int blockIndex);
 
     /**
      * Appends all values at the specified position to the page builder starting at {@code outputChannelOffset}.

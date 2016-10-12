@@ -116,6 +116,8 @@ public class CrossCompiledMultiJoinOperatorFactory
         return new CrossCompiledMultiJoinOperator(
                 operatorContext,
                 getTypes(),
+                probeTypes,
+                buildTypes,
                 probeJoinChannels,
                 joinType,
                 lookupSourceSupplier.getLookupSource(),

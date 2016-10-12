@@ -25,6 +25,7 @@ import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.control.ForLoop;
 import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
+import com.facebook.presto.bytecode.expression.BytecodeExpressions;
 import com.facebook.presto.bytecode.instruction.LabelNode;
 import com.facebook.presto.operator.InMemoryJoinHash;
 import com.facebook.presto.operator.JoinFilterFunction;
@@ -190,7 +191,8 @@ public class JoinCompiler
         generateGetChannelCountMethod(classDefinition, channelFields);
         generateGetSizeInBytesMethod(classDefinition, sizeField);
         generateAppendToMethod(classDefinition, callSiteBinder, types, channelFields);
-        generateGetLongValueMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, hashChannelField);
+        generateGetLongValueMethod(classDefinition, callSiteBinder, channelFields);
+        generateGetBlockMethod(classDefinition, callSiteBinder, channelFields);
         generateHashPositionMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, hashChannelField);
         generateHashRowMethod(classDefinition, callSiteBinder, joinChannelTypes);
         generateRowEqualsRowMethod(classDefinition, callSiteBinder, joinChannelTypes);
@@ -368,7 +370,7 @@ public class JoinCompiler
                 .append(constantFalse().ret());
     }
 
-    private static void generateGetLongValueMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<Type> joinChannelTypes, List<FieldDefinition> joinChannelFields, FieldDefinition hashChannelField)
+    private static void generateGetLongValueMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<FieldDefinition> channelFields)
     {
         Parameter blockIndex = arg("blockIndex", int.class);
         Parameter blockPosition = arg("blockPosition", int.class);
@@ -382,7 +384,7 @@ public class JoinCompiler
         BytecodeExpression bigintType = constantType(callSiteBinder, BigintType.BIGINT);
         BytecodeExpression block = getLongValueMethod
                 .getThis()
-                .getField(joinChannelFields.get(0))
+                .getField(channelFields.get(0))
                 .invoke("get", Object.class, blockIndex)
                 .cast(Block.class);
 
@@ -394,6 +396,25 @@ public class JoinCompiler
                         block,
                         blockPosition)
                         .ret());
+    }
+
+    private static void generateGetBlockMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<FieldDefinition> channelFields)
+    {
+        Parameter channel = arg("channel", int.class);
+        Parameter blockIndex = arg("blockIndex", int.class);
+        MethodDefinition getBlockMethod = classDefinition.declareMethod(
+                a(PUBLIC),
+                "getBlock",
+                type(Block.class),
+                channel,
+                blockIndex);
+
+        for (int i = 0; i < channelFields.size(); i++) {
+            getBlockMethod.getBody()
+                    .append(new IfStatement()
+                            .condition(BytecodeExpressions.equal(blockIndex, constantInt(i)))
+                            .ifTrue(new BytecodeBlock().getField(channelFields.get(i)).ret()));
+        }
     }
 
     private static void generateHashPositionMethod(ClassDefinition classDefinition, CallSiteBinder callSiteBinder, List<Type> joinChannelTypes, List<FieldDefinition> joinChannelFields, FieldDefinition hashChannelField)

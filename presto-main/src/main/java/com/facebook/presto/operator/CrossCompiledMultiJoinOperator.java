@@ -15,35 +15,27 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.OpCode;
-import com.facebook.presto.bytecode.ParameterizedType;
 import com.facebook.presto.bytecode.Variable;
-import com.facebook.presto.bytecode.control.ForLoop;
-import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.control.WhileLoop;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
-import com.facebook.presto.bytecode.instruction.InvokeInstruction;
 import com.facebook.presto.operator.LookupJoinOperators.JoinType;
-import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
-import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.CallSiteBinder;
 import com.facebook.presto.sql.gen.cross.CrossCompilationContext;
 import com.facebook.presto.sql.gen.cross.CrossCompiledOperator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Primitives;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantInt;
-import static com.facebook.presto.bytecode.expression.BytecodeExpressions.lessThan;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.invokeStatic;
 import static com.facebook.presto.sql.gen.SqlTypeBytecodeExpression.constantType;
-import static com.google.common.base.Preconditions.checkState;
-import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static java.util.Objects.requireNonNull;
 
 public class CrossCompiledMultiJoinOperator
@@ -57,6 +49,8 @@ public class CrossCompiledMultiJoinOperator
     private final Runnable onClose;
 
     private final PageBuilder pageBuilder;
+    private final List<Type> probeTypes;
+    private final List<Type> buildTypes;
 
     public InMemoryJoinHash lookupSource;
     private JoinProbe probe1;
@@ -68,6 +62,8 @@ public class CrossCompiledMultiJoinOperator
     public CrossCompiledMultiJoinOperator(
             OperatorContext operatorContext,
             List<Type> types,
+            List<Type> probeTypes,
+            List<Type> buildTypes,
             List<Integer> probeJoinChannels,
             JoinType joinType,
             ListenableFuture<LookupSource> lookupSourceFuture,
@@ -76,6 +72,8 @@ public class CrossCompiledMultiJoinOperator
     {
         this.operatorContext = requireNonNull(operatorContext, "operatorContext is null");
         this.types = ImmutableList.copyOf(requireNonNull(types, "types is null"));
+        this.probeTypes = ImmutableList.copyOf(requireNonNull(probeTypes, "probeTypes is null"));
+        this.buildTypes = ImmutableList.copyOf(requireNonNull(buildTypes, "buildTypes is null"));
 
         requireNonNull(joinType, "joinType is null");
 
@@ -97,12 +95,9 @@ public class CrossCompiledMultiJoinOperator
             probeColumns[probeJoinChannel] = context.getChannel(probeJoinChannel);
         }
 
-        String joinPositionName = context.uniqueVariableName("joinPosition");
-        Variable joinPosition = context.getMethodScope().declareVariable(long.class, joinPositionName);
+        Variable joinPosition = context.getMethodScope().createTempVariable(long.class);
 
         BytecodeBlock body = new BytecodeBlock();
-        body.append(
-                joinPosition);
 
         /*
 
@@ -121,7 +116,7 @@ public class CrossCompiledMultiJoinOperator
     }
          */
 
-        Variable rawHash = context.getMethodScope().declareVariable(long.class, context.uniqueVariableName("rawHash"));
+        Variable rawHash = context.getMethodScope().createTempVariable(long.class);
         body.push(0L).putVariable(rawHash);
 
         CallSiteBinder callSiteBinder = context.getCachedInstanceBinder().getCallSiteBinder();
@@ -131,34 +126,78 @@ public class CrossCompiledMultiJoinOperator
                     .getVariable(rawHash)
                     .push(31L)
                     .append(OpCode.LMUL)
-                    .append(type.invoke("hash", long.class, probeColumns[index])) // TODO: this will not work for non Bigint
+                    // TODO: add support for non bigint columns
+                    .append(type.invoke("hash", long.class, probeColumns[probeJoinChannels.get(index)]))
                     .append(OpCode.LADD)
                     .putVariable(rawHash);
         }
 
-        Variable pos = context.getMethodScope().declareVariable(int.class, context.uniqueVariableName("pos"));
-
+        Variable pos = context.getMethodScope().createTempVariable(int.class);
         body.append(lookupSourceField.invoke("getPos", int.class, rawHash)).putVariable(pos);
         body.append(new WhileLoop()
-                .condition(lookupSourceField.invoke("getJoinPositionFromPos", int.class, pos))
+                .condition(
+                        BytecodeExpressions.add(
+                                BytecodeExpressions.notEqual(
+                                        lookupSourceField.invoke("getJoinPositionFromPos", int.class, pos),
+                                        BytecodeExpressions.constantInt(-1)),
+                                BytecodeExpressions.notEqual(
+                                        // TODO: add support for multiple any type columns
+                                        probeColumns[probeJoinChannels.get(0)],
+                                        lookupSourceField.invoke(
+                                                "getLongValue",
+                                                long.class,
+                                                lookupSourceField.invoke("getJoinPositionFromPos", int.class, pos)))))
                 .body(new BytecodeBlock()
-                        .append(/* if break*/)
                         .append(lookupSourceField.invoke("incrementJoinPosition", int.class, pos))
                         .putVariable(pos)));
         body.getVariable(pos).putVariable(joinPosition);
 
-        for (int index = 0; index < probeJoinChannels.size(); index++) {
+        for (int index = 0; index < probeTypes.size(); index++) {
             context.mapInputToOutputChannel(index, index);
         }
 
-        context.defineChannel(probeJoinChannels.size() + 1, () -> lookupSourceField.invoke("getChannel", Block.class, BytecodeExpressions.constantInt(0).invoke("getLong", long.class, joinPosition)));
-        BytecodeBlock downStreamBlock = context.processDownstreamOperator();
+        BytecodeBlock downStreamBlock = new BytecodeBlock();
+
+        //long pageAddress = addresses.getLong(Ints.checkedCast(position));
+        Variable pageAddress = context.getMethodScope().createTempVariable(long.class);
+        downStreamBlock.append(pageAddress.set(lookupSourceField.invoke("getPageAddress", long.class, joinPosition)));
+
+        Variable blockIndex = context.getMethodScope().createTempVariable(int.class);
+        downStreamBlock.append(blockIndex.set(invokeStatic(SyntheticAddress.class, "decodeSliceIndex", long.class, pageAddress)));
+        Variable blockPosition = context.getMethodScope().createTempVariable(int.class);
+        downStreamBlock.append(blockPosition.set(invokeStatic(SyntheticAddress.class, "decodeSliceIndex", long.class, pageAddress)));
+
+        for (int index = 0; index < buildTypes.size(); index++) {
+            final int dupa = index;
+            context.defineChannel(
+                    probeTypes.size() + index,
+                    () -> getNativeType(
+                            callSiteBinder,
+                            buildTypes.get(dupa),
+                            lookupSourceField.invoke(
+                                "getBlock",
+                                Block.class,
+                                BytecodeExpressions.constantInt(dupa),
+                                blockIndex),
+                            blockPosition));
+
+        }
+
+        downStreamBlock.append(context.processDownstreamOperator());
 
         body.append(new WhileLoop()
-                .condition(BytecodeExpressions.lessThanOrEqual(joinPosition, BytecodeExpressions.constantInt(0)))
-                .body(new BytecodeBlock().append(downStreamBlock)));
+                .condition(BytecodeExpressions.greaterThanOrEqual(joinPosition, BytecodeExpressions.constantInt(0)))
+                .body(new BytecodeBlock()
+                        .append(downStreamBlock)
+                        .append(joinPosition.set(lookupSourceField.invoke("getNextJoinPosition", long.class, joinPosition)))));
 
         return body;
+    }
+
+    private BytecodeExpression getNativeType(CallSiteBinder callSiteBinder, Type type, BytecodeExpression block, BytecodeExpression blockPosition)
+    {
+        String methodName = "get" + Primitives.wrap(type.getJavaType()).getSimpleName();
+        return constantType(callSiteBinder, type).invoke(methodName, type.getJavaType(), block, blockPosition);
     }
 
     @Override
@@ -195,54 +234,5 @@ public class CrossCompiledMultiJoinOperator
         if (lookupSource != null) {
             lookupSource.close();
         }
-        // closing lookup source is only here for index join
-        if (lookupSource2 != null) {
-            lookupSource2.close();
-        }
-    }
-
-    private boolean joinCurrentPosition()
-    {
-        // while we have a position to join against...
-        while (joinPosition >= 0) {
-            long startingJoinPosition2 = joinPosition2;
-            while (joinPosition2 >= 0) {
-                pageBuilder.declarePosition();
-
-                // write probe columns
-                probe1.appendTo(pageBuilder);
-
-                // write build columns
-                lookupSource.appendTo(joinPosition, pageBuilder, probe1.getChannelCount());
-                lookupSource2.appendTo(joinPosition2, pageBuilder, probe1.getChannelCount() + lookupSource.getChannelCount());
-
-                // get next join position for this row
-                joinPosition2 = lookupSource.getNextJoinPosition(joinPosition2, probe1.getPosition(), probe1.getPage());
-            }
-            joinPosition = lookupSource.getNextJoinPosition(joinPosition, probe1.getPosition(), probe1.getPage());
-
-            if (pageBuilder.isFull()) {
-                joinPosition2 = startingJoinPosition2; // revert join
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean advanceProbePosition()
-    {
-        boolean hasNext1 = probe1.advanceNextPosition();
-        boolean hasNext2 = probe2.advanceNextPosition();
-        checkState(hasNext1 == hasNext2);
-        if (!hasNext1) {
-            probe1 = null;
-            probe2 = null;
-            return false;
-        }
-
-        // update join position
-        joinPosition = probe1.getCurrentJoinPosition();
-        joinPosition2 = probe2.getCurrentJoinPosition();
-        return true;
     }
 }

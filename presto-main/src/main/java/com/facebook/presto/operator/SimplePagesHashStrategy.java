@@ -50,6 +50,11 @@ public class SimplePagesHashStrategy
         }
     }
 
+    public List<Block> getChannel(int channel)
+    {
+        return channels.get(channel);
+    }
+
     @Override
     public int getChannelCount()
     {
@@ -212,5 +217,11 @@ public class SimplePagesHashStrategy
             }
         }
         return false;
+    }
+
+    @Override
+    public Block getBlock(int channel, int blockIndex)
+    {
+        return channels.get(channel).get(blockIndex);
     }
 }

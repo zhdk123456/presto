@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.BigintType;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
@@ -137,6 +138,25 @@ public final class InMemoryJoinHash
     public int getJoinPositionCount()
     {
         return positionLinks.length;
+    }
+
+    long getPageAddress(long position)
+    {
+        return addresses.getLong(Ints.checkedCast(position));
+    }
+
+    Block getChannel(int channel, long pageAddress)
+    {
+        int blockIndex = decodeSliceIndex(pageAddress);
+        return pagesHashStrategy.getBlock(channel, blockIndex);
+    }
+
+    public long getLongValue(int position)
+    {
+        long pageAddress = addresses.getLong(Ints.checkedCast(position));
+        int blockIndex = decodeSliceIndex(pageAddress);
+        int blockPosition = decodePosition(pageAddress);
+        return pagesHashStrategy.getLongValue(blockIndex, blockPosition);
     }
 
     @Override
