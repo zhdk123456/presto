@@ -202,6 +202,20 @@ public final class InMemoryJoinHash
         return -1;
     }
 
+    public long getJoinPositionFromVlaue(long rawHash, long probeValue)
+    {
+        int pos = getHashPosition(rawHash, mask);
+
+        while (key[pos] != -1) {
+            if (positionEqualsCurrentRowIgnoreNulls(key[pos], (byte) rawHash, probeValue)) {
+                return key[pos];
+            }
+            // increment position and mask to handler wrap around
+            pos = (pos + 1) & mask;
+        }
+        return -1;
+    }
+
     @Override
     public long getJoinPositionFromVlaue(long probeValue)
     {

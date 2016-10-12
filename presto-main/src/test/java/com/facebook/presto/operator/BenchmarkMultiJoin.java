@@ -60,7 +60,7 @@ import static org.testng.AssertJUnit.assertEquals;
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
 @Fork(value = 1, jvmArgsAppend = {
-        //"-XX:MaxInlineSize=10",
+        "-XX:MaxInlineSize=100",
         "-XX:CompileCommand=print,*PageProcessor*.process*"} )
 @Warmup(iterations = 10)
 @Measurement(iterations = 1000)

@@ -91,8 +91,6 @@ public class CrossCompiledMultiJoinOperator
     @Override
     public BytecodeBlock process(CrossCompilationContext context)
     {
-        BytecodeExpression lookupSourceField = context.getField("this").getField("lookupSource", InMemoryJoinHash.class);
-
         BytecodeExpression probeColumns[] = new BytecodeExpression[probeJoinChannels.size()];
         int probeColumn = 0;
         for (Integer probeJoinChannel : probeJoinChannels) {
@@ -103,10 +101,17 @@ public class CrossCompiledMultiJoinOperator
 
         BytecodeBlock body = new BytecodeBlock();
 
+        CallSiteBinder callSiteBinder = context.getCachedInstanceBinder().getCallSiteBinder();
+
+        //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, probeColumns[0])));
+
+        //BytecodeExpression inMemoryJoinHash = context.getField("this").getField("lookupSource", InMemoryJoinHash.class);
+        Variable inMemoryJoinHash = context.getMethodScope().createTempVariable(InMemoryJoinHash.class);
+        context.getMethodHeader().append(inMemoryJoinHash.set(context.getField("this").getField("lookupSource", InMemoryJoinHash.class)));
+
         Variable rawHash = context.getMethodScope().createTempVariable(long.class);
         body.append(rawHash.set(constantLong(0)));
 
-        CallSiteBinder callSiteBinder = context.getCachedInstanceBinder().getCallSiteBinder();
         for (int index = 0; index < probeJoinChannels.size(); index++) {
             BytecodeExpression type = constantType(callSiteBinder, types.get(probeJoinChannels.get(index)));
             body
@@ -119,24 +124,26 @@ public class CrossCompiledMultiJoinOperator
                     .putVariable(rawHash);
         }
 
+        //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, rawHash, probeColumns[0])));
+
         Variable pos = context.getMethodScope().createTempVariable(int.class);
-        body.append(pos.set(lookupSourceField.invoke("getPos", int.class, rawHash)));
+        body.append(pos.set(inMemoryJoinHash.invoke("getPos", int.class, rawHash)));
 
         body.append(new WhileLoop()
                 .condition(
                         BytecodeExpressions.and(
                                 BytecodeExpressions.notEqual(
-                                        lookupSourceField.invoke("getJoinPositionFromPos", long.class, pos),
+                                        inMemoryJoinHash.invoke("getJoinPositionFromPos", long.class, pos),
                                         BytecodeExpressions.constantLong(-1)),
                                 BytecodeExpressions.notEqual(
                                         // TODO: add support for multiple any type columns
                                         probeColumns[0],
-                                        lookupSourceField.invoke(
+                                        inMemoryJoinHash.invoke(
                                                 "getLongValue",
                                                 long.class,
                                                 pos))))
-                .body(pos.set(lookupSourceField.invoke("incrementJoinPosition", int.class, pos))));
-        body.append(joinPosition.set(lookupSourceField.invoke("getJoinPositionFromPos", long.class, pos)));
+                .body(pos.set(inMemoryJoinHash.invoke("incrementJoinPosition", int.class, pos))));
+        body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromPos", long.class, pos)));
 
         for (int index = 0; index < probeTypes.size(); index++) {
             context.mapInputToOutputChannel(index, index);
@@ -146,7 +153,7 @@ public class CrossCompiledMultiJoinOperator
 
         //long pageAddress = addresses.getLong(Ints.checkedCast(position));
         Variable pageAddress = context.getMethodScope().createTempVariable(long.class);
-        downStreamBlock.append(pageAddress.set(lookupSourceField.invoke("getPageAddress", long.class, joinPosition)));
+        downStreamBlock.append(pageAddress.set(inMemoryJoinHash.invoke("getPageAddress", long.class, joinPosition)));
 
         Variable blockPosition = context.getMethodScope().createTempVariable(int.class);
         downStreamBlock.append(blockPosition.set(invokeStatic(SyntheticAddress.class, "decodePosition", int.class, pageAddress)));
@@ -159,7 +166,7 @@ public class CrossCompiledMultiJoinOperator
                     () -> getNativeType(
                             callSiteBinder,
                             buildTypes.get(dupa),
-                            lookupSourceField.invoke(
+                            inMemoryJoinHash.invoke(
                                     "getBlock",
                                     Block.class,
                                     BytecodeExpressions.constantInt(dupa),
@@ -172,10 +179,10 @@ public class CrossCompiledMultiJoinOperator
         downStreamBlock.append(context.processDownstreamOperator());
 
         body.append(new WhileLoop()
-                .condition(BytecodeExpressions.greaterThanOrEqual(joinPosition, BytecodeExpressions.constantLong(0)))
+                .condition(BytecodeExpressions.greaterThanOrEqual(joinPosition, constantLong(0)))
                 .body(new BytecodeBlock()
                         .append(downStreamBlock)
-                        .append(joinPosition.set(lookupSourceField.invoke("getNextJoinPosition", long.class, joinPosition)))));
+                        .append(joinPosition.set(inMemoryJoinHash.invoke("getNextJoinPosition", long.class, joinPosition)))));
         return body;
     }
 

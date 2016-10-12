@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.ClassDefinition;
+import com.facebook.presto.bytecode.DynamicClassLoader;
 import com.facebook.presto.bytecode.FieldDefinition;
 import com.facebook.presto.bytecode.MethodDefinition;
 import com.facebook.presto.bytecode.Parameter;
@@ -526,7 +527,11 @@ public class CombinedOperatorFactory
         generateProcessMethod(classDefinition, cachedInstanceBinder, operators);
         generateConstructor(classDefinition, cachedInstanceBinder, operators);
 
-        return defineClass(classDefinition, PageProcessor.class, callSiteBinder.getBindings(), getClass().getClassLoader());
+        return defineClass(
+                classDefinition,
+                PageProcessor.class,
+                callSiteBinder.getBindings(),
+                new DynamicClassLoader(getClass().getClassLoader()));
     }
 
     private void generateProcessMethod(ClassDefinition classDefinition, CachedInstanceBinder cachedInstanceBinder, List<CrossCompiledOperator> operators)
