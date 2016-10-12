@@ -353,6 +353,10 @@ public final class SqlFormatter
                 append(indent, type).append(" JOIN ");
             }
 
+            if (node.isLateral()) {
+                append(indent, "LATERAL ");
+            }
+
             process(node.getRight(), indent);
 
             if (node.getType() != Join.Type.CROSS && node.getType() != Join.Type.IMPLICIT) {

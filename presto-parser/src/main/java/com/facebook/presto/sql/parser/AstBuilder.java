@@ -226,6 +226,12 @@ class AstBuilder
         return new CreateTable(getLocation(context), getQualifiedName(context.qualifiedName()), visit(context.tableElement(), TableElement.class), context.EXISTS() != null, processTableProperties(context.tableProperties()));
     }
 
+    @Override
+    public Node visitJointRelation(SqlBaseParser.JointRelationContext ctx)
+    {
+        return super.visitJointRelation(ctx);
+    }
+
     private Map<String, Expression> processTableProperties(TablePropertiesContext tablePropertiesContext)
     {
         ImmutableMap.Builder<String, Expression> properties = ImmutableMap.builder();
@@ -460,14 +466,22 @@ class AstBuilder
         Optional<Relation> from = Optional.empty();
         List<SelectItem> selectItems = visit(context.selectItem(), SelectItem.class);
 
-        List<Relation> relations = visit(context.relation(), Relation.class);
-        if (!relations.isEmpty()) {
-            // synthesize implicit join nodes
-            Iterator<Relation> iterator = relations.iterator();
-            Relation relation = iterator.next();
+        List<Relation> relations = visit(context.jointRelation().stream().map(x -> x.relation()).collect(toList()), Relation.class);
 
+        // synthesize implicit join nodes
+        Iterator<Relation> iterator = relations.iterator();
+        if (context.relation() != null) {
+            Relation relation = getOnlyElement(visit(ImmutableList.of(context.relation()), Relation.class));
+            int i = 0;
             while (iterator.hasNext()) {
-                relation = new Join(getLocation(context), Join.Type.IMPLICIT, relation, iterator.next(), Optional.<JoinCriteria>empty());
+                relation = new Join(
+                        getLocation(context),
+                        Join.Type.IMPLICIT,
+                        context.jointRelation().get(i++).LATERAL() != null,
+                        relation,
+                        iterator.next(),
+                        Optional.<JoinCriteria>empty()
+                );
             }
 
             from = Optional.of(relation);
@@ -758,7 +772,7 @@ class AstBuilder
 
         if (context.CROSS() != null) {
             right = (Relation) visit(context.right);
-            return new Join(getLocation(context), Join.Type.CROSS, left, right, Optional.<JoinCriteria>empty());
+            return new Join(getLocation(context), Join.Type.CROSS, false /* fixme support lateral */, left, right, Optional.<JoinCriteria>empty());
         }
 
         JoinCriteria criteria;
@@ -798,7 +812,7 @@ class AstBuilder
             joinType = Join.Type.INNER;
         }
 
-        return new Join(getLocation(context), joinType, left, right, Optional.of(criteria));
+        return new Join(getLocation(context), joinType, false /* fixme support lateral */, left, right, Optional.of(criteria));
     }
 
     @Override

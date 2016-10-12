@@ -1302,8 +1302,46 @@ public class TestSqlParser
         assertStatement("SELECT * FROM a, b",
                 simpleQuery(selectList(new AllColumns()),
                         new Join(Join.Type.IMPLICIT,
+                                false,
                                 new Table(QualifiedName.of("a")),
                                 new Table(QualifiedName.of("b")),
+                                Optional.<JoinCriteria>empty())));
+    }
+
+    @Test
+    public void testImplicitLateralJoin()
+            throws Exception
+    {
+        assertStatement("SELECT * FROM a, LATERAL b",
+                simpleQuery(selectList(new AllColumns()),
+                        new Join(Join.Type.IMPLICIT,
+                                true,
+                                new Table(QualifiedName.of("a")),
+                                new Table(QualifiedName.of("b")),
+                                Optional.<JoinCriteria>empty())));
+
+        assertStatement("SELECT * FROM a, LATERAL b, c",
+                simpleQuery(selectList(new AllColumns()),
+                        new Join(Join.Type.IMPLICIT,
+                                false,
+                                new Join(Join.Type.IMPLICIT,
+                                        true,
+                                        new Table(QualifiedName.of("a")),
+                                        new Table(QualifiedName.of("b")),
+                                        Optional.<JoinCriteria>empty()),
+                                new Table(QualifiedName.of("c")),
+                                Optional.<JoinCriteria>empty())));
+
+        assertStatement("SELECT * FROM a, b, LATERAL c",
+                simpleQuery(selectList(new AllColumns()),
+                        new Join(Join.Type.IMPLICIT,
+                                true,
+                                new Join(Join.Type.IMPLICIT,
+                                        false,
+                                        new Table(QualifiedName.of("a")),
+                                        new Table(QualifiedName.of("b")),
+                                        Optional.<JoinCriteria>empty()),
+                                new Table(QualifiedName.of("c")),
                                 Optional.<JoinCriteria>empty())));
     }
 
@@ -1343,8 +1381,10 @@ public class TestSqlParser
                         selectList(new AllColumns()),
                         new Join(
                                 Join.Type.LEFT,
+                                false,
                                 new Join(
                                         Join.Type.CROSS,
+                                        false,
                                         new Table(QualifiedName.of("a")),
                                         new Table(QualifiedName.of("b")),
                                         Optional.empty()
@@ -1356,12 +1396,16 @@ public class TestSqlParser
                         selectList(new AllColumns()),
                         new Join(
                                 Join.Type.INNER,
+                                false,
                                 new Join(
                                         Join.Type.CROSS,
+                                        false,
                                         new Join(
                                                 Join.Type.INNER,
+                                                false,
                                                 new Join(
                                                         Join.Type.CROSS,
+                                                        false,
                                                         new Table(QualifiedName.of("a")),
                                                         new Table(QualifiedName.of("b")),
                                                         Optional.empty()
@@ -1384,6 +1428,7 @@ public class TestSqlParser
                         selectList(new AllColumns()),
                         new Join(
                                 Join.Type.CROSS,
+                                false,
                                 new Table(QualifiedName.of("t")),
                                 new Unnest(ImmutableList.of(new QualifiedNameReference(QualifiedName.of("a"))), false),
                                 Optional.empty())));
@@ -1392,6 +1437,7 @@ public class TestSqlParser
                         selectList(new AllColumns()),
                         new Join(
                                 Join.Type.CROSS,
+                                false,
                                 new Table(QualifiedName.of("t")),
                                 new Unnest(ImmutableList.of(new QualifiedNameReference(QualifiedName.of("a"))), true),
                                 Optional.empty())));

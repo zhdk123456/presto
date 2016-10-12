@@ -131,7 +131,7 @@ sortItem
 
 querySpecification
     : SELECT setQuantifier? selectItem (',' selectItem)*
-      (FROM relation (',' relation)*)?
+      (FROM relation (',' jointRelation)*)?
       (WHERE where=booleanExpression)?
       (GROUP BY groupBy)?
       (HAVING having=booleanExpression)?
@@ -171,6 +171,10 @@ selectItem
     : expression (AS? identifier)?  #selectSingle
     | qualifiedName '.' ASTERISK    #selectAll
     | ASTERISK                      #selectAll
+    ;
+
+jointRelation
+    : LATERAL? relation
     ;
 
 relation
@@ -606,6 +610,7 @@ DEALLOCATE: 'DEALLOCATE';
 EXECUTE: 'EXECUTE';
 CASCADE: 'CASCADE';
 RESTRICT: 'RESTRICT';
+LATERAL: 'LATERAL';
 
 NORMALIZE: 'NORMALIZE';
 NFD : 'NFD';

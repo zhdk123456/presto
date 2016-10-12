@@ -23,19 +23,20 @@ import static java.util.Objects.requireNonNull;
 public class Join
         extends Relation
 {
-    public Join(Type type, Relation left, Relation right, Optional<JoinCriteria> criteria)
+    public Join(Type type, boolean isLateral, Relation left, Relation right, Optional<JoinCriteria> criteria)
     {
-        this(Optional.empty(), type, left, right, criteria);
+        this(Optional.empty(), type, isLateral, left, right, criteria);
     }
 
-    public Join(NodeLocation location, Type type, Relation left, Relation right, Optional<JoinCriteria> criteria)
+    public Join(NodeLocation location, Type type, boolean isLateral, Relation left, Relation right, Optional<JoinCriteria> criteria)
     {
-        this(Optional.of(location), type, left, right, criteria);
+        this(Optional.of(location), type, isLateral, left, right, criteria);
     }
 
-    private Join(Optional<NodeLocation> location, Type type, Relation left, Relation right, Optional<JoinCriteria> criteria)
+    private Join(Optional<NodeLocation> location, Type type, boolean isLateral, Relation left, Relation right, Optional<JoinCriteria> criteria)
     {
         super(location);
+        this.isLateral = isLateral;
         requireNonNull(left, "left is null");
         requireNonNull(right, "right is null");
         if ((type == Type.CROSS) || (type == Type.IMPLICIT)) {
@@ -57,6 +58,7 @@ public class Join
     }
 
     private final Type type;
+    private final boolean isLateral;
     private final Relation left;
     private final Relation right;
     private final Optional<JoinCriteria> criteria;
@@ -64,6 +66,11 @@ public class Join
     public Type getType()
     {
         return type;
+    }
+
+    public boolean isLateral()
+    {
+        return isLateral;
     }
 
     public Relation getLeft()
@@ -110,6 +117,7 @@ public class Join
         }
         Join join = (Join) o;
         return (type == join.type) &&
+                (isLateral == join.isLateral) &&
                 Objects.equals(left, join.left) &&
                 Objects.equals(right, join.right) &&
                 Objects.equals(criteria, join.criteria);

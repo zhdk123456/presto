@@ -202,6 +202,11 @@ public abstract class AstVisitor<R, C>
         return visitNode(node, context);
     }
 
+    protected R visitJointRelation(JointRelation node, C context)
+    {
+        return visitNode(node, context);
+    }
+
     protected R visitQueryBody(QueryBody node, C context)
     {
         return visitRelation(node, context);
