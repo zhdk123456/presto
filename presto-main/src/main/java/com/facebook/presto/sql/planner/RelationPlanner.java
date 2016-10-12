@@ -26,6 +26,7 @@ import com.facebook.presto.sql.analyzer.Field;
 import com.facebook.presto.sql.analyzer.RelationType;
 import com.facebook.presto.sql.analyzer.Scope;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
+import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.ExceptNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.IntersectNode;
@@ -51,6 +52,7 @@ import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.InPredicate;
 import com.facebook.presto.sql.tree.Intersect;
 import com.facebook.presto.sql.tree.Join;
+import com.facebook.presto.sql.tree.JoinCriteria;
 import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Query;
@@ -67,6 +69,7 @@ import com.facebook.presto.sql.tree.Unnest;
 import com.facebook.presto.sql.tree.Values;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -77,12 +80,14 @@ import com.google.common.collect.UnmodifiableIterator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.sql.analyzer.SemanticExceptions.throwNotSupportedException;
 import static com.facebook.presto.sql.planner.ExpressionInterpreter.evaluateConstantExpression;
+import static com.facebook.presto.sql.tree.Join.Type.IMPLICIT;
 import static com.facebook.presto.sql.tree.Join.Type.INNER;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.Types.checkType;
@@ -208,6 +213,11 @@ class RelationPlanner
                 throwNotSupportedException(unnest, "UNNEST on other than the right side of CROSS JOIN");
             }
             return planCrossJoinUnnest(leftPlan, node, unnest);
+        }
+
+        if (node.isLateral()) {
+            Preconditions.checkArgument(node.getType() == INNER || node.getType() == IMPLICIT, "Expected INNER or IMPLICIT join");
+            return planLateralJoin(node, context);
         }
 
         RelationPlan rightPlan = process(node.getRight(), context);
@@ -366,6 +376,35 @@ class RelationPlanner
         }
 
         return new RelationPlan(root, analysis.getScope(node), outputSymbols, sampleWeight);
+    }
+
+    private RelationPlan planLateralJoin(Join node, Void context)
+    {
+        RelationPlan leftPlan = process(node.getLeft(), context);
+        RelationPlan rightPlan = process(node.getRight(), context);
+        PlanBuilder leftPlanBuilder = initializePlanBuilder(leftPlan);
+        PlanBuilder rightPlanBuilder = initializePlanBuilder(rightPlan);
+
+        PlanNode subqueryPlanNode = rightPlanBuilder.getRoot();
+        Map<Expression, Symbol> correlations = subqueryPlanner.extractCorrelation(leftPlanBuilder, subqueryPlanNode);
+
+        leftPlanBuilder = leftPlanBuilder.appendProjections(correlations.keySet(), symbolAllocator, idAllocator);
+        subqueryPlanNode = subqueryPlanner.replaceExpressionsWithSymbols(subqueryPlanNode, correlations);
+
+        List<Symbol> outputSymbols = ImmutableList.<Symbol>builder()
+                .addAll(leftPlan.getOutputSymbols())
+                .addAll(rightPlan.getOutputSymbols())
+                .build();
+        PlanNode inputPlanNode = leftPlanBuilder.getRoot();
+        return new RelationPlan(
+                new ApplyNode(
+                        idAllocator.getNextId(),
+                        inputPlanNode,
+                        subqueryPlanNode,
+                        ImmutableList.copyOf(correlations.values())),
+                analysis.getScope(node),
+                outputSymbols,
+                leftPlanBuilder.getSampleWeight());
     }
 
     private boolean isEqualComparisonExpression(Expression conjunct)

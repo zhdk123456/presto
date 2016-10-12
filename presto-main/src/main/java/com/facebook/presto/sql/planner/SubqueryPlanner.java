@@ -307,7 +307,7 @@ class SubqueryPlanner
         }
     }
 
-    private Map<Expression, Symbol> extractCorrelation(PlanBuilder subPlan, PlanNode subquery)
+    public Map<Expression, Symbol> extractCorrelation(PlanBuilder subPlan, PlanNode subquery)
     {
         Set<Expression> missingReferences = extractOuterColumnReferences(subquery);
         ImmutableMap.Builder<Expression, Symbol> correlation = ImmutableMap.builder();
@@ -359,7 +359,7 @@ class SubqueryPlanner
         return expressionColumnReferences.build();
     }
 
-    private PlanNode replaceExpressionsWithSymbols(PlanNode planNode, Map<Expression, Symbol> mapping)
+     public PlanNode replaceExpressionsWithSymbols(PlanNode planNode, Map<Expression, Symbol> mapping)
     {
         if (mapping.isEmpty()) {
             return planNode;
