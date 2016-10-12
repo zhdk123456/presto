@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.facebook.presto.SystemSessionProperties.getProcessingOptimization;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantFalse;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -260,10 +261,16 @@ public class FilterAndProjectOperator
                             wasNullVariable
                     );
 
-                    Variable result = context.getMethodScope().createTempVariable(projection.getType().getJavaType());
-                    block.append(projection.accept(visitor, context.getMethodScope()))
-                            .putVariable(result);
-                    return result;
+                    if (!projection.getType().getJavaType().equals(void.class)) {
+                        Variable result = context.getMethodScope().createTempVariable(projection.getType().getJavaType());
+                        block.append(projection.accept(visitor, context.getMethodScope()))
+                                .putVariable(result);
+                        return result;
+                    }
+                    else {
+                        block.append(projection.accept(visitor, context.getMethodScope()));
+                        return constantNull(Void.class);
+                    }
                 }
 
                 private BytecodeExpression generateFilter(CrossCompilationContext context, BytecodeBlock block)

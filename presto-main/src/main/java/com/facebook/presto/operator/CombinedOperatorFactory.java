@@ -590,9 +590,15 @@ public class CombinedOperatorFactory
                 BytecodeBlock block = new BytecodeBlock();
                 block.append(pageBuilder.invoke("declarePosition", void.class));
                 for (int channel = 0; channel < getTypes().size(); ++channel) {
-                    block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
-                            .append(context.getChannel(channel))
-                            .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                    if (!getTypes().get(channel).getJavaType().equals(void.class)) {
+                        block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
+                                .append(context.getChannel(channel))
+                                .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                    }
+                    else {
+                        block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
+                                .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                    }
                 }
                 return block;
             }
