@@ -213,10 +213,10 @@ columnAliases
     ;
 
 relationPrimary
-    : qualifiedName                                                   #tableName
-    | '(' query ')'                                                   #subqueryRelation
-    | UNNEST '(' expression (',' expression)* ')' (WITH ORDINALITY)?  #unnest
-    | '(' relation ')'                                                #parenthesizedRelation
+    : qualifiedName                                                    #tableName
+    | '(' query ')'                                                    #subqueryRelation
+    | (TABLE | UNNEST) '(' expression (',' expression)* ')' (WITH ORDINALITY)?   #unnest
+    | '(' relation ')'                                                 #parenthesizedRelation
     ;
 
 expression
@@ -229,7 +229,6 @@ booleanExpression
     | left=booleanExpression operator=AND right=booleanExpression  #logicalBinary
     | left=booleanExpression operator=OR right=booleanExpression   #logicalBinary
     ;
-
 // workaround for:
 //  https://github.com/antlr/antlr4/issues/780
 //  https://github.com/antlr/antlr4/issues/781

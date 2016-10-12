@@ -1346,6 +1346,20 @@ public class TestSqlParser
     }
 
     @Test
+    public void testTableFunctions()
+            throws Exception
+    {
+        assertStatement("SELECT * FROM t CROSS JOIN TABLE(a)",
+                simpleQuery(
+                        selectList(new AllColumns()),
+                        new Join(
+                                Join.Type.CROSS,
+                                new Table(QualifiedName.of("t")),
+                                new Unnest(ImmutableList.of(new QualifiedNameReference(QualifiedName.of("a"))), false),
+                                Optional.empty())));
+    }
+
+    @Test
     public void testStartTransaction()
             throws Exception
     {
