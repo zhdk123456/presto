@@ -55,7 +55,7 @@ public class CrossCompiledMultiJoinOperator
     private final List<Type> probeTypes;
     private final List<Type> buildTypes;
 
-    public InMemoryJoinHash lookupSource;
+    public LookupSource lookupSource;
     private JoinProbe probe1;
     private JoinProbe probe2;
 
@@ -106,8 +106,8 @@ public class CrossCompiledMultiJoinOperator
         //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, probeColumns[0])));
 
         //BytecodeExpression inMemoryJoinHash = context.getField("this").getField("lookupSource", InMemoryJoinHash.class);
-        Variable inMemoryJoinHash = context.getMethodScope().createTempVariable(InMemoryJoinHash.class);
-        context.getMethodHeader().append(inMemoryJoinHash.set(context.getField("this").getField("lookupSource", InMemoryJoinHash.class)));
+        Variable inMemoryJoinHash = context.getMethodScope().createTempVariable(LookupSource.class);
+        context.getMethodHeader().append(inMemoryJoinHash.set(context.getField("this").getField("lookupSource", LookupSource.class)));
 
         Variable rawHash = context.getMethodScope().createTempVariable(long.class);
         body.append(rawHash.set(constantLong(0)));
@@ -124,8 +124,9 @@ public class CrossCompiledMultiJoinOperator
                     .putVariable(rawHash);
         }
 
-        //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, rawHash, probeColumns[0])));
+        body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, rawHash, probeColumns[0])));
 
+        /*
         Variable pos = context.getMethodScope().createTempVariable(int.class);
         body.append(pos.set(inMemoryJoinHash.invoke("getPos", int.class, rawHash)));
 
@@ -144,7 +145,7 @@ public class CrossCompiledMultiJoinOperator
                                                 pos))))
                 .body(pos.set(inMemoryJoinHash.invoke("incrementJoinPosition", int.class, pos))));
         body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromPos", long.class, pos)));
-
+        */
         for (int index = 0; index < probeTypes.size(); index++) {
             context.mapInputToOutputChannel(index, index);
         }
@@ -195,7 +196,7 @@ public class CrossCompiledMultiJoinOperator
     @Override
     public Map<String, FieldDefinition> getFields()
     {
-        return ImmutableMap.of("this", new FieldDefinition(CrossCompiledMultiJoinOperator.class, this));
+        return ImmutableMap.of("this", new FieldDefinition(this.getClass(), this));
     }
 
     @Override
@@ -203,7 +204,7 @@ public class CrossCompiledMultiJoinOperator
     {
         if (lookupSourceFuture.isDone()) {
             if (lookupSource == null) {
-                lookupSource = (InMemoryJoinHash) tryGetFutureValue(lookupSourceFuture).orElse(null);
+                lookupSource = tryGetFutureValue(lookupSourceFuture).orElse(null);
             }
         }
         return lookupSourceFuture;

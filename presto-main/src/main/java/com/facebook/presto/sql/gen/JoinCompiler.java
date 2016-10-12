@@ -154,13 +154,12 @@ public class JoinCompiler
     {
         Class<? extends PagesHashStrategy> pagesHashStrategyClass = internalCompileHashStrategy(types, joinChannels);
 
-        /*
         Class<? extends LookupSource> lookupSourceClass = IsolatedClass.isolateClass(
                 new DynamicClassLoader(getClass().getClassLoader()),
                 LookupSource.class,
-                InMemoryJoinHash.class);*/
+                InMemoryJoinHash.class);
 
-        return new LookupSourceFactory(InMemoryJoinHash.class, new PagesHashStrategyFactory(pagesHashStrategyClass));
+        return new LookupSourceFactory(lookupSourceClass, new PagesHashStrategyFactory(pagesHashStrategyClass));
     }
 
     private Class<? extends PagesHashStrategy> internalCompileHashStrategy(List<Type> types, List<Integer> joinChannels)

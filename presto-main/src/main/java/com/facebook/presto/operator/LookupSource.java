@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
+import com.facebook.presto.spi.block.Block;
 
 import java.io.Closeable;
 
@@ -44,12 +45,47 @@ public interface LookupSource
     @Override
     void close();
 
+    default long getJoinPositionFromVlaue(long rawHash, long probeValue)
+    {
+        throw new UnsupportedOperationException();
+    }
+
     default long getJoinPositionFromVlaue(long probeValue)
     {
         throw new UnsupportedOperationException();
     }
 
     default long getNextJoinPosition(long currentJoinPosition)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getPageAddress(long position)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default Block getBlock(int channel, long pageAddress)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getLongValue(int pos)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default int getPos(long rawHash)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getJoinPositionFromPos(int pos)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default int incrementJoinPosition(int pos)
     {
         throw new UnsupportedOperationException();
     }
