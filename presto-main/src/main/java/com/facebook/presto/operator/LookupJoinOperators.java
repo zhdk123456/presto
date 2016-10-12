@@ -122,6 +122,7 @@ public class LookupJoinOperators
             List<? extends Type> probeTypes,
             List<Integer> probeJoinChannel,
             Optional<Integer> probeHashChannel,
+            Optional<OperatorFactory> projection,
             boolean filterFunctionPresent)
     {
         ImmutableList.Builder<CrossCompiledOperatorFactory> factories = ImmutableList.builder();
@@ -147,6 +148,10 @@ public class LookupJoinOperators
                 probeJoinChannel,
                 probeHashChannel,
                 JoinType.INNER));
+
+        if (projection.isPresent()) {
+            factories.add((CrossCompiledOperatorFactory) projection.get());
+        }
 
         return new CombinedOperatorFactory(
                 operatorId + 42,

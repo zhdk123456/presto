@@ -145,19 +145,24 @@ public final class InMemoryJoinHash
         return addresses.getLong(Ints.checkedCast(position));
     }
 
-    public Block getBlock(int channel, long pageAddress)
+    public Block getBlock(int channel, int blockIndex)
     {
-        int blockIndex = decodeSliceIndex(pageAddress);
+        ;
         return pagesHashStrategy.getBlock(channel, blockIndex);
     }
 
-    public long getLongValue(int pos)
+    public long getLongValue(long pos)
     {
-        long position = key[pos];
-        long pageAddress = addresses.getLong(Ints.checkedCast(position));
+        long pageAddress = addresses.getLong(Ints.checkedCast(pos));
         int blockIndex = decodeSliceIndex(pageAddress);
         int blockPosition = decodePosition(pageAddress);
         return pagesHashStrategy.getLongValue(blockIndex, blockPosition);
+    }
+
+    @Override
+    public byte getPositionHash(int pos)
+    {
+        return positionToHashes[pos];
     }
 
     @Override

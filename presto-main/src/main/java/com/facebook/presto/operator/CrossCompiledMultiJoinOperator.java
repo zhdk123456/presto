@@ -16,9 +16,12 @@ package com.facebook.presto.operator;
 import com.facebook.presto.bytecode.BytecodeBlock;
 import com.facebook.presto.bytecode.OpCode;
 import com.facebook.presto.bytecode.Variable;
+import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.control.WhileLoop;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.bytecode.expression.BytecodeExpressions;
+import com.facebook.presto.bytecode.instruction.JumpInstruction;
+import com.facebook.presto.bytecode.instruction.LabelNode;
 import com.facebook.presto.operator.LookupJoinOperators.JoinType;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
@@ -26,6 +29,7 @@ import com.facebook.presto.spi.type.AbstractLongType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.CallSiteBinder;
 import com.facebook.presto.sql.gen.cross.CrossCompilationContext;
+import com.facebook.presto.sql.gen.cross.CrossCompilationContext.ChannelBlock;
 import com.facebook.presto.sql.gen.cross.CrossCompiledOperator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +40,10 @@ import java.util.List;
 import java.util.Map;
 
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.constantLong;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.equal;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.greaterThanOrEqual;
 import static com.facebook.presto.bytecode.expression.BytecodeExpressions.invokeStatic;
+import static com.facebook.presto.bytecode.expression.BytecodeExpressions.notEqual;
 import static com.facebook.presto.sql.gen.SqlTypeBytecodeExpression.constantType;
 import static io.airlift.concurrent.MoreFutures.tryGetFutureValue;
 import static java.util.Objects.requireNonNull;
@@ -91,29 +98,21 @@ public class CrossCompiledMultiJoinOperator
     @Override
     public BytecodeBlock process(CrossCompilationContext context)
     {
+        Variable lookupSource = context.getMethodScope().createTempVariable(LookupSource.class);
+        context.getMethodHeader().append(lookupSource.set(context.getField("this").getField("lookupSource", LookupSource.class)));
+
+        BytecodeBlock body = new BytecodeBlock();
+        CallSiteBinder callSiteBinder = context.getCachedInstanceBinder().getCallSiteBinder();
+
         BytecodeExpression probeColumns[] = new BytecodeExpression[probeJoinChannels.size()];
         int probeColumn = 0;
         for (Integer probeJoinChannel : probeJoinChannels) {
             probeColumns[probeColumn++] = context.getChannel(probeJoinChannel);
         }
 
-        Variable joinPosition = context.getMethodScope().createTempVariable(long.class);
-
-        BytecodeBlock body = new BytecodeBlock();
-
-        CallSiteBinder callSiteBinder = context.getCachedInstanceBinder().getCallSiteBinder();
-
-        //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, probeColumns[0])));
-
-        //BytecodeExpression inMemoryJoinHash = context.getField("this").getField("lookupSource", InMemoryJoinHash.class);
-        Variable inMemoryJoinHash = context.getMethodScope().createTempVariable(LookupSource.class);
-        context.getMethodHeader().append(inMemoryJoinHash.set(context.getField("this").getField("lookupSource", LookupSource.class)));
-
-        Variable rawHash = context.getMethodScope().createTempVariable(long.class);
-        body.append(rawHash.set(constantLong(0)));
+        Variable rawHash = context.getMethodScope().declareVariable(context.uniqueVariableName("rawHash"), body, constantLong(0L));
 
         for (int index = 0; index < probeJoinChannels.size(); index++) {
-            BytecodeExpression type = constantType(callSiteBinder, types.get(probeJoinChannels.get(index)));
             body
                     .getVariable(rawHash)
                     .push(31L)
@@ -124,66 +123,96 @@ public class CrossCompiledMultiJoinOperator
                     .putVariable(rawHash);
         }
 
-        body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, rawHash, probeColumns[0])));
+        //body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromVlaue", long.class, rawHash, probeColumns[0])));
 
-        /*
-        Variable pos = context.getMethodScope().createTempVariable(int.class);
-        body.append(pos.set(inMemoryJoinHash.invoke("getPos", int.class, rawHash)));
+        Variable pos = context.getMethodScope().declareVariable(
+                context.uniqueVariableName("pos"), body,
+                lookupSource.invoke("getPos", int.class, rawHash));
+        Variable joinPosition = context.getMethodScope().declareVariable(
+                context.uniqueVariableName("joinPosition"),
+                body, lookupSource.invoke("getJoinPositionFromPos", long.class, pos));
 
+        LabelNode done = new LabelNode("done");
         body.append(new WhileLoop()
                 .condition(
-                        BytecodeExpressions.and(
-                                BytecodeExpressions.notEqual(
-                                        inMemoryJoinHash.invoke("getJoinPositionFromPos", long.class, pos),
-                                        BytecodeExpressions.constantLong(-1)),
-                                BytecodeExpressions.notEqual(
-                                        // TODO: add support for multiple any type columns
-                                        probeColumns[0],
-                                        inMemoryJoinHash.invoke(
-                                                "getLongValue",
-                                                long.class,
-                                                pos))))
-                .body(pos.set(inMemoryJoinHash.invoke("incrementJoinPosition", int.class, pos))));
-        body.append(joinPosition.set(inMemoryJoinHash.invoke("getJoinPositionFromPos", long.class, pos)));
-        */
+                        notEqual(joinPosition, constantLong(-1)))
+                .body(new BytecodeBlock()
+                        .append(new IfStatement()
+                                .condition(
+                                        BytecodeExpressions.and(
+                                                equal(rawHash.cast(byte.class).cast(int.class), lookupSource.invoke("getPositionHash", byte.class, joinPosition.cast(int.class)).cast(int.class)),
+                                                equal(
+                                                        // TODO: add support for multiple any type columns
+                                                        probeColumns[0],
+                                                        lookupSource.invoke(
+                                                                "getLongValue",
+                                                                long.class,
+                                                                joinPosition))))
+                                .ifTrue(JumpInstruction.jump(done)))
+                        .append(pos.set(lookupSource.invoke("incrementJoinPosition", int.class, pos)))
+                        .append(joinPosition.set(lookupSource.invoke("getJoinPositionFromPos", long.class, pos)))));
+        body.visitLabel(done);
+
         for (int index = 0; index < probeTypes.size(); index++) {
-            context.mapInputToOutputChannel(index, index);
+            if (probeJoinChannels.contains(index)) {
+                final int finalIndex = index;
+                context.defineChannel(index, () -> context.getChannel(finalIndex));
+                context.defineIsNull(index, BytecodeExpressions::constantFalse);
+            }
+            else {
+                context.mapInputToOutputChannel(index, index);
+            }
         }
 
         BytecodeBlock downStreamBlock = new BytecodeBlock();
+        Variable pageAddress = context.getMethodScope().declareVariable(
+                context.uniqueVariableName("pageAddress"),
+                downStreamBlock,
+                lookupSource.invoke("getPageAddress", long.class, joinPosition));
 
-        //long pageAddress = addresses.getLong(Ints.checkedCast(position));
-        Variable pageAddress = context.getMethodScope().createTempVariable(long.class);
-        downStreamBlock.append(pageAddress.set(inMemoryJoinHash.invoke("getPageAddress", long.class, joinPosition)));
+        Variable blockIndex = context.getMethodScope().declareVariable(
+                context.uniqueVariableName("blockIndex"),
+                downStreamBlock,
+                invokeStatic(SyntheticAddress.class, "decodeSliceIndex", int.class, pageAddress));
 
-        Variable blockPosition = context.getMethodScope().createTempVariable(int.class);
-        downStreamBlock.append(blockPosition.set(invokeStatic(SyntheticAddress.class, "decodePosition", int.class, pageAddress)));
+        Variable blockPosition = context.getMethodScope().declareVariable(
+                context.uniqueVariableName("blockPosition"),
+                downStreamBlock,
+                invokeStatic(SyntheticAddress.class, "decodePosition", int.class, pageAddress));
 
         for (int index = 0; index < buildTypes.size(); index++) {
-            final int dupa = index;
+            final int channelIndex = index;
             context.defineIsNull(probeTypes.size() + index, BytecodeExpressions::constantFalse); // TODO: add support for null
             context.defineChannel(
                     probeTypes.size() + index,
                     () -> getNativeType(
                             callSiteBinder,
-                            buildTypes.get(dupa),
-                            inMemoryJoinHash.invoke(
+                            buildTypes.get(channelIndex),
+                            lookupSource.invoke(
                                     "getBlock",
                                     Block.class,
-                                    BytecodeExpressions.constantInt(dupa),
-                                    pageAddress),
+                                    BytecodeExpressions.constantInt(channelIndex),
+                                    blockIndex),
                             blockPosition));
-
+            context.defineChannelBlock(
+                    probeTypes.size() + index,
+                    () -> new ChannelBlock(
+                            lookupSource.invoke(
+                                    "getBlock",
+                                    Block.class,
+                                    BytecodeExpressions.constantInt(channelIndex),
+                                    blockIndex),
+                            blockPosition)
+            );
         }
-
 
         downStreamBlock.append(context.processDownstreamOperator());
 
         body.append(new WhileLoop()
-                .condition(BytecodeExpressions.greaterThanOrEqual(joinPosition, constantLong(0)))
+                .condition(greaterThanOrEqual(joinPosition, constantLong(0)))
                 .body(new BytecodeBlock()
                         .append(downStreamBlock)
-                        .append(joinPosition.set(inMemoryJoinHash.invoke("getNextJoinPosition", long.class, joinPosition)))));
+                        .append(joinPosition.set(lookupSource.invoke("getNextJoinPosition", long.class, joinPosition)))));
         return body;
     }
 

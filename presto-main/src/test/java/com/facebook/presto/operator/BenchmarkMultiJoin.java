@@ -14,10 +14,17 @@
 package com.facebook.presto.operator;
 
 import com.facebook.presto.RowPagesBuilder;
+import com.facebook.presto.metadata.MetadataManager;
+import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.operator.HashBuilderOperator.HashBuilderOperatorFactory;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.gen.ExpressionCompiler;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
+import com.facebook.presto.sql.relational.CallExpression;
+import com.facebook.presto.sql.relational.ConstantExpression;
+import com.facebook.presto.sql.relational.InputReferenceExpression;
+import com.facebook.presto.sql.relational.RowExpression;
 import com.facebook.presto.testing.TestingTaskContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -31,6 +38,11 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.VerboseMode;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -42,12 +54,17 @@ import java.util.concurrent.ExecutorService;
 
 import static com.facebook.presto.RowPagesBuilder.rowPagesBuilder;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
+import static com.facebook.presto.metadata.FunctionKind.SCALAR;
+import static com.facebook.presto.metadata.FunctionRegistry.mangleOperatorName;
 import static com.facebook.presto.operator.PageAssertions.assertPageEquals;
+import static com.facebook.presto.spi.function.OperatorType.HASH_CODE;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.util.Threads.checkNotSameThreadExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -59,15 +76,16 @@ import static org.testng.AssertJUnit.assertEquals;
 @State(Thread)
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
-@Fork(value = 1, jvmArgsAppend = {
-        "-XX:MaxInlineSize=100",
-        "-XX:CompileCommand=print,*PageProcessor*.process*"} )
-@Warmup(iterations = 10)
-@Measurement(iterations = 1000)
+@Fork(value = 2, jvmArgsAppend = {
+        /*"-XX:MaxInlineSize=100"*/
+        "-XX:CompileCommand=print,*PageProcessor*.process*"})
+@Warmup(iterations = 20)
+@Measurement(iterations = 20)
 public class BenchmarkMultiJoin
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;
     private static final int HASH_JOIN_OPERATOR_ID = 2;
+    private static final int PROJECT_OPERATOR_ID = 3;
     private static final PlanNodeId TEST_PLAN_NODE_ID = new PlanNodeId("test");
 
     @State(Thread)
@@ -264,11 +282,14 @@ public class BenchmarkMultiJoin
             resultTypes.addAll(getTypes());
             resultTypes.addAll(getTypes());
             resultTypes.addAll(getTypes());
+            if (processor != null) {
+                resultTypes.add(BIGINT);
+            }
             return resultTypes;
         }
     }
 
-    @Benchmark
+    //@Benchmark
     public List<Page> baselineMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -286,24 +307,59 @@ public class BenchmarkMultiJoin
         join1OutputTypes.addAll(joinContext.getTypes());
         join1OutputTypes.addAll(joinContext.getTypes());
 
-        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(join1OutputTypes);
+        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
 
         OperatorFactory joinOperatorFactory2 = LookupJoinOperators.innerJoin(
                 HASH_JOIN_OPERATOR_ID,
                 TEST_PLAN_NODE_ID,
                 hashBuilderOperatorFactory2.getLookupSourceSupplier(),
-                joinContext.getTypes(),
+                join1OutputTypes,
                 joinContext.getHashChannels(),
                 joinContext.getHashChannel(),
                 false);
 
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
-        List<Page> joinOutput1 = feed(joinContext, joinOperatorFactory1, joinContext.getProbePages1().iterator());
-        feed(joinContext, hashBuilderOperatorFactory2, joinOutput1.iterator());
-        return feed(joinContext, joinOperatorFactory2, joinContext.getProbePages2().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
+        List<Page> joinOutput1 = feed(joinContext, joinOperatorFactory1, joinContext.getProbePages2().iterator());
+        return feed(joinContext, joinOperatorFactory2, joinOutput1.iterator());
+        /*OperatorFactory projection = projection();
+        List<Page> joinOutput2 = feed(joinContext, joinOperatorFactory2, joinOutput1.iterator());
+        return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    @Benchmark
+    static PageProcessor processor;
+
+    OperatorFactory projection()
+    {
+        Signature signature = new Signature(mangleOperatorName(HASH_CODE), SCALAR, BIGINT.getTypeSignature(), BIGINT.getTypeSignature());
+        RowExpression mul = new CallExpression(signature, BIGINT, ImmutableList.of(new InputReferenceExpression(1, BIGINT)));
+
+        RowExpression filter = new ConstantExpression(TRUE, BOOLEAN);
+        List<RowExpression> projection = ImmutableList.of(
+                new InputReferenceExpression(0, VARCHAR),
+                new InputReferenceExpression(1, BIGINT),
+                new InputReferenceExpression(2, BIGINT),
+                new InputReferenceExpression(3, VARCHAR),
+                new InputReferenceExpression(4, BIGINT),
+                new InputReferenceExpression(5, BIGINT),
+                new InputReferenceExpression(6, VARCHAR),
+                new InputReferenceExpression(7, BIGINT),
+                new InputReferenceExpression(8, BIGINT),
+                mul);
+
+        if (processor == null) {
+            ExpressionCompiler expressionCompiler = new ExpressionCompiler(MetadataManager.createTestMetadataManager());
+            processor = expressionCompiler.compilePageProcessor(filter, projection).get();
+        }
+
+        return new FilterAndProjectOperator.FilterAndProjectOperatorFactory(
+                PROJECT_OPERATOR_ID, TEST_PLAN_NODE_ID,
+                () -> processor,
+                ImmutableList.of(VARCHAR, BIGINT, BIGINT, VARCHAR, BIGINT, BIGINT, VARCHAR, BIGINT, BIGINT, BIGINT),
+                filter, projection);
+    }
+
+    //@Benchmark
     public List<Page> handcodedMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -312,7 +368,7 @@ public class BenchmarkMultiJoin
         OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.multiJoin(
                 HASH_JOIN_OPERATOR_ID,
                 TEST_PLAN_NODE_ID,
-                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory1.getLookupSourceSupplier(),
                 hashBuilderOperatorFactory2.getLookupSourceSupplier(),
                 joinContext.getTypes(),
                 joinContext.getHashChannels(),
@@ -320,11 +376,16 @@ public class BenchmarkMultiJoin
                 false);
 
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
-        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+
+        /*OperatorFactory projection = projection();
+
+        List<Page> joinOutput2 = feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+        return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    @Benchmark
+    //@Benchmark
     public List<Page> handcodedBigintMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -333,7 +394,7 @@ public class BenchmarkMultiJoin
         OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.bigintMultiJoin(
                 HASH_JOIN_OPERATOR_ID,
                 TEST_PLAN_NODE_ID,
-                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory1.getLookupSourceSupplier(),
                 hashBuilderOperatorFactory2.getLookupSourceSupplier(),
                 joinContext.getTypes(),
                 joinContext.getHashChannels(),
@@ -341,8 +402,13 @@ public class BenchmarkMultiJoin
                 false);
 
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
-        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+
+        /*OperatorFactory projection = projection();
+
+        List<Page> joinOutput2 = feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+        return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
     @Benchmark
@@ -354,15 +420,17 @@ public class BenchmarkMultiJoin
         OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.xcompiledMultiJoin(
                 HASH_JOIN_OPERATOR_ID,
                 TEST_PLAN_NODE_ID,
-                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory1.getLookupSourceSupplier(),
                 hashBuilderOperatorFactory2.getLookupSourceSupplier(),
                 joinContext.getTypes(),
                 joinContext.getHashChannels(),
                 joinContext.getHashChannel(),
+                //Optional.of(projection()),
+                Optional.empty(),
                 false);
 
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
-        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
     }
 
@@ -454,5 +522,15 @@ public class BenchmarkMultiJoin
         }
 
         return outputPages.build();
+    }
+
+    public static void main(String[] args)
+            throws RunnerException
+    {
+        Options options = new OptionsBuilder()
+                .verbosity(VerboseMode.NORMAL)
+                .include(".*" + BenchmarkMultiJoin.class.getSimpleName() + ".*")
+                .build();
+        new Runner(options).run();
     }
 }

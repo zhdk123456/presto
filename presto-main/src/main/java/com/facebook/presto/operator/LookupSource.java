@@ -65,12 +65,17 @@ public interface LookupSource
         throw new UnsupportedOperationException();
     }
 
-    default Block getBlock(int channel, long pageAddress)
+    default Block getBlock(int channel, int blockIndex)
     {
         throw new UnsupportedOperationException();
     }
 
-    default long getLongValue(int pos)
+    default long getLongValue(long pos)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default byte getPositionHash(int pos)
     {
         throw new UnsupportedOperationException();
     }

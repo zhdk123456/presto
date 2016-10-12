@@ -106,7 +106,7 @@ public class BenchmarkGroupByHash
         return pageBuilder.build();
     }
 
-    @Benchmark
+    //@Benchmark
     @OperationsPerInvocation(POSITIONS)
     public Object bigintGroupByHash(SingleChannelBenchmarkData data)
     {
@@ -127,7 +127,7 @@ public class BenchmarkGroupByHash
         return pageBuilder.build();
     }
 
-    @Benchmark
+    //@Benchmark
     @OperationsPerInvocation(POSITIONS)
     public long baseline(BaselinePagesData data)
     {
@@ -156,7 +156,7 @@ public class BenchmarkGroupByHash
         return groupIds;
     }
 
-    @Benchmark
+    //@Benchmark
     @OperationsPerInvocation(POSITIONS)
     public long baselineBigArray(BaselinePagesData data)
     {
@@ -288,7 +288,7 @@ public class BenchmarkGroupByHash
     @State(Scope.Thread)
     public static class BenchmarkData
     {
-        @Param({ "1", "5", "10", "15", "20" })
+        @Param({ "1", "5"/*, "10", "15", "20"*/ })
         private int channelCount = 1;
 
         // todo add more group counts when JMH support programmatic ability to set OperationsPerInvocation

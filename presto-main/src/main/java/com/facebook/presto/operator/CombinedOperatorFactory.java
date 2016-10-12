@@ -35,6 +35,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.CachedInstanceBinder;
 import com.facebook.presto.sql.gen.CallSiteBinder;
 import com.facebook.presto.sql.gen.cross.CrossCompilationContext;
+import com.facebook.presto.sql.gen.cross.CrossCompilationContext.ChannelBlock;
 import com.facebook.presto.sql.gen.cross.CrossCompiledOperator;
 import com.facebook.presto.sql.gen.cross.CrossCompiledOperatorFactory;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
@@ -129,6 +130,7 @@ public class CombinedOperatorFactory
         final List<CrossOperatorContext> operatorStack = new ArrayList<>();
         final Map<CrossCompiledOperator, Map<Integer, Supplier<BytecodeExpression>>> channelDefinitions = new HashMap<>();
         final Map<CrossCompiledOperator, Map<Integer, Supplier<BytecodeExpression>>> isNullDefinitions = new HashMap<>();
+        final Map<CrossCompiledOperator, Map<Integer, Supplier<ChannelBlock>>> channelBlocks = new HashMap<>();
 
         int topOperatorIndex = 0;
         int currentOperatorIndex = 0;
@@ -142,6 +144,7 @@ public class CombinedOperatorFactory
                 BytecodeBlock methodHeader,
                 Map<Integer, Supplier<BytecodeExpression>> inputChannelDefinitions,
                 Map<Integer, Supplier<BytecodeExpression>> inputIsNullDefinitions,
+                Map<Integer, Supplier<ChannelBlock>> inputChannelBlocks,
                 List<CrossCompiledOperator> operators)
         {
             this.metadata = metadata;
@@ -154,6 +157,7 @@ public class CombinedOperatorFactory
             operatorStack.add(new CrossOperatorContext(INIT_OPERATOR));
             channelDefinitions.put(INIT_OPERATOR, inputChannelDefinitions);
             isNullDefinitions.put(INIT_OPERATOR, inputIsNullDefinitions);
+            channelBlocks.put(INIT_OPERATOR, inputChannelBlocks);
         }
 
         @Override
@@ -203,6 +207,7 @@ public class CombinedOperatorFactory
 
             BytecodeExpression definedChannelExpression = computeParentChannelDefinition(channel);
             if (definedChannelExpression instanceof Variable) {
+                topOperatorDefinedChannels(parentOperator).put(channel, definedChannelExpression);
                 return definedChannelExpression;
             }
 
@@ -210,6 +215,16 @@ public class CombinedOperatorFactory
             Variable definedChannelVariable = methodScope.declareVariable("variable" + (variableNumber++), topOperatorContext.header, definedChannelExpression);
             topOperatorDefinedChannels(parentOperator).put(channel, definedChannelVariable);
             return definedChannelVariable;
+        }
+
+        @Override
+        public Optional<ChannelBlock> getChannelBlock(int channel)
+        {
+            CrossCompiledOperator parentOperator = operator(currentOperatorIndex - 1);
+            if (channelBlocks.containsKey(parentOperator) && channelBlocks.get(parentOperator).containsKey(channel)) {
+                return Optional.of(channelBlocks.get(parentOperator).get(channel).get());
+            }
+            return Optional.empty();
         }
 
         @Override
@@ -282,12 +297,30 @@ public class CombinedOperatorFactory
                     .put(channel, definition);
         }
 
+        public void defineChannelBlock(int channel, Supplier<ChannelBlock> channelBlock)
+        {
+            channelBlocks
+                    .computeIfAbsent(topOperator(), operator -> new HashMap<>())
+                    .put(channel, channelBlock);
+        }
+
         @Override
         public void defineIsNull(int channel, Supplier<BytecodeExpression> definition)
         {
             isNullDefinitions
                     .computeIfAbsent(topOperator(), operator -> new HashMap<>())
                     .put(channel, definition);
+        }
+
+        @Override
+        public void mapInputToOutputChannel(int inputChannel, int outputChannel)
+        {
+            defineChannel(outputChannel, () -> getChannel(inputChannel));
+            defineIsNull(outputChannel, () -> isNull(inputChannel));
+            Optional<ChannelBlock> channelBlock = getChannelBlock(inputChannel);
+            if (channelBlock.isPresent() && !getChannel(operator(currentOperatorIndex - 1), inputChannel).isPresent()) {
+                defineChannelBlock(outputChannel, channelBlock::get);
+            }
         }
 
         @Override
@@ -477,6 +510,7 @@ public class CombinedOperatorFactory
             COMPILED_PAGE_PROCESSOR = Optional.of(compiledPageProcessor);
         }
         compiledPageProcessor = COMPILED_PAGE_PROCESSOR.get();
+        //compiledPageProcessor = compilePageProcessor(operators);
 
         List<Object> args = new ArrayList<>();
         List<Class<?>> constructorTypes = new ArrayList<>();
@@ -567,11 +601,15 @@ public class CombinedOperatorFactory
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         entry -> getInputIsNullDefinition(entry.getValue(), position)));
+        Map<Integer, Supplier<ChannelBlock>> inputChannelBlocks = channelBlocks.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> () -> new ChannelBlock(entry.getValue(), position)));
         operators = ImmutableList.<CrossCompiledOperator>builder()
                 .addAll(operators)
                 .add(rowAppender(pageBuilder, scope))
                 .build();
-        CrossContext context = new CrossContext(metadata, thisVariable, cachedInstanceBinder, scope, header, channelDefinitions, isNullDefinitions, operators);
+        CrossContext context = new CrossContext(metadata, thisVariable, cachedInstanceBinder, scope, header, channelDefinitions, isNullDefinitions, inputChannelBlocks, operators);
         BytecodeBlock processBlock = context.processDownstreamOperator();
 
         // for loop loop body
@@ -602,14 +640,24 @@ public class CombinedOperatorFactory
                 BytecodeBlock block = new BytecodeBlock();
                 block.append(pageBuilder.invoke("declarePosition", void.class));
                 for (int channel = 0; channel < getTypes().size(); ++channel) {
-                    if (!getTypes().get(channel).getJavaType().equals(void.class)) {
-                        block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
-                                .append(context.getChannel(channel))
-                                .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                    Optional<ChannelBlock> channelBlock = context.getChannelBlock(channel);
+                    if (!channelBlock.isPresent()) {
+                        if (!getTypes().get(channel).getJavaType().equals(void.class)) {
+                            block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
+                                    .append(context.getChannel(channel))
+                                    .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                        }
+                        else {
+                            block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
+                                    .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                        }
                     }
                     else {
-                        block.append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
-                                .append(generateWrite(context.getCachedInstanceBinder().getCallSiteBinder(), scope, context.isNull(channel), getTypes().get(channel)));
+                        block.append(constantType(context.getCachedInstanceBinder().getCallSiteBinder(), getTypes().get(channel)))
+                                .append(channelBlock.get().getBlock())
+                                .append(channelBlock.get().getPosition())
+                                .append(pageBuilder.invoke("getBlockBuilder", BlockBuilder.class, constantInt(channel)))
+                                .invokeInterface(Type.class, "appendTo", void.class, Block.class, int.class, BlockBuilder.class);
                     }
                 }
                 return block;

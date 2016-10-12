@@ -19,10 +19,33 @@ import com.facebook.presto.bytecode.expression.BytecodeExpression;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.gen.CachedInstanceBinder;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public interface CrossCompilationContext
 {
+    class ChannelBlock
+    {
+        private final BytecodeExpression block;
+        private final BytecodeExpression position;
+
+        public ChannelBlock(BytecodeExpression block, BytecodeExpression position)
+        {
+            this.block = block;
+            this.position = position;
+        }
+
+        public BytecodeExpression getBlock()
+        {
+            return block;
+        }
+
+        public BytecodeExpression getPosition()
+        {
+            return position;
+        }
+    }
+
     Metadata getMetadata();
 
     CachedInstanceBinder getCachedInstanceBinder();
@@ -37,17 +60,17 @@ public interface CrossCompilationContext
 
     BytecodeExpression getChannel(int channel);
 
+    Optional<ChannelBlock> getChannelBlock(int channel);
+
     BytecodeExpression isNull(int channel);
 
     void defineChannel(int channel, Supplier<BytecodeExpression> definition);
 
+    void defineChannelBlock(int channel, Supplier<ChannelBlock> channelBlock);
+
     void defineIsNull(int channel, Supplier<BytecodeExpression> definition);
 
-    default void mapInputToOutputChannel(int inputChannel, int outputChannel)
-    {
-        defineChannel(outputChannel, () -> CrossCompilationContext.this.getChannel(inputChannel));
-        defineIsNull(outputChannel, () -> CrossCompilationContext.this.isNull(inputChannel));
-    }
+    void mapInputToOutputChannel(int inputChannel, int outputChannel);
 
     BytecodeBlock processDownstreamOperator();
 }
