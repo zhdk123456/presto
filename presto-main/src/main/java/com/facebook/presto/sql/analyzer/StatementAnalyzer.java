@@ -758,7 +758,7 @@ class StatementAnalyzer
         }
 
         Scope left = process(node.getLeft(), scope);
-        Scope right = process(node.getRight(), isUnnestRelation(node.getRight()) ? left : scope);
+        Scope right = process(node.getRight(), (isUnnestRelation(node.getRight()) || node.isLateral()) ? left : scope);
 
         Scope output = createScope(node, scope, left.getRelationType().joinWith(right.getRelationType()));
 
