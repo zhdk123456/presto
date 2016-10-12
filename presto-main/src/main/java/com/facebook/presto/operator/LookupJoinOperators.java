@@ -138,6 +138,7 @@ public class LookupJoinOperators
         List<Type> join2ProbeTypes = new ArrayList<>();
         join2ProbeTypes.addAll(probeTypes);
         join2ProbeTypes.addAll(lookupSourceSupplier1.getTypes());
+
         factories.add(CROSS_COMPILED_JOIN_PROBE_COMPILER.xcompiledMultiJoinOperatorFactory(
                 operatorId + 15,
                 planNodeId,

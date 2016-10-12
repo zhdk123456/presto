@@ -461,6 +461,8 @@ public class CombinedOperatorFactory
         return factories.get(factories.size() - 1).getTypes();
     }
 
+    private static Optional<Class<? extends PageProcessor>> COMPILED_PAGE_PROCESSOR = Optional.empty();
+
     @Override
     public Operator createOperator(DriverContext driverContext)
     {
@@ -468,7 +470,12 @@ public class CombinedOperatorFactory
                 .map(factory -> factory.createCrossCompiledOperator(driverContext))
                 .collect(toList());
 
-        Class<? extends PageProcessor> compiledPageProcessor = compilePageProcessor(operators);
+        Class<? extends PageProcessor> compiledPageProcessor = null;
+        if (!COMPILED_PAGE_PROCESSOR.isPresent()) {
+            compiledPageProcessor = compilePageProcessor(operators);
+            COMPILED_PAGE_PROCESSOR = Optional.of(compiledPageProcessor);
+        }
+        compiledPageProcessor = COMPILED_PAGE_PROCESSOR.get();
 
         List<Object> args = new ArrayList<>();
         List<Class<?>> constructorTypes = new ArrayList<>();

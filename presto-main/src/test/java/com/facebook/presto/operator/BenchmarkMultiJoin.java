@@ -59,9 +59,11 @@ import static org.testng.AssertJUnit.assertEquals;
 @State(Thread)
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
-@Fork(1)
+@Fork(value = 1, jvmArgsAppend = {
+        //"-XX:MaxInlineSize=10",
+        "-XX:CompileCommand=print,*PageProcessor*.process*"} )
 @Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Measurement(iterations = 1000)
 public class BenchmarkMultiJoin
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;
