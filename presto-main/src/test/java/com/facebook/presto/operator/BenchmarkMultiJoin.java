@@ -471,6 +471,32 @@ public class BenchmarkMultiJoin
     }
 
     //@Benchmark
+    public List<Page> handcodedRowMultiJoin(JoinContext joinContext)
+    {
+        HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+        HashBuilderOperatorFactory hashBuilderOperatorFactory2 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
+
+        OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.rowMultiJoin(
+                HASH_JOIN_OPERATOR_ID,
+                TEST_PLAN_NODE_ID,
+                hashBuilderOperatorFactory1.getLookupSourceSupplier(),
+                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                joinContext.getTypes(),
+                joinContext.getHashChannels(),
+                joinContext.getHashChannel(),
+                false);
+
+        feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
+        feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
+        return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+
+        /*OperatorFactory projection = projection();
+
+        List<Page> joinOutput2 = feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+        return feed(joinContext, projection, joinOutput2.iterator());*/
+    }
+
+    //@Benchmark
     public List<Page> handcodedBigintMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -597,6 +623,17 @@ public class BenchmarkMultiJoin
         JoinContext joinContext = new JoinContext();
         joinContext.setup();
         List<Page> handcodedPages = handcodedMultiJoin(joinContext);
+        List<Page> baselinePages = baselineMultiJoin(joinContext);
+
+        assertPages(joinContext.getResultTypes(), baselinePages, handcodedPages);
+    }
+
+    @Test
+    public void testHandcodedRowMultiJoin()
+    {
+        JoinContext joinContext = new JoinContext();
+        joinContext.setup();
+        List<Page> handcodedPages = handcodedRowMultiJoin(joinContext);
         List<Page> baselinePages = baselineMultiJoin(joinContext);
 
         assertPages(joinContext.getResultTypes(), baselinePages, handcodedPages);

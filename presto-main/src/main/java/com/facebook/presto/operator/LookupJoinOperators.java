@@ -46,6 +46,7 @@ public class LookupJoinOperators
 
     private static final JoinProbeCompiler JOIN_PROBE_COMPILER = new JoinProbeCompiler();
     private static final MultiJoinProbeCompiler MULTI_JOIN_PROBE_COMPILER = new MultiJoinProbeCompiler();
+    private static final RowMultiJoinProbeCompiler ROW_MULTI_JOIN_PROBE_COMPILER = new RowMultiJoinProbeCompiler();
     private static final BigintMultiJoinProbeCompiler BIGINT_MULTI_JOIN_PROBE_COMPILER = new BigintMultiJoinProbeCompiler();
     private static final CrossCompiledJoinProbeCompiler CROSS_COMPILED_JOIN_PROBE_COMPILER = new CrossCompiledJoinProbeCompiler();
 
@@ -80,6 +81,28 @@ public class LookupJoinOperators
             boolean filterFunctionPresent)
     {
         return MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
+                operatorId,
+                planNodeId,
+                lookupSourceSupplier1,
+                lookupSourceSupplier2,
+                probeTypes,
+                probeJoinChannel,
+                probeHashChannel,
+                JoinType.INNER,
+                filterFunctionPresent);
+    }
+
+    public static OperatorFactory rowMultiJoin(
+            int operatorId,
+            PlanNodeId planNodeId,
+            LookupSourceSupplier lookupSourceSupplier1,
+            LookupSourceSupplier lookupSourceSupplier2,
+            List<? extends Type> probeTypes,
+            List<Integer> probeJoinChannel,
+            Optional<Integer> probeHashChannel,
+            boolean filterFunctionPresent)
+    {
+        return ROW_MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
                 operatorId,
                 planNodeId,
                 lookupSourceSupplier1,
