@@ -32,13 +32,12 @@ public class TestKafkaDistributed
     private final EmbeddedKafka embeddedKafka;
 
     public TestKafkaDistributed()
-            throws Exception
+            throws IOException
     {
         this(createEmbeddedKafka());
     }
 
     public TestKafkaDistributed(EmbeddedKafka embeddedKafka)
-            throws Exception
     {
         super(createKafkaQueryRunner(embeddedKafka, TpchTable.getTables()));
         this.embeddedKafka = embeddedKafka;
@@ -46,7 +45,6 @@ public class TestKafkaDistributed
 
     @AfterClass(alwaysRun = true)
     public void destroy()
-            throws IOException
     {
         closeAllRuntimeException(queryRunner, embeddedKafka);
     }
@@ -57,19 +55,16 @@ public class TestKafkaDistributed
 
     @Override
     public void testCreateTable()
-            throws Exception
     {
     }
 
     @Override
     public void testCreateTableAsSelect()
-            throws Exception
     {
     }
 
     @Override
     public void testSymbolAliasing()
-            throws Exception
     {
     }
 
@@ -79,33 +74,28 @@ public class TestKafkaDistributed
 
     @Override
     public void testView()
-            throws Exception
     {
     }
 
     @Override
     public void testCompatibleTypeChangeForView()
-            throws Exception
     {
         // Kafka connector currently does not support views
     }
 
     @Override
     public void testCompatibleTypeChangeForView2()
-            throws Exception
     {
         // Kafka connector currently does not support views
     }
 
     @Override
     public void testViewMetadata()
-            throws Exception
     {
     }
 
     @Test
     public void testViewCaseSensitivity()
-            throws Exception
     {
         // Kafka connector currently does not support views
     }
@@ -116,7 +106,6 @@ public class TestKafkaDistributed
 
     @Override
     public void testInsert()
-            throws Exception
     {
     }
 
@@ -126,7 +115,6 @@ public class TestKafkaDistributed
 
     @Override
     public void testDelete()
-            throws Exception
     {
     }
 
@@ -136,7 +124,6 @@ public class TestKafkaDistributed
 
     @Override
     public void testRenameTable()
-            throws Exception
     {
     }
 
@@ -146,7 +133,6 @@ public class TestKafkaDistributed
 
     @Override
     public void testRenameColumn()
-            throws Exception
     {
     }
 
@@ -156,7 +142,6 @@ public class TestKafkaDistributed
 
     @Override
     public void testAddColumn()
-            throws Exception
     {
     }
 }

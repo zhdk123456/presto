@@ -23,6 +23,7 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.tests.DistributedQueryRunner;
 import com.facebook.presto.tests.TestingPrestoClient;
 import com.facebook.presto.tpch.TpchPlugin;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
@@ -51,13 +52,11 @@ public final class KafkaQueryRunner
     private static final String TPCH_SCHEMA = "tpch";
 
     public static DistributedQueryRunner createKafkaQueryRunner(EmbeddedKafka embeddedKafka, TpchTable<?>... tables)
-            throws Exception
     {
         return createKafkaQueryRunner(embeddedKafka, ImmutableList.copyOf(tables));
     }
 
     public static DistributedQueryRunner createKafkaQueryRunner(EmbeddedKafka embeddedKafka, Iterable<TpchTable<?>> tables)
-            throws Exception
     {
         DistributedQueryRunner queryRunner = null;
         try {
@@ -89,7 +88,7 @@ public final class KafkaQueryRunner
         }
         catch (Throwable e) {
             closeAllSuppress(e, queryRunner, embeddedKafka);
-            throw e;
+            throw Throwables.propagate(e);
         }
     }
 

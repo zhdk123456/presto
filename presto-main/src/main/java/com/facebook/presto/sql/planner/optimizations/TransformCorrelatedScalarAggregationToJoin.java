@@ -44,13 +44,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher.searchFrom;
 import static com.facebook.presto.sql.planner.optimizations.Predicates.isInstanceOfAny;
 import static com.facebook.presto.sql.planner.plan.SimplePlanRewriter.rewriteWith;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
-import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableMap;
 import static java.util.Objects.requireNonNull;
 

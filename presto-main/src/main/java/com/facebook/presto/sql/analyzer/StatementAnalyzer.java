@@ -98,7 +98,6 @@ import com.google.common.primitives.Ints;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -758,7 +757,7 @@ class StatementAnalyzer
             throw new SemanticException(NOT_SUPPORTED, node, "Natural join not supported");
         }
 
-        if (node.isLateral() && !(node.getType() == Join.Type.INNER || node.getType()== Join.Type.IMPLICIT)) {
+        if (node.isLateral() && !(node.getType() == Join.Type.INNER || node.getType() == Join.Type.IMPLICIT)) {
             throw new SemanticException(NOT_SUPPORTED, node, "Lateral join only supported for inner and implicit joins");
         }
 
