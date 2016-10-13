@@ -14,6 +14,8 @@
 package com.facebook.presto.operator;
 
 import com.facebook.presto.metadata.MetadataManager;
+import com.facebook.presto.row.PageToRowOperatorFactory;
+import com.facebook.presto.row.RowOperatorFactory;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.BigintMultiJoinProbeCompiler;
@@ -23,11 +25,14 @@ import com.facebook.presto.sql.gen.MultiJoinProbeCompiler;
 import com.facebook.presto.sql.gen.cross.CrossCompiledOperatorFactory;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static jersey.repackaged.com.google.common.base.Preconditions.checkArgument;
 
 public class LookupJoinOperators
@@ -95,23 +100,39 @@ public class LookupJoinOperators
     public static OperatorFactory rowMultiJoin(
             int operatorId,
             PlanNodeId planNodeId,
-            LookupSourceSupplier lookupSourceSupplier1,
-            LookupSourceSupplier lookupSourceSupplier2,
+            List<LookupSourceSupplier> lookupSourceSuppliers,
             List<? extends Type> probeTypes,
             List<Integer> probeJoinChannel,
             Optional<Integer> probeHashChannel,
             boolean filterFunctionPresent)
     {
-        return ROW_MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
-                operatorId,
+        ImmutableList.Builder<RowOperatorFactory> factories = ImmutableList.builder();
+
+        List<Type> types = new ArrayList<>(probeTypes);
+        for (int i = 0; i < lookupSourceSuppliers.size(); ++i) {
+            factories.add(ROW_MULTI_JOIN_PROBE_COMPILER.compileMultiJoinOperatorFactory(
+                    operatorId + i,
+                    planNodeId,
+                    lookupSourceSuppliers.get(i),
+                    types,
+                    probeJoinChannel,
+                    Optional.empty(),
+                    JoinType.INNER,
+                    i));
+            types.addAll(probeTypes);
+        }
+
+        List<ListenableFuture<?>> futures = lookupSourceSuppliers.stream().map(LookupSourceSupplier::getLookupSource).collect(toList());
+        ListenableFuture<?> future = Futures.allAsList(futures);
+
+        return new PageToRowOperatorFactory(
+                operatorId + 42,
                 planNodeId,
-                lookupSourceSupplier1,
-                lookupSourceSupplier2,
-                probeTypes,
-                probeJoinChannel,
-                probeHashChannel,
-                JoinType.INNER,
-                filterFunctionPresent);
+                MetadataManager.createTestMetadataManager(),
+                factories.build(),
+                ImmutableList.copyOf(probeTypes),
+                types,
+                future);
     }
 
     public static OperatorFactory bigintMultiJoin(

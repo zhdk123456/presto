@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.row.RowObject;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
@@ -91,6 +92,16 @@ public interface LookupSource
     }
 
     default int incrementJoinPosition(int pos)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getJoinPosition(RowObject probe, int id)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    default void appendTo(long joinPosition, RowObject probe, int id)
     {
         throw new UnsupportedOperationException();
     }

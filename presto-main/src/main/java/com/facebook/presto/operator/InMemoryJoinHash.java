@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.row.RowObject;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.block.Block;
@@ -186,6 +187,21 @@ public final class InMemoryJoinHash
         return (pos + 1) & mask;
     }
 
+    public long getJoinPosition(RowObject probe, int id)
+    {
+        long rawHash = probe.hash(id);
+        int pos = getHashPosition(rawHash, mask);
+
+        while (key[pos] != -1) {
+            if (positionEqualsCurrentRowIgnoreNulls(key[pos], (byte) rawHash, probe, id)) {
+                return key[pos];
+            }
+            // increment position and mask to handler wrap around
+            pos = (pos + 1) & mask;
+        }
+        return -1;
+    }
+
     @Override
     public long getJoinPosition(int position, Page hashChannelsPage, Page allChannelsPage)
     {
@@ -260,6 +276,21 @@ public final class InMemoryJoinHash
     }
 
     @Override
+    public void appendTo(long position, RowObject probe, int id)
+    {
+        long pageAddress = addresses.getLong(Ints.checkedCast(position));
+        int blockIndex = decodeSliceIndex(pageAddress);
+        int blockPosition = decodePosition(pageAddress);
+
+        probe.set(
+                id,
+                blockPosition,
+                pagesHashStrategy.getBlock(0, blockIndex),
+                pagesHashStrategy.getBlock(1, blockIndex),
+                pagesHashStrategy.getBlock(2, blockIndex));
+    }
+
+    @Override
     public void appendTo(long position, PageBuilder pageBuilder, int outputChannelOffset)
     {
         long pageAddress = addresses.getLong(Ints.checkedCast(position));
@@ -301,6 +332,14 @@ public final class InMemoryJoinHash
         int blockIndex = decodeSliceIndex(pageAddress);
         int blockPosition = decodePosition(pageAddress);
         return pagesHashStrategy.getLongValue(blockIndex, blockPosition) == probeValue;
+    }
+
+    private boolean positionEqualsCurrentRowIgnoreNulls(int leftPosition, byte rawHash, RowObject probe, int id)
+    {
+        if (positionToHashes[leftPosition] != rawHash) {
+            return false;
+        }
+        return probe.equals(id, getLongValue(leftPosition));
     }
 
     private boolean positionEqualsCurrentRowIgnoreNulls(int leftPosition, byte rawHash, int rightPosition, Page rightPage)

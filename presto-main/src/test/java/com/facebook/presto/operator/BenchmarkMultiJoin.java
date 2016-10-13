@@ -479,8 +479,9 @@ public class BenchmarkMultiJoin
         OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.rowMultiJoin(
                 HASH_JOIN_OPERATOR_ID,
                 TEST_PLAN_NODE_ID,
-                hashBuilderOperatorFactory1.getLookupSourceSupplier(),
-                hashBuilderOperatorFactory2.getLookupSourceSupplier(),
+                ImmutableList.of(
+                        hashBuilderOperatorFactory1.getLookupSourceSupplier(),
+                        hashBuilderOperatorFactory2.getLookupSourceSupplier()),
                 joinContext.getTypes(),
                 joinContext.getHashChannels(),
                 joinContext.getHashChannel(),
@@ -666,7 +667,7 @@ public class BenchmarkMultiJoin
         int expectedPositions = expectedPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
         int actualPositions = actualPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
         assertEquals(expectedPositions, actualPositions);
-
+        
         for (int i = 0; i < actualPages.size(); i++) {
             Page handcodedPage = actualPages.get(i);
             Page baselinePage = expectedPages.get(i);
