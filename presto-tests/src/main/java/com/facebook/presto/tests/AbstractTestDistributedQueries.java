@@ -49,7 +49,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testSetSession()
-            throws Exception
     {
         MaterializedResult result = computeActual("SET SESSION test_string = 'bar'");
         assertTrue((Boolean) getOnlyElement(result).getField(0));
@@ -86,7 +85,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testResetSession()
-            throws Exception
     {
         MaterializedResult result = computeActual(getSession(), "RESET SESSION test_string");
         assertTrue((Boolean) getOnlyElement(result).getField(0));
@@ -99,7 +97,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testCreateTable()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_create (a bigint, b double, c varchar)");
         assertTrue(queryRunner.tableExists(getSession(), "test_create"));
@@ -122,7 +119,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testCreateTableAsSelect()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_create_table_as_if_not_exists (a bigint, b double)");
         assertTrue(queryRunner.tableExists(getSession(), "test_create_table_as_if_not_exists"));
@@ -265,19 +261,16 @@ public abstract class AbstractTestDistributedQueries
     }
 
     protected void assertCreateTableAsSelect(String table, @Language("SQL") String query, @Language("SQL") String rowCountQuery)
-            throws Exception
     {
         assertCreateTableAsSelect(getSession(), table, query, query, rowCountQuery);
     }
 
     protected void assertCreateTableAsSelect(String table, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
-            throws Exception
     {
         assertCreateTableAsSelect(getSession(), table, query, expectedQuery, rowCountQuery);
     }
 
     protected void assertCreateTableAsSelect(Session session, String table, @Language("SQL") String query, @Language("SQL") String expectedQuery, @Language("SQL") String rowCountQuery)
-            throws Exception
     {
         assertUpdate(session, "CREATE TABLE " + table + " AS " + query, rowCountQuery);
         assertQuery(session, "SELECT * FROM " + table, expectedQuery);
@@ -288,7 +281,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testRenameTable()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_rename AS SELECT 123 x", 1);
 
@@ -309,7 +301,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testRenameColumn()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_rename_column AS SELECT 123 x", 1);
 
@@ -327,7 +318,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testAddColumn()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_add_column AS SELECT 123 x", 1);
         assertUpdate("CREATE TABLE test_add_column_a AS SELECT 234 x, 111 a", 1);
@@ -367,7 +357,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testInsert()
-            throws Exception
     {
         @Language("SQL") String query = "SELECT orderdate, orderkey, totalprice FROM orders";
 
@@ -417,7 +406,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testDelete()
-            throws Exception
     {
         // delete half the table, then delete the rest
 
@@ -537,7 +525,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testDropTableIfExists()
-            throws Exception
     {
         assertFalse(queryRunner.tableExists(getSession(), "test_drop_if_exists"));
         assertUpdate("DROP TABLE IF EXISTS test_drop_if_exists");
@@ -546,7 +533,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testView()
-            throws Exception
     {
         @Language("SQL") String query = "SELECT orderkey, orderstatus, totalprice / 2 half FROM orders";
 
@@ -569,7 +555,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testViewCaseSensitivity()
-            throws Exception
     {
         computeActual("CREATE VIEW test_view_uppercase AS SELECT X FROM (SELECT 123 X)");
         computeActual("CREATE VIEW test_view_mixedcase AS SELECT XyZ FROM (SELECT 456 XyZ)");
@@ -579,7 +564,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testCompatibleTypeChangeForView()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_table_1 AS SELECT 'abcdefg' a", 1);
         assertUpdate("CREATE VIEW test_view_1 AS SELECT a FROM test_table_1");
@@ -598,7 +582,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testCompatibleTypeChangeForView2()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_table_2 AS SELECT BIGINT '1' v", 1);
         assertUpdate("CREATE VIEW test_view_2 AS SELECT * FROM test_table_2");
@@ -617,7 +600,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testViewMetadata()
-            throws Exception
     {
         @Language("SQL") String query = "SELECT BIGINT '123' x, 'foo' y";
         assertUpdate("CREATE VIEW meta_test_view AS " + query);
@@ -690,14 +672,12 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testLargeQuerySuccess()
-            throws Exception
     {
         assertQuery("SELECT " + Joiner.on(" AND ").join(nCopies(500, "1 = 1")), "SELECT true");
     }
 
     @Test
     public void testShowSchemasFromOther()
-            throws Exception
     {
         MaterializedResult result = computeActual("SHOW SCHEMAS FROM tpch");
         assertTrue(result.getOnlyColumnAsSet().containsAll(ImmutableSet.of(INFORMATION_SCHEMA, "tiny", "sf1")));
@@ -705,7 +685,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testTableSampleSystem()
-            throws Exception
     {
         int total = computeActual("SELECT orderkey FROM orders").getMaterializedRows().size();
 
@@ -722,7 +701,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testTableSampleSystemBoundaryValues()
-            throws Exception
     {
         MaterializedResult fullSample = computeActual("SELECT orderkey FROM orders TABLESAMPLE SYSTEM (100)");
         MaterializedResult emptySample = computeActual("SELECT orderkey FROM orders TABLESAMPLE SYSTEM (0)");
@@ -735,7 +713,6 @@ public abstract class AbstractTestDistributedQueries
     @Override
     @Test
     public void testTableSamplePoissonizedRescaled()
-            throws Exception
     {
         MaterializedResult sample = computeActual("SELECT * FROM orders TABLESAMPLE POISSONIZED (10) RESCALED");
         MaterializedResult all = computeExpected("SELECT * FROM orders", sample.getTypes());
@@ -746,7 +723,6 @@ public abstract class AbstractTestDistributedQueries
 
     @Test
     public void testSymbolAliasing()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_symbol_aliasing AS SELECT 1 foo_1, 2 foo_2_4", 1);
         assertQuery("SELECT foo_1, foo_2_4 FROM test_symbol_aliasing", "SELECT 1, 2");
