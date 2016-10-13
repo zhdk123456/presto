@@ -7401,5 +7401,20 @@ public abstract class AbstractTestQueries
         assertQuery(
                 "SELECT nationkey, a, b, name FROM nation, LATERAL (SELECT nationkey + 2 AS a), LATERAL (SELECT a * -1 AS b) ORDER BY b LIMIT 1",
                 "VALUES (24, 26, -26, 'UNITED STATES')");
+        
+        assertQuery(
+                "SELECT * FROM region, LATERAL (SELECT * FROM nation WHERE nation.regionkey = region.regionkey)",
+                "SELECT * FROM region, nation WHERE nation.regionkey = region.regionkey"
+        );
+
+        assertQuery(
+                "SELECT quantity, extendedprice, avg_price, low, high\n" +
+                "FROM lineitem,\n" +
+                "LATERAL (SELECT extendedprice / quantity AS avg_price) average_price,\n" +
+                "LATERAL (SELECT avg_price * 0.9 AS low) lower_bound,\n" +
+                "LATERAL (SELECT avg_price * 1.1 AS high) upper_bound\n" +
+                "LIMIT 1",
+                "VALUES (17.0, 24710.35, 1453.55, 1308.195, 1598.905)"
+        );
     }
 }
