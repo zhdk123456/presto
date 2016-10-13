@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.RowPagesBuilder.rowPagesBuilder;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
@@ -76,11 +77,11 @@ import static org.testng.AssertJUnit.assertEquals;
 @State(Thread)
 @OutputTimeUnit(MILLISECONDS)
 @BenchmarkMode(AverageTime)
-@Fork(value = 2, jvmArgsAppend = {
-        /*"-XX:MaxInlineSize=100"*/
-        "-XX:CompileCommand=print,*PageProcessor*.process*"})
-@Warmup(iterations = 20)
-@Measurement(iterations = 20)
+@Fork(value = 1, jvmArgsAppend = {
+        /*"-XX:MaxInlineSize=100"
+        "-XX:CompileCommand=print,*PageProcessor*.process*"*/})
+@Warmup(iterations = 10)
+@Measurement(iterations = 10)
 public class BenchmarkMultiJoin
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;
@@ -104,6 +105,12 @@ public class BenchmarkMultiJoin
         protected Optional<Integer> hashChannel;
         protected List<Page> buildPages1;
         protected List<Page> buildPages2;
+        protected List<Page> buildPages3;
+        protected List<Page> buildPages4;
+        protected List<Page> buildPages5;
+        protected List<Page> buildPages6;
+        protected List<Page> buildPages7;
+        protected List<Page> buildPages8;
         protected List<Type> types;
         protected List<Integer> hashChannels;
 
@@ -131,8 +138,25 @@ public class BenchmarkMultiJoin
             hashChannel = buildPagesBuilder1.getHashChannel();
 
             RowPagesBuilder buildPagesBuilder2 = initializeBuildPages();
-
             buildPages2 = buildPagesBuilder2.build();
+
+            RowPagesBuilder buildPagesBuilder3 = initializeBuildPages();
+            buildPages3 = buildPagesBuilder3.build();
+
+            RowPagesBuilder buildPagesBuilder4 = initializeBuildPages();
+            buildPages4 = buildPagesBuilder4.build();
+
+            RowPagesBuilder buildPagesBuilder5 = initializeBuildPages();
+            buildPages5 = buildPagesBuilder5.build();
+
+            RowPagesBuilder buildPagesBuilder6 = initializeBuildPages();
+            buildPages6 = buildPagesBuilder6.build();
+
+            RowPagesBuilder buildPagesBuilder7 = initializeBuildPages();
+            buildPages7 = buildPagesBuilder7.build();
+
+            RowPagesBuilder buildPagesBuilder8 = initializeBuildPages();
+            buildPages8 = buildPagesBuilder8.build();
         }
 
         public HashBuilderOperatorFactory getHashBuilderOperatorFactory(List<Type> types)
@@ -196,6 +220,36 @@ public class BenchmarkMultiJoin
         public List<Page> getBuildPages2()
         {
             return buildPages2;
+        }
+
+        public List<Page> getBuildPages3()
+        {
+            return buildPages3;
+        }
+
+        public List<Page> getBuildPages4()
+        {
+            return buildPages4;
+        }
+
+        public List<Page> getBuildPages5()
+        {
+            return buildPages5;
+        }
+
+        public List<Page> getBuildPages6()
+        {
+            return buildPages6;
+        }
+
+        public List<Page> getBuildPages7()
+        {
+            return buildPages7;
+        }
+
+        public List<Page> getBuildPages8()
+        {
+            return buildPages8;
         }
     }
 
@@ -327,6 +381,37 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
+    public List<Page> baselineMultiJoin(JoinContext joinContext, List<List<Page>> buildPages)
+    {
+        List<HashBuilderOperatorFactory> hashBuilderFactories = buildPages.stream().map(
+                pages -> joinContext.getHashBuilderOperatorFactory(joinContext.getTypes())
+        ).collect(Collectors.toList());
+
+        List<OperatorFactory> joinFactories = new ArrayList<>();
+        List<Type> outputTypes = new ArrayList<>(joinContext.types);
+        for (int i = 0; i < buildPages.size(); ++i) {
+            joinFactories.add(LookupJoinOperators.innerJoin(
+                    HASH_JOIN_OPERATOR_ID,
+                    TEST_PLAN_NODE_ID,
+                    hashBuilderFactories.get(i).getLookupSourceSupplier(),
+                    outputTypes,
+                    joinContext.getHashChannels(),
+                    joinContext.getHashChannel(),
+                    false));
+            outputTypes.addAll(joinContext.getTypes());
+        }
+
+        for (int i = 0; i < hashBuilderFactories.size(); ++i) {
+            feed(joinContext, hashBuilderFactories.get(i), buildPages.get(i).iterator());
+        }
+
+        List<Page> output = joinContext.getProbePages2();
+        for (int i = 0; i < hashBuilderFactories.size(); ++i) {
+            output = feed(joinContext, joinFactories.get(i), output.iterator());
+        }
+        return output;
+    }
+
     static PageProcessor processor;
 
     OperatorFactory projection()
@@ -411,7 +496,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    @Benchmark
+    //@Benchmark
     public List<Page> xcompiledMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -432,6 +517,64 @@ public class BenchmarkMultiJoin
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
         feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
         return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+    }
+
+    public List<Page> xcompiledMultiJoin(JoinContext joinContext, List<List<Page>> buildPages)
+    {
+        List<HashBuilderOperatorFactory> hashBuilderFactories = buildPages.stream().map(
+                pages -> joinContext.getHashBuilderOperatorFactory(joinContext.getTypes())
+        ).collect(Collectors.toList());
+
+        OperatorFactory multiJoinOperatorFactory = LookupJoinOperators.xcompiledMultiJoin(
+                HASH_JOIN_OPERATOR_ID,
+                TEST_PLAN_NODE_ID,
+                hashBuilderFactories.stream().map(HashBuilderOperatorFactory::getLookupSourceSupplier).collect(Collectors.toList()),
+                joinContext.getTypes(),
+                joinContext.getHashChannels());
+
+        for (int i = 0; i < hashBuilderFactories.size(); ++i) {
+            feed(joinContext, hashBuilderFactories.get(i), buildPages.get(i).iterator());
+        }
+        return feed(joinContext, multiJoinOperatorFactory, joinContext.getProbePages2().iterator());
+    }
+
+    @Test
+    public void test8()
+    {
+        JoinContext joinContext = new JoinContext();
+        joinContext.setup();
+        List<List<Page>> buildPages = ImmutableList.of(joinContext.probePages1, joinContext.probePages2, joinContext.buildPages3,
+                joinContext.buildPages4, joinContext.buildPages5, joinContext.buildPages6, joinContext.buildPages7, joinContext.buildPages8);
+        List<Page> xcompiledPages = xcompiledMultiJoin(joinContext, buildPages);
+        List<Page> baselinePages = baselineMultiJoin(joinContext, buildPages);
+
+        assertPages(joinContext.getResultTypes(), baselinePages, xcompiledPages);
+    }
+
+    //@Benchmark
+    public void baseline8(JoinContext joinContext)
+    {
+        baselineMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2, joinContext.buildPages3,
+                joinContext.buildPages4, joinContext.buildPages5, joinContext.buildPages6, joinContext.buildPages7, joinContext.buildPages8));
+    }
+
+    @Benchmark
+    public void baseline4(JoinContext joinContext)
+    {
+        baselineMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2));
+    }
+
+    //@Benchmark
+    public void xcompile8(JoinContext joinContext)
+    {
+        xcompiledMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2, joinContext.buildPages3,
+                joinContext.buildPages4, joinContext.buildPages5, joinContext.buildPages6, joinContext.buildPages7, joinContext.buildPages8));
+    }
+
+    @Benchmark
+    public void xcompile4(JoinContext joinContext)
+    {
+        xcompiledMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2));
     }
 
     @Test
@@ -483,7 +626,9 @@ public class BenchmarkMultiJoin
 
     private void assertPages(List<Type> types, List<Page> expectedPages, List<Page> actualPages)
     {
-        assertEquals(expectedPages.size(), actualPages.size());
+        int expectedPositions = expectedPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
+        int actualPositions = actualPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
+        assertEquals(expectedPositions, actualPositions);
 
         for (int i = 0; i < actualPages.size(); i++) {
             Page handcodedPage = actualPages.get(i);

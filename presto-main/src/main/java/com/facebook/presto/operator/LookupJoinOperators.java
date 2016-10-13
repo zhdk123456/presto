@@ -32,7 +32,8 @@ import static jersey.repackaged.com.google.common.base.Preconditions.checkArgume
 
 public class LookupJoinOperators
 {
-    public enum JoinType {
+    public enum JoinType
+    {
         INNER,
         PROBE_OUTER, // the Probe is the outer side of the join
         LOOKUP_OUTER, // The LookupSource is the outer side of the join
@@ -88,7 +89,6 @@ public class LookupJoinOperators
                 probeHashChannel,
                 JoinType.INNER,
                 filterFunctionPresent);
-
     }
 
     public static OperatorFactory bigintMultiJoin(
@@ -159,7 +159,35 @@ public class LookupJoinOperators
                 MetadataManager.createTestMetadataManager(),
                 factories.build(),
                 ImmutableList.copyOf(probeTypes));
-
     }
 
+    public static OperatorFactory xcompiledMultiJoin(
+            int operatorId,
+            PlanNodeId planNodeId,
+            List<LookupSourceSupplier> lookupSourceSuppliers,
+            List<? extends Type> probeTypes,
+            List<Integer> probeJoinChannel)
+    {
+        ImmutableList.Builder<CrossCompiledOperatorFactory> factories = ImmutableList.builder();
+
+        List<Type> types = new ArrayList<>(probeTypes);
+        for (int i = 0; i < lookupSourceSuppliers.size(); ++i) {
+            factories.add(CROSS_COMPILED_JOIN_PROBE_COMPILER.xcompiledMultiJoinOperatorFactory(
+                    operatorId + i,
+                    planNodeId,
+                    lookupSourceSuppliers.get(i),
+                    types,
+                    probeJoinChannel,
+                    Optional.empty(),
+                    JoinType.INNER));
+            types.addAll(probeTypes);
+        }
+
+        return new CombinedOperatorFactory(
+                operatorId + 42,
+                planNodeId,
+                MetadataManager.createTestMetadataManager(),
+                factories.build(),
+                ImmutableList.copyOf(probeTypes));
+    }
 }
