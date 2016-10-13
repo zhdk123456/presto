@@ -82,7 +82,7 @@ import static org.testng.AssertJUnit.assertEquals;
         /*"-XX:MaxInlineSize=100"
         "-XX:CompileCommand=print,*PageProcessor*.process*"*/})
 @Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Measurement(iterations = 100)
 public class BenchmarkMultiJoin
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;

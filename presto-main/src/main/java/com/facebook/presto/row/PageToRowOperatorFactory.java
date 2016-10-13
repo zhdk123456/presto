@@ -162,7 +162,8 @@ public class PageToRowOperatorFactory
 
             TestRowObject rowObject = new TestRowObject();
             for (int position = 0; position < page.getPositionCount(); position++) {
-                rowObject.col0 = col0Type.getSlice(page.getBlock(0), position);
+                rowObject.col0 = page.getBlock(0);
+                rowObject.pos0 = position;
                 rowObject.col1 = col1Type.getLong(page.getBlock(1), position);
                 rowObject.col2 = col2Type.getLong(page.getBlock(2), position);
 

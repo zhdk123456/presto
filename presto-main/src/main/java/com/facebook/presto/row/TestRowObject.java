@@ -5,18 +5,22 @@ import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.AbstractLongType;
 import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.VarcharType;
-import io.airlift.slice.Slice;
 
 public class TestRowObject
         extends RowObject
 {
-    public Slice col0;
+    public int pos0;
+    public Block col0;
     public long col1;
     public long col2;
-    public Slice col3;
+
+    public int pos3;
+    public Block col3;
     public long col4;
     public long col5;
-    public Slice col6;
+
+    public int pos6;
+    public Block col6;
     public long col7;
     public long col8;
 
@@ -24,35 +28,35 @@ public class TestRowObject
     public void appendTo(PageBuilder pageBuilder)
     {
         pageBuilder.declarePosition();
-        pageBuilder.getBlockBuilder(0).writeBytes(col0, 0, col0.length());
-        pageBuilder.getBlockBuilder(0).closeEntry();
+        VarcharType.VARCHAR.appendTo(col0, pos0, pageBuilder.getBlockBuilder(0));
         pageBuilder.getBlockBuilder(1).writeLong(col1);
         pageBuilder.getBlockBuilder(2).writeLong(col2);
 
-        pageBuilder.getBlockBuilder(3).writeBytes(col3, 0, col3.length());
-        pageBuilder.getBlockBuilder(3).closeEntry();
+
+        VarcharType.VARCHAR.appendTo(col3, pos3, pageBuilder.getBlockBuilder(3));
         pageBuilder.getBlockBuilder(4).writeLong(col4);
         pageBuilder.getBlockBuilder(5).writeLong(col5);
 
-        pageBuilder.getBlockBuilder(6).writeBytes(col6, 0, col6.length());
-        pageBuilder.getBlockBuilder(6).closeEntry();
+        VarcharType.VARCHAR.appendTo(col6, pos6, pageBuilder.getBlockBuilder(6));
         pageBuilder.getBlockBuilder(7).writeLong(col7);
         pageBuilder.getBlockBuilder(8).writeLong(col8);
     }
 
     public void set(int id, int blockPosition, Block block0, Block block1, Block block2)
     {
-        Slice slice = VarcharType.VARCHAR.getSlice(block0, blockPosition);
+        //Slice slice = VarcharType.VARCHAR.getSlice(block0, blockPosition);
         long aLong0 = BigintType.BIGINT.getLong(block1, blockPosition);
         long aLong1 = BigintType.BIGINT.getLong(block2, blockPosition);
         switch (id) {
             case 0:
-                col3 = slice;
+                pos3 = blockPosition;
+                col3 = block0;
                 col4 = aLong0;
                 col5 = aLong1;
                 break;
             case 1:
-                col6 = slice;
+                pos6 = blockPosition;
+                col6 = block0;
                 col7 = aLong0;
                 col8 = aLong1;
                 break;
