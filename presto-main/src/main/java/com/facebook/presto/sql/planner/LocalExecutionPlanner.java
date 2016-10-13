@@ -1575,7 +1575,8 @@ public class LocalExecutionPlanner
                     metadata,
                     sqlParser,
                     sourceTypes,
-                    rewrittenFilter);
+                    rewrittenFilter,
+                    emptyList());
 
             RowExpression translatedFilter = toRowExpression(rewrittenFilter, expressionTypes);
             return joinFilterFunctionCompiler.compileJoinFilterFunction(translatedFilter, buildLayout.size()).create(session.toConnectorSession());
