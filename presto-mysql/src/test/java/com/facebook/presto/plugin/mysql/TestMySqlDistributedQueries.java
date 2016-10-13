@@ -75,7 +75,6 @@ public class TestMySqlDistributedQueries
 
     @Test
     public void testDropTable()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_drop AS SELECT 123 x", 1);
         assertTrue(queryRunner.tableExists(getSession(), "test_drop"));
@@ -97,7 +96,6 @@ public class TestMySqlDistributedQueries
 
     @Test
     public void testPrestoCreatedParameterizedVarchar()
-            throws Exception
     {
         DataTypeTest.create()
                 .addRoundTrip(stringDataType("varchar(10)", createVarcharType(255)), "text_a")
@@ -114,7 +112,6 @@ public class TestMySqlDistributedQueries
 
     @Test
     public void testMySqlCreatedParameterizedVarchar()
-            throws Exception
     {
         DataTypeTest.create()
                 .addRoundTrip(stringDataType("tinytext", createVarcharType(255)), "a")
@@ -128,7 +125,6 @@ public class TestMySqlDistributedQueries
 
     @Test
     public void testMySqlCreatedParameterizedVarcharUnicode()
-            throws Exception
     {
         String sampleUnicodeText = "\u653b\u6bbb\u6a5f\u52d5\u968a";
         DataTypeTest.create()
@@ -144,14 +140,12 @@ public class TestMySqlDistributedQueries
 
     @Test
     public void testPrestoCreatedParameterizedChar()
-            throws Exception
     {
         mysqlCharTypeTest().execute(queryRunner, prestoCreateAsSelect("mysql_test_parameterized_char"));
     }
 
     @Test
     public void testMySqlCreatedParameterizedChar()
-            throws Exception
     {
         mysqlCharTypeTest().execute(queryRunner, mysqlCreateAndInsert("tpch.mysql_test_parameterized_char"));
     }
@@ -192,7 +186,6 @@ public class TestMySqlDistributedQueries
 
     @Override
     public void testShowColumns()
-            throws Exception
     {
         MaterializedResult actual = computeActual("SHOW COLUMNS FROM orders");
 

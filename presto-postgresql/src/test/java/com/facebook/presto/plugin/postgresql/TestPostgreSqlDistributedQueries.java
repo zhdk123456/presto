@@ -67,7 +67,6 @@ public class TestPostgreSqlDistributedQueries
 
     @Override
     public void testLargeIn()
-            throws Exception
     {
         // the PostgreSQL query fails with "stack depth limit exceeded"
         // TODO: fix QueryBuilder not to generate such a large query
@@ -76,7 +75,6 @@ public class TestPostgreSqlDistributedQueries
 
     @Test
     public void testDropTable()
-            throws Exception
     {
         assertUpdate("CREATE TABLE test_drop AS SELECT 123 x", 1);
         assertTrue(queryRunner.tableExists(getSession(), "test_drop"));
