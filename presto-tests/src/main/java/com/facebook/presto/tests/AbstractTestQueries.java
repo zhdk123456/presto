@@ -7394,8 +7394,8 @@ public abstract class AbstractTestQueries
                 "SELECT nationkey, a FROM nation, LATERAL (SELECT max(region.name) FROM region WHERE region.regionkey <= nation.regionkey) t(a) ORDER BY nationkey LIMIT 1",
                 "VALUES (0, 'AFRICA')");
 
-        assertQueryFails(
+        assertQuery(
                 "SELECT nationkey, a FROM nation, LATERAL (SELECT region.name FROM region WHERE region.regionkey = nation.regionkey) t(a) ORDER BY nationkey LIMIT 1",
-                "Unsupported correlated subquery type");
+                "VALUES (0, 'AFRICA')");
     }
 }
