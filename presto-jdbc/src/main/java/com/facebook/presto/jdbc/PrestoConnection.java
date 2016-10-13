@@ -72,7 +72,7 @@ public class PrestoConnection
     private final QueryExecutor queryExecutor;
     private final Runnable onClose;
 
-    PrestoConnection(PrestoDriverUri uri, String user, QueryExecutor queryExecutor, Runnable onClose)
+    PrestoConnection(PrestoConnectionConfig uri, String user, QueryExecutor queryExecutor, Runnable onClose)
             throws SQLException
     {
         requireNonNull(uri, "uri is null");
