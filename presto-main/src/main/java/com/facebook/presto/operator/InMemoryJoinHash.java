@@ -187,21 +187,6 @@ public final class InMemoryJoinHash
         return (pos + 1) & mask;
     }
 
-    public long getJoinPosition(RowObject probe, int id)
-    {
-        long rawHash = probe.hash(id);
-        int pos = getHashPosition(rawHash, mask);
-
-        while (key[pos] != -1) {
-            if (positionEqualsCurrentRowIgnoreNulls(key[pos], (byte) rawHash, probe, id)) {
-                return key[pos];
-            }
-            // increment position and mask to handler wrap around
-            pos = (pos + 1) & mask;
-        }
-        return -1;
-    }
-
     @Override
     public long getJoinPosition(int position, Page hashChannelsPage, Page allChannelsPage)
     {
@@ -267,6 +252,22 @@ public final class InMemoryJoinHash
             currentJoinPosition = positionLinks[Ints.checkedCast(currentJoinPosition)];
         }
         return currentJoinPosition;
+    }
+
+    @Override
+    public long getJoinPosition(RowObject probe, int id)
+    {
+        long rawHash = probe.hash(id);
+        int pos = getHashPosition(rawHash, mask);
+
+        while (key[pos] != -1) {
+            if (positionEqualsCurrentRowIgnoreNulls(key[pos], (byte) rawHash, probe, id)) {
+                return key[pos];
+            }
+            // increment position and mask to handler wrap around
+            pos = (pos + 1) & mask;
+        }
+        return -1;
     }
 
     @Override

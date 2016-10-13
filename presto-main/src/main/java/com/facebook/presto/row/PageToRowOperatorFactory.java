@@ -85,11 +85,17 @@ public class PageToRowOperatorFactory
             implements Operator
     {
         private final OperatorContext operatorContext;
-        private final List<RowOperator> rowOperators;
+
+        private final RowOperator operator0;
+        private final RowOperator operator1;
         private final List<Type> outputTypes;
         private final ListenableFuture<?> future;
         private boolean finishing;
         private final PageBuilder pageBuilder;
+        private final Type col0Type;
+        private final Type col1Type;
+        private final Type col2Type;
+
 
         public PageToRowOperator(
                 OperatorContext operatorContext,
@@ -99,10 +105,17 @@ public class PageToRowOperatorFactory
         {
             checkState(outputTypes.equals(ImmutableList.of(VARCHAR, BIGINT, BIGINT, VARCHAR, BIGINT, BIGINT, VARCHAR, BIGINT, BIGINT)));
             this.operatorContext = operatorContext;
-            this.rowOperators = rowOperators;
             this.outputTypes = outputTypes;
             this.future = future;
             this.pageBuilder = new PageBuilder(outputTypes);
+
+            checkState(rowOperators.size() == 2);
+
+            operator0 = rowOperators.get(0);
+            operator1 = rowOperators.get(1);
+            col0Type = outputTypes.get(0);
+            col1Type = outputTypes.get(1);
+            col2Type = outputTypes.get(2);
         }
 
         @Override
@@ -144,19 +157,10 @@ public class PageToRowOperatorFactory
         @Override
         public void addInput(Page page)
         {
-            for (RowOperator rowOperator : rowOperators) {
-                rowOperator.prepare();
-            }
-
-            checkState(rowOperators.size() == 2);
-            RowOperator operator0 = rowOperators.get(0);
-            RowOperator operator1 = rowOperators.get(1);
+            operator0.prepare();
+            operator1.prepare();
 
             TestRowObject rowObject = new TestRowObject();
-            Type col0Type = outputTypes.get(0);
-            Type col1Type = outputTypes.get(1);
-            Type col2Type = outputTypes.get(2);
-
             for (int position = 0; position < page.getPositionCount(); position++) {
                 rowObject.col0 = col0Type.getSlice(page.getBlock(0), position);
                 rowObject.col1 = col1Type.getLong(page.getBlock(1), position);
@@ -166,7 +170,6 @@ public class PageToRowOperatorFactory
                 operator0.addInput(rowObject);
                 RowObject output0 = operator0.getOutput();
                 while (output0 != null) {
-
                     operator1.addInput(output0);
                     RowObject output1 = operator1.getOutput();
                     while (output1 != null) {

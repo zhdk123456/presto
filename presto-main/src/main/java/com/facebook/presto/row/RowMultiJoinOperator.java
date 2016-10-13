@@ -80,7 +80,7 @@ public class RowMultiJoinOperator
         checkState(lookupSource != null, "Lookup source 1 has not been built yet");
 
         probe = row;
-        joinPosition = lookupSource.getJoinPosition(probe, id);
+        joinPosition = -1;
     }
 
     @Override
@@ -89,17 +89,23 @@ public class RowMultiJoinOperator
         if (lookupSource == null) {
             return null;
         }
+        if (probe == null) {
+            return null;
+        }
 
         // join probe page with the lookup source
-        if (probe != null) {
-            if (joinPosition < 0) {
-                probe = null;
-                return null;
-            }
-            lookupSource.appendTo(joinPosition, probe, id);
-            joinPosition = lookupSource.getNextJoinPosition(joinPosition);
-            return probe;
+        if (joinPosition < 0) {
+            joinPosition = lookupSource.getJoinPosition(probe, id);
         }
-        return null;
+        else {
+            joinPosition = lookupSource.getNextJoinPosition(joinPosition);
+        }
+        if (joinPosition < 0) {
+            probe = null;
+            return null;
+        }
+        lookupSource.appendTo(joinPosition, probe, id);
+
+        return probe;
     }
 }

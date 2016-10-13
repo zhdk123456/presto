@@ -344,7 +344,7 @@ public class BenchmarkMultiJoin
         }
     }
 
-    //@Benchmark
+    @Benchmark
     public List<Page> baselineMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -471,7 +471,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    //@Benchmark
+    @Benchmark
     public List<Page> handcodedRowMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -498,7 +498,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    //@Benchmark
+    @Benchmark
     public List<Page> handcodedBigintMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -524,7 +524,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    //@Benchmark
+    @Benchmark
     public List<Page> xcompiledMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -586,7 +586,7 @@ public class BenchmarkMultiJoin
                 joinContext.buildPages4, joinContext.buildPages5, joinContext.buildPages6, joinContext.buildPages7, joinContext.buildPages8));
     }
 
-    @Benchmark
+    //@Benchmark
     public void baseline4(JoinContext joinContext)
     {
         baselineMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2));
@@ -599,7 +599,7 @@ public class BenchmarkMultiJoin
                 joinContext.buildPages4, joinContext.buildPages5, joinContext.buildPages6, joinContext.buildPages7, joinContext.buildPages8));
     }
 
-    @Benchmark
+    //@Benchmark
     public void xcompile4(JoinContext joinContext)
     {
         xcompiledMultiJoin(joinContext, ImmutableList.of(joinContext.probePages1, joinContext.probePages2));
