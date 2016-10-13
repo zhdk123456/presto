@@ -15,6 +15,7 @@
 package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.fasterxml.jackson.databind.node.ValueNode;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -72,6 +73,15 @@ public class PlanNodeSearcher
                     return found;
                 }
             }
+        }
+        return Optional.empty();
+    }
+
+    public <T extends PlanNode> Optional<T> findSingle()
+    {
+        List<T> all = findAll();
+        if (all.size() == 1)  {
+            return Optional.of(all.get(0));
         }
         return Optional.empty();
     }
@@ -185,4 +195,5 @@ public class PlanNodeSearcher
             throw new IllegalArgumentException("Unable to replace first node when a node has multiple children, use replaceAll instead");
         }
     }
+
 }
