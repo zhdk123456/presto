@@ -20,15 +20,22 @@ import com.facebook.presto.spi.function.SqlType;
 
 import javax.annotation.Nullable;
 
+import java.util.Date;
+import java.util.Random;
+
+import static com.facebook.presto.operator.scalar.MathFunctions.sqrt;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.IntegerType.INTEGER;
 import static com.facebook.presto.spi.type.RealType.REAL;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static java.lang.Math.pow;
 
 public final class TableFunctions
 {
+    private static Random rng = new Random(new Date().getTime());
+
     private TableFunctions() {}
 
     @Description("tsequence")
@@ -57,6 +64,36 @@ public final class TableFunctions
             for (long x = x1; x < x2; ++x) {
                 tg.addRow(x, y);
             }
+        }
+        return tg.buildBlock();
+    }
+
+    @Description("pnorm")
+    @ScalarFunction
+    @Nullable
+    @SqlType(tableType = {"x double"})
+    public static Block pnorm(@SqlType("bigint") long n, @SqlType("double") double mean, @SqlType("double") double sd)
+    {
+        TableGenerator tg = new TableGenerator(DOUBLE);
+        for (int i = 0; i < n; ++i) {
+            tg.addRow(rng.nextGaussian() * sd + mean);
+        }
+        return tg.buildBlock();
+    }
+
+    @Description("pnorm")
+    @ScalarFunction
+    @Nullable
+    @SqlType(tableType = {"x double", "y double"})
+    public static Block ppairnorm(@SqlType("bigint") long n, @SqlType("double") double mean1, @SqlType("double") double sd1, @SqlType("double") double mean2, @SqlType("double") double sd2, @SqlType("double") double corr)
+    {
+        TableGenerator tg = new TableGenerator(DOUBLE, DOUBLE);
+        for (int i = 0; i < n; ++i) {
+            double x1 = rng.nextGaussian();
+            double x2 = rng.nextGaussian();
+            double y1 = mean1 + sd1 * x1;
+            double y2 = mean2 + sd2 * (corr * x1 + sqrt(1 - pow(corr, 2)) * x2);
+            tg.addRow(y1, y2);
         }
         return tg.buildBlock();
     }
