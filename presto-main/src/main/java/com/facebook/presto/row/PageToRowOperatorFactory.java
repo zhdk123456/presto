@@ -165,7 +165,7 @@ public class PageToRowOperatorFactory
                 rowObject.col0 = page.getBlock(0);
                 rowObject.pos0 = position;
                 rowObject.col1 = col1Type.getLong(page.getBlock(1), position);
-                rowObject.col2 = col2Type.getLong(page.getBlock(2), position);
+                rowObject.col2 = page.getBlock(2);
 
                 // TODO can this loop be native java?
                 operator0.addInput(rowObject);
