@@ -906,7 +906,9 @@ public class ExpressionAnalyzer
         protected Type visitSubqueryExpression(SubqueryExpression node, StackableAstVisitorContext<Void> context)
         {
             StatementAnalyzer analyzer = statementAnalyzerFactory.apply(node);
-            Scope subqueryScope = createQueryBoundaryScope();
+            Scope subqueryScope = Scope.builder()
+                    .withParent(scope)
+                    .build();
             analyzer.getAnalysis().setScope(node, subqueryScope);
             Scope queryScope = analyzer.process(node.getQuery(), subqueryScope);
 
@@ -935,7 +937,7 @@ public class ExpressionAnalyzer
         protected Type visitExists(ExistsPredicate node, StackableAstVisitorContext<Void> context)
         {
             StatementAnalyzer analyzer = statementAnalyzerFactory.apply(node);
-            Scope subqueryScope = createQueryBoundaryScope();
+            Scope subqueryScope = Scope.builder().withParent(scope).build();
             analyzer.getAnalysis().setScope(node, subqueryScope);
             analyzer.process(node.getSubquery(), subqueryScope);
 
@@ -943,14 +945,6 @@ public class ExpressionAnalyzer
 
             expressionTypes.put(node, BOOLEAN);
             return BOOLEAN;
-        }
-
-        private Scope createQueryBoundaryScope()
-        {
-            return Scope.builder()
-                    .withParent(scope)
-                    .markQueryBoundary()
-                    .build();
         }
 
         @Override
