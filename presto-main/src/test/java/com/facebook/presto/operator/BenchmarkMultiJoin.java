@@ -81,8 +81,8 @@ import static org.testng.AssertJUnit.assertEquals;
 @Fork(value = 1, jvmArgsAppend = {
         /*"-XX:MaxInlineSize=100"
         "-XX:CompileCommand=print,*PageProcessor*.process*"*/})
-@Warmup(iterations = 10)
-@Measurement(iterations = 100)
+@Warmup(iterations = 20)
+@Measurement(iterations = 10)
 public class BenchmarkMultiJoin
 {
     private static final int HASH_BUILD_OPERATOR_ID = 1;
