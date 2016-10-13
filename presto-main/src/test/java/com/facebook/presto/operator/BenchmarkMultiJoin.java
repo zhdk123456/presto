@@ -18,6 +18,7 @@ import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.operator.HashBuilderOperator.HashBuilderOperatorFactory;
 import com.facebook.presto.spi.Page;
+import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.ExpressionCompiler;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
@@ -667,12 +668,25 @@ public class BenchmarkMultiJoin
         int expectedPositions = expectedPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
         int actualPositions = actualPages.stream().map(page -> page.getPositionCount()).mapToInt(x -> x).sum();
         assertEquals(expectedPositions, actualPositions);
-        
-        for (int i = 0; i < actualPages.size(); i++) {
-            Page handcodedPage = actualPages.get(i);
-            Page baselinePage = expectedPages.get(i);
-            assertPageEquals(types, baselinePage, handcodedPage);
+
+        Page expected = rewrite(types, expectedPages);
+        Page actual = rewrite(types, actualPages);
+
+        assertPageEquals(types, expected, actual);
+    }
+
+    private Page rewrite(List<Type> types, List<Page> pages)
+    {
+        PageBuilder singlePage = new PageBuilder(types);
+        for (Page page : pages) {
+            for (int position = 0; position < page.getPositionCount(); position++) {
+                singlePage.declarePosition();
+                for (int channel = 0; channel < types.size(); channel++) {
+                    types.get(channel).appendTo(page.getBlock(channel), position, singlePage.getBlockBuilder(channel));
+                }
+            }
         }
+        return singlePage.build();
     }
 
     private static List<Page> feed(JoinContext joinContext, OperatorFactory factory, Iterator<Page> input)
