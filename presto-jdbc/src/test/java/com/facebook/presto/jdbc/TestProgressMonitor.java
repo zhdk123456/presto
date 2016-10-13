@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -119,7 +120,7 @@ public class TestProgressMonitor
         HttpClient client = new TestingHttpClient(new TestingHttpClientProcessor(RESPONSES));
         QueryExecutor testQueryExecutor = QueryExecutor.create(client);
         String uri = format("prestotest://%s", SERVER_ADDRESS);
-        return new PrestoConnection(new PrestoDriverUri(uri), "test", testQueryExecutor);
+        return new PrestoConnection(new PrestoDriverUri(uri, new Properties()), "test", testQueryExecutor);
     }
 
     private static class TestingHttpClientProcessor

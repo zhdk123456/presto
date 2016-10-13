@@ -82,12 +82,17 @@ class QueryExecutor
         close();
     }
 
-    static QueryExecutor create(String userAgent, JettyIoPool jettyIoPool)
+    static HttpClientConfig baseClientConfig()
+    {
+        return new HttpClientConfig()
+                .setConnectTimeout(new Duration(10, TimeUnit.SECONDS))
+                .setSocksProxy(getSystemSocksProxy());
+    }
+
+    static QueryExecutor create(String userAgent, HttpClientConfig clientConfig, JettyIoPool jettyIoPool)
     {
         return create(new JettyHttpClient(
-                new HttpClientConfig()
-                        .setConnectTimeout(new Duration(10, TimeUnit.SECONDS))
-                        .setSocksProxy(getSystemSocksProxy()),
+                clientConfig,
                 jettyIoPool,
                 ImmutableSet.of(new UserAgentRequestFilter(userAgent))));
     }

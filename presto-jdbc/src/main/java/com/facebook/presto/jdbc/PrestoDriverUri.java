@@ -22,7 +22,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import static com.facebook.presto.jdbc.ConnectionProperties.SSL;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static java.util.Objects.requireNonNull;
@@ -39,26 +41,29 @@ final class PrestoDriverUri
 
     private final HostAndPort address;
     private final URI uri;
+    private final Properties connectionProperties;
 
     private String catalog;
     private String schema;
 
     private final boolean useSecureConnection;
 
-    public PrestoDriverUri(String url)
+    public PrestoDriverUri(String url, Properties driverProperties)
             throws SQLException
     {
-        this(parseDriverUrl(url));
+        this(parseDriverUrl(url), driverProperties);
     }
 
-    private PrestoDriverUri(URI uri)
+    private PrestoDriverUri(URI uri, Properties driverProperties)
             throws SQLException
     {
         this.uri = requireNonNull(uri, "uri is null");
         this.address = HostAndPort.fromParts(uri.getHost(), uri.getPort());
+        this.connectionProperties = getMergedProperties(uri, driverProperties);
 
-        Map<String, String> params = parseParameters(uri.getQuery());
-        useSecureConnection = Boolean.parseBoolean(params.get("secure"));
+        validateConnectionProperties(this.connectionProperties);
+
+        useSecureConnection = Integer.parseInt(connectionProperties.getProperty(SSL.getKey())) == 1;
 
         initCatalogAndSchema();
     }
@@ -83,9 +88,14 @@ final class PrestoDriverUri
         return buildHttpUri();
     }
 
+    public Properties getConnectionProperties()
+    {
+        return connectionProperties;
+    }
+
     private static Map<String, String> parseParameters(String query)
     {
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> result = new HashMap<>(ConnectionProperties.getDefaults());
 
         if (query != null) {
             Iterable<String> queryArgs = QUERY_SPLITTER.split(query);
@@ -122,7 +132,7 @@ final class PrestoDriverUri
 
     private URI buildHttpUri()
     {
-        String scheme = (address.getPort() == 443 || useSecureConnection) ? "https" : "http";
+        String scheme = useSecureConnection ? "https" : "http";
 
         return uriBuilder()
                 .scheme(scheme)
@@ -164,6 +174,24 @@ final class PrestoDriverUri
                 throw new SQLException("Schema name is empty: " + uri);
             }
             schema = parts.get(1);
+        }
+    }
+
+    private static Properties getMergedProperties(URI uri, Properties driverProperties)
+            throws SQLException
+    {
+        Properties result = new Properties();
+        result.putAll(ConnectionProperties.getDefaults());
+        result.putAll(driverProperties);
+        result.putAll(parseParameters(uri.getQuery()));
+        return result;
+    }
+
+    private static void validateConnectionProperties(Properties connectionProperties)
+            throws SQLException
+    {
+        for (ConnectionProperty property : ConnectionProperties.allOf) {
+            property.validate(connectionProperties);
         }
     }
 }
