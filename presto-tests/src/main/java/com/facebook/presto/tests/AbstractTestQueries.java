@@ -7401,7 +7401,7 @@ public abstract class AbstractTestQueries
         assertQuery(
                 "SELECT nationkey, a, b, name FROM nation, LATERAL (SELECT nationkey + 2 AS a), LATERAL (SELECT a * -1 AS b) ORDER BY b LIMIT 1",
                 "VALUES (24, 26, -26, 'UNITED STATES')");
-        
+
         assertQuery(
                 "SELECT * FROM region, LATERAL (SELECT * FROM nation WHERE nation.regionkey = region.regionkey)",
                 "SELECT * FROM region, nation WHERE nation.regionkey = region.regionkey"
