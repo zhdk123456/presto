@@ -51,8 +51,6 @@ public final class TableFunctions
         return tg.buildBlock();
     }
 
-    // example call:
-    // select * from (select x,y from unnest(tgrid(1,5,10,20)) as t(tmp1), unnest(tmp1));
     @Description("tgrid")
     @ScalarFunction
     @Nullable
