@@ -7385,4 +7385,17 @@ public abstract class AbstractTestQueries
             assertEquals(e.getMessage(), "line 1:1: Incorrect number of parameters: expected 1 but found 0");
         }
     }
+
+    @Test
+    public void testLateralJoin()
+            throws Exception
+    {
+        assertQuery(
+                "SELECT nationkey, a FROM nation, LATERAL (SELECT max(region.name) FROM region WHERE region.regionkey <= nation.regionkey) t(a) ORDER BY nationkey LIMIT 1",
+                "VALUES (0, 'AFRICA')");
+
+        assertQueryFails(
+                "SELECT nationkey, a FROM nation, LATERAL (SELECT region.name FROM region WHERE region.regionkey = nation.regionkey) t(a) ORDER BY nationkey LIMIT 1",
+                "Unsupported correlated subquery type");
+    }
 }
