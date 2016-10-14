@@ -18,6 +18,7 @@ import com.facebook.presto.client.QueryResults;
 import com.facebook.presto.client.StatementClient;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
+import io.airlift.http.client.BasicAuthRequestFilter;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -162,7 +163,7 @@ public class QueryRunner
     {
         if (user.isPresent() && password.isPresent()) {
             checkArgument(session.getServer().getScheme().equalsIgnoreCase("https"), "Authentication using username/password requires HTTPS to be enabled");
-            return ImmutableList.of(new LdapRequestFilter(user.get(), password.get()));
+            return ImmutableList.of(new BasicAuthRequestFilter(user.get(), password.get()));
         }
         return ImmutableList.of();
     }
