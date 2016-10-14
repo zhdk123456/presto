@@ -66,6 +66,7 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.util.Threads.checkNotSameThreadExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -376,10 +377,10 @@ public class BenchmarkMultiJoin
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
         feed(joinContext, hashBuilderOperatorFactory2, joinContext.getBuildPages2().iterator());
         List<Page> joinOutput1 = feed(joinContext, joinOperatorFactory1, joinContext.getProbePages2().iterator());
-        return feed(joinContext, joinOperatorFactory2, joinOutput1.iterator());
-        /*OperatorFactory projection = projection();
+        //return feed(joinContext, joinOperatorFactory2, joinOutput1.iterator());
+        OperatorFactory projection = projection();
         List<Page> joinOutput2 = feed(joinContext, joinOperatorFactory2, joinOutput1.iterator());
-        return feed(joinContext, projection, joinOutput2.iterator());*/
+        return feed(joinContext, projection, joinOutput2.iterator());
     }
 
     public List<Page> baselineMultiJoin(JoinContext joinContext, List<List<Page>> buildPages)
@@ -420,7 +421,7 @@ public class BenchmarkMultiJoin
         Signature signature = new Signature(mangleOperatorName(HASH_CODE), SCALAR, BIGINT.getTypeSignature(), BIGINT.getTypeSignature());
         RowExpression mul = new CallExpression(signature, BIGINT, ImmutableList.of(new InputReferenceExpression(1, BIGINT)));
 
-        RowExpression filter = new ConstantExpression(TRUE, BOOLEAN);
+        RowExpression filter = new ConstantExpression(FALSE, BOOLEAN);
         List<RowExpression> projection = ImmutableList.of(
                 new InputReferenceExpression(0, VARCHAR),
                 new InputReferenceExpression(1, BIGINT),
@@ -471,7 +472,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    @Benchmark
+    //@Benchmark
     public List<Page> handcodedRowMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -498,7 +499,7 @@ public class BenchmarkMultiJoin
         return feed(joinContext, projection, joinOutput2.iterator());*/
     }
 
-    @Benchmark
+    //@Benchmark
     public List<Page> handcodedBigintMultiJoin(JoinContext joinContext)
     {
         HashBuilderOperatorFactory hashBuilderOperatorFactory1 = joinContext.getHashBuilderOperatorFactory(joinContext.getTypes());
@@ -538,8 +539,8 @@ public class BenchmarkMultiJoin
                 joinContext.getTypes(),
                 joinContext.getHashChannels(),
                 joinContext.getHashChannel(),
-                //Optional.of(projection()),
-                Optional.empty(),
+                Optional.of(projection()),
+                //Optional.empty(),
                 false);
 
         feed(joinContext, hashBuilderOperatorFactory1, joinContext.getBuildPages1().iterator());
