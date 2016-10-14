@@ -19,9 +19,20 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
+import com.facebook.presto.sql.planner.optimizations.joins.JoinGraph;
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.google.common.collect.ImmutableList;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.Set;
+
+import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 
 public class CrossJoinsElimination
         implements PlanOptimizer
@@ -32,6 +43,60 @@ public class CrossJoinsElimination
         if (!SystemSessionProperties.isJoinReorderingEnabled(session)) {
             return plan;
         }
+
+        List<JoinGraph> joinGraphs = JoinGraph.buildFrom(plan);
+        if (joinGraphs.size() != 1) {
+            // we support only single join graph
+            return plan;
+        }
+        JoinGraph graph = joinGraphs.get(0);
+
+        Optional<List<Integer>> joinOrder = getJoinOrder(graph);
+
         return plan;
+    }
+
+    /**
+     * Given JoinGraph determine the order of joins between graph nodes
+     * by traversing JoinGraph. Any graph traversal algorithm could be used
+     * here (like BFS or DFS), but we use PriorityQueue to preserve
+     * original JoinOrder as mush as it is possible. PriorityQueue returns
+     * next nodes to join in order of their occurrence in original Plan.
+     */
+    public static Optional<List<Integer>> getJoinOrder(JoinGraph graph)
+    {
+        ImmutableList.Builder<PlanNode> joinOrder = ImmutableList.builder();
+
+        Map<PlanNode, Integer> priorities = new HashMap<>();
+        for (int i = 0; i < graph.size(); i++) {
+            priorities.put(graph.getNode(i), i);
+        }
+
+        PriorityQueue<PlanNode> nodesToVisit = new PriorityQueue<>(
+                graph.size(),
+                (Comparator<PlanNode>) (node1, node2) -> priorities.get(node1).compareTo(priorities.get(node2)));
+        Set<PlanNode> visited = new HashSet<>();
+
+        nodesToVisit.add(graph.getNode(0));
+
+        while (!nodesToVisit.isEmpty()) {
+            PlanNode node = nodesToVisit.poll();
+            if (visited.contains(node)) {
+                continue;
+            }
+            visited.add(node);
+            joinOrder.add(node);
+            for (JoinGraph.Edge edge : graph.getEdges(node)) {
+                PlanNode neighbour = edge.getTargetNode();
+                nodesToVisit.add(neighbour);
+            }
+        }
+
+        if (visited.size() != graph.size()) {
+            // Disconnected graph - we failed to eliminate some cross join
+            // abort reordering
+            return Optional.empty();
+        }
+        return Optional.of(joinOrder.build().stream().map(priorities::get).collect(toImmutableList()));
     }
 }
