@@ -22,6 +22,7 @@ import com.facebook.presto.sql.planner.optimizations.BeginTableWrite;
 import com.facebook.presto.sql.planner.optimizations.CanonicalizeExpressions;
 import com.facebook.presto.sql.planner.optimizations.CountConstantOptimizer;
 import com.facebook.presto.sql.planner.optimizations.DesugaringOptimizer;
+import com.facebook.presto.sql.planner.optimizations.EliminateCrossJoins;
 import com.facebook.presto.sql.planner.optimizations.EmptyDeleteOptimizer;
 import com.facebook.presto.sql.planner.optimizations.EvaluateConstantApply;
 import com.facebook.presto.sql.planner.optimizations.HashGenerationOptimizer;
@@ -102,7 +103,8 @@ public class PlanOptimizers
                 new PruneIdentityProjections(), // This MUST run after PruneUnreferencedOutputs as it may introduce new redundant projections
                 new MetadataQueryOptimizer(metadata),
                 new EvaluateConstantApply(),
-                new RemoveRedundantApply());
+                new RemoveRedundantApply(),
+                new EliminateCrossJoins());
 
         if (featuresConfig.isOptimizeSingleDistinct()) {
             builder.add(new SingleDistinctOptimizer());
