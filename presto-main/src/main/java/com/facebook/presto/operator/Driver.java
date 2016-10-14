@@ -526,7 +526,9 @@ public class Driver
         if (blocked.isDone()) {
             blocked = operator.getOperatorContext().isWaitingForSystemRevocableMemory();
         }
-
+        if (blocked.isDone()) {
+            return blocked;
+        }
         return firstFinishedFuture(ImmutableList.of(blocked, operator.getOperatorContext().getSystemMemoryRevokingRequestedFuture()));
     }
 
