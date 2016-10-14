@@ -20,6 +20,7 @@ import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.facebook.presto.tpch.testing.SampledTpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
 
+import static com.facebook.presto.SystemSessionProperties.REORDER_JOINS;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
@@ -38,6 +39,7 @@ public class TestLocalQueries
         Session defaultSession = testSessionBuilder()
                 .setCatalog("local")
                 .setSchema(TINY_SCHEMA_NAME)
+                .setSystemProperties(ImmutableMap.of(REORDER_JOINS, "true"))
                 .build();
 
         LocalQueryRunner localQueryRunner = new LocalQueryRunner(defaultSession);
