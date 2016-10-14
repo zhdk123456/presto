@@ -172,7 +172,11 @@ class SubqueryPlanner
         InPredicate parametersReplaced = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(parameters, analysis), inPredicate);
         translationMap.addIntermediateMapping(inPredicate, parametersReplaced);
         SymbolReference valueList = getOnlyElement(subquery.getOutputSymbols()).toSymbolReference();
-        translationMap.addIntermediateMapping(parametersReplaced, new InPredicate(parametersReplaced.getValue(), valueList));
+        ComparisonExpression rewrittenInPredicate = new ComparisonExpression(
+                ComparisonExpression.Type.EQUAL,
+                parametersReplaced.getValue(),
+                valueList);
+        translationMap.addIntermediateMapping(parametersReplaced, rewrittenInPredicate);
 
         return new PlanBuilder(translationMap,
                 new ApplyNode(idAllocator.getNextId(),
