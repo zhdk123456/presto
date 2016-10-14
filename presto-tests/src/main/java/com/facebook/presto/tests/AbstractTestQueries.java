@@ -2683,6 +2683,14 @@ public abstract class AbstractTestQueries
     }
 
     @Test
+    public void testValuesSubqueries()
+            throws Exception
+    {
+//        assertQuery("SELECT 1 IN (VALUES 1) FROM (VALUES 3)", "VALUES (true)");
+        assertQuery("SELECT 2 IN (SELECT a + 1) FROM (VALUES 1,2,3) t(a)", "VALUES (false), (true), (false)");
+    }
+
+    @Test
     public void testJoinWithMultipleScalarSubqueryClauses()
             throws Exception
     {
