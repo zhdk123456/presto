@@ -55,14 +55,16 @@ public class EliminateCrossJoins
         }
 
         List<JoinGraph> joinGraphs = JoinGraph.buildFrom(plan);
-        if (joinGraphs.size() != 1) {
-            // we support only single join graph
-            return plan;
-        }
-        JoinGraph graph = joinGraphs.get(0);
 
-        List<Integer> joinOrder = getJoinOrder(graph);
-        return rewriteWith(new Rewriter(idAllocator, graph, joinOrder), plan);
+        for (int i = 0; i < joinGraphs.size(); i++) {
+            JoinGraph graph = joinGraphs.get(i);
+            List<Integer> joinOrder = getJoinOrder(graph);
+
+            plan = rewriteWith(new Rewriter(idAllocator, graph, joinOrder), plan);
+            joinGraphs = JoinGraph.buildFrom(plan);
+        }
+
+        return plan;
     }
 
     /**
