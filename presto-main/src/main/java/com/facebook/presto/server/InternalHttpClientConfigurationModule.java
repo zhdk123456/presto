@@ -14,16 +14,13 @@
 package com.facebook.presto.server;
 
 import com.google.inject.Binder;
-import com.google.inject.Binding;
-import com.google.inject.matcher.AbstractMatcher;
-import com.google.inject.spi.ProvisionListener;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
-import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpClientDefaultsBinder;
 
 import java.nio.file.Paths;
 
-import static com.facebook.presto.util.Types.checkType;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.http.client.HttpClientDefaultsBinder.httpClientDefaultsBinder;
 import static java.nio.file.Files.isReadable;
 
 public class InternalHttpClientConfigurationModule
@@ -33,41 +30,14 @@ public class InternalHttpClientConfigurationModule
     protected void setup(Binder binder)
     {
         InternalHttpClientConfiguration configuration = buildConfigObject(InternalHttpClientConfiguration.class);
-        binder.bindListener(new HttpClientConfigMatcher(), new ConfigurationListener(configuration));
-    }
-
-    private static class HttpClientConfigMatcher
-            extends AbstractMatcher<Binding<?>>
-    {
-        @Override
-        public boolean matches(Binding<?> binding)
-        {
-            return binding.getKey().getTypeLiteral().getRawType().equals(HttpClientConfig.class);
-        }
-    }
-
-    private static class ConfigurationListener
-            implements ProvisionListener
-    {
-        private final InternalHttpClientConfiguration configuration;
-
-        private ConfigurationListener(InternalHttpClientConfiguration configuration)
-        {
-            this.configuration = configuration;
-        }
-
-        @Override
-        public <T> void onProvision(ProvisionInvocation<T> provision)
-        {
-            HttpClientConfig config = checkType(provision.provision(), HttpClientConfig.class, "config");
-            checkState(config.getKeyStorePath() == null);
-            checkState(config.getKeyStorePassword() == null);
+        HttpClientDefaultsBinder httpClientDefaultsBinder = httpClientDefaultsBinder(binder);
+        httpClientDefaultsBinder.bindConfig(configDefaults -> {
             String keyStorePath = configuration.getKeyStorePath();
             if (keyStorePath != null) {
                 checkState(isReadable(Paths.get(keyStorePath)), "Keystore is not readable: %s", keyStorePath);
-                config.setKeyStorePath(keyStorePath);
+                configDefaults.setKeyStorePath(keyStorePath);
             }
-            config.setKeyStorePassword(configuration.getKeyStorePassword());
-        }
+            configDefaults.setKeyStorePassword(configuration.getKeyStorePassword());
+        });
     }
 }
