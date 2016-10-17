@@ -17,6 +17,7 @@ package com.facebook.presto.sql.planner.optimizations.joins;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -42,6 +43,7 @@ public class JoinGraph
 {
     private final List<PlanNode> nodes; // nodes in order of their appearance in plan
     private final Multimap<PlanNode, Edge> edges;
+    private final PlanNodeId rootId;
 
     public static List<JoinGraph> buildFrom(PlanNode plan)
     {
@@ -55,13 +57,24 @@ public class JoinGraph
 
     public JoinGraph(PlanNode node)
     {
-        this(ImmutableList.of(node), ImmutableMultimap.of());
+        this(ImmutableList.of(node), ImmutableMultimap.of(), node.getId());
     }
 
-    public JoinGraph(List<PlanNode> nodes, Multimap<PlanNode, Edge> edges)
+    public JoinGraph(List<PlanNode> nodes, Multimap<PlanNode, Edge> edges, PlanNodeId rootId)
     {
         this.nodes = nodes;
         this.edges = edges;
+        this.rootId = rootId;
+    }
+
+    public PlanNodeId getRootId()
+    {
+        return rootId;
+    }
+
+    public JoinGraph withRootId(PlanNodeId rootId)
+    {
+        return new JoinGraph(nodes, edges, rootId);
     }
 
     public boolean isEmpty()
@@ -112,7 +125,7 @@ public class JoinGraph
         return builder.toString();
     }
 
-    private JoinGraph joinWith(JoinGraph other, List<JoinNode.EquiJoinClause> joinClauses, Context context)
+    private JoinGraph joinWith(JoinGraph other, List<JoinNode.EquiJoinClause> joinClauses, Context context, PlanNodeId rootId)
     {
         for (PlanNode node : other.nodes) {
             checkState(!edges.containsKey(node), format("Node [%s] appeared in two JoinGraphs", node));
@@ -138,7 +151,7 @@ public class JoinGraph
             joinedEdges.put(right, new Edge(left, rightSymbol, leftSymbol));
         }
 
-        return new JoinGraph(joinedNodes.build(), joinedEdges.build());
+        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId);
     }
 
     private static class Builder
@@ -147,10 +160,13 @@ public class JoinGraph
         @Override
         protected JoinGraph visitPlan(PlanNode node, Context context)
         {
-            node.getSources().stream()
-                    .map(child -> child.accept(this, context))
-                    .filter(graph -> graph.size() > 1)
-                    .forEach(context::addSubGraph);
+            for (PlanNode child : node.getSources()) {
+                JoinGraph graph = child.accept(this, context);
+                if (graph.size() < 2) {
+                    continue;
+                }
+                context.addSubGraph(graph.withRootId(child.getId()));
+            }
 
             for (Symbol symbol : node.getOutputSymbols()) {
                 context.setSymbolSource(symbol, node);
@@ -169,7 +185,7 @@ public class JoinGraph
             JoinGraph left = node.getLeft().accept(this, context);
             JoinGraph right = node.getRight().accept(this, context);
 
-            return left.joinWith(right, node.getCriteria(), context);
+            return left.joinWith(right, node.getCriteria(), context, node.getId());
         }
     }
 
