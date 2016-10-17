@@ -55,17 +55,18 @@ public class CrossJoinsElimination
         }
 
         List<JoinGraph> joinGraphs = JoinGraph.buildFrom(plan);
-        if (joinGraphs.size() != 1) {
-            // we support only single join graph
-            return plan;
-        }
-        JoinGraph graph = joinGraphs.get(0);
 
-        Optional<List<Integer>> joinOrder = getJoinOrder(graph);
-        if (!joinOrder.isPresent()) {
-            return plan;
+        for (int i = 0; i < joinGraphs.size(); i++) {
+            JoinGraph graph = joinGraphs.get(i);
+            Optional<List<Integer>> joinOrder = getJoinOrder(graph);
+
+            if (joinOrder.isPresent()) {
+                plan = rewriteWith(new Rewriter(idAllocator, graph, joinOrder.get()), plan);
+                joinGraphs = JoinGraph.buildFrom(plan);
+            }
         }
-        return rewriteWith(new Rewriter(idAllocator, graph, joinOrder.get()), plan);
+
+        return plan;
     }
 
     /**

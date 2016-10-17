@@ -31,6 +31,7 @@ import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.join;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.tableScan;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
+import static java.lang.String.format;
 import static org.testng.Assert.fail;
 
 public class TestReorderJoins
@@ -76,7 +77,23 @@ public class TestReorderJoins
                                 anyTree(tableScan("lineitem")))));
     }
 
-    private void assertPlan(@Language("SQL") String sql, PlanMatchPattern pattern)
+    @Test
+    public void testEliminateCrossJoinFromTwoJoinBlocks()
+    {
+        String joinToReorder = "(SELECT l.suppkey suppkey FROM part p, orders o, lineitem l WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey)";
+        assertPlan(format("SELECT * FROM (SELECT max(suppkey) suppkey FROM (%s)) subquery, supplier s WHERE subquery.suppkey = s.suppkey", joinToReorder),
+                anyTree(
+                        join(INNER, ImmutableList.of(aliasPair("max", "suppkey")),
+                                anyTree(join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
+                                        anyTree(
+                                                join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
+                                                        anyTree(tableScan("part")),
+                                                        anyTree(tableScan("lineitem")))),
+                                        anyTree(tableScan("orders")))),
+                                anyTree())));
+    }
+
+    private void assertPlan(String sql, PlanMatchPattern pattern)
     {
         //Plan actualPlan = plan(sql);
         queryRunner.inTransaction(transactionSession -> {
