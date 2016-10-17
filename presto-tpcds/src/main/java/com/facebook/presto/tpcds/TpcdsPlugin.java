@@ -15,14 +15,15 @@ package com.facebook.presto.tpcds;
 
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.connector.ConnectorFactory;
+import com.facebook.presto.spi.connector.ConnectorFactoryContext;
 import com.google.common.collect.ImmutableList;
 
 public class TpcdsPlugin
         implements Plugin
 {
     @Override
-    public Iterable<ConnectorFactory> getConnectorFactories()
+    public Iterable<ConnectorFactory> getConnectorFactories(ConnectorFactoryContext context)
     {
-        return ImmutableList.of(new TpcdsConnectorFactory());
+        return ImmutableList.of(new TpcdsConnectorFactory(context.getNodeManager()));
     }
 }

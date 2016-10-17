@@ -37,12 +37,14 @@ public class TpcdsSplitManager
     private final NodeManager nodeManager;
     private final int splitsPerNode;
     private final boolean noSexism;
+    private final String connectorId;
 
-    public TpcdsSplitManager(NodeManager nodeManager, int splitsPerNode, boolean noSexism)
+    public TpcdsSplitManager(String connectorId, NodeManager nodeManager, int splitsPerNode, boolean noSexism)
     {
         requireNonNull(nodeManager);
         checkArgument(splitsPerNode > 0, "splitsPerNode must be at least 1");
 
+        this.connectorId = connectorId;
         this.nodeManager = nodeManager;
         this.splitsPerNode = splitsPerNode;
         this.noSexism = noSexism;
@@ -53,7 +55,7 @@ public class TpcdsSplitManager
     {
         TpcdsTableHandle tableHandle = checkType(layout, TpcdsTableLayoutHandle.class, "layout").getTable();
 
-        Set<Node> nodes = nodeManager.getRequiredWorkerNodes();
+        Set<Node> nodes = nodeManager.getActiveDatasourceNodes(connectorId);
         checkState(!nodes.isEmpty(), "No TPCDS nodes available");
 
         int totalParts = nodes.size() * splitsPerNode;

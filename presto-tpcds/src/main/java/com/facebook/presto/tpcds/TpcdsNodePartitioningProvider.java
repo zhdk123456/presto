@@ -40,12 +40,14 @@ public class TpcdsNodePartitioningProvider
 {
     private final NodeManager nodeManager;
     private final int splitsPerNode;
+    private final String connectorId;
 
-    public TpcdsNodePartitioningProvider(NodeManager nodeManager, int splitsPerNode)
+    public TpcdsNodePartitioningProvider(String connectorId, NodeManager nodeManager, int splitsPerNode)
     {
         requireNonNull(nodeManager, "nodeManager is null");
         checkArgument(splitsPerNode > 0, "splitsPerNode must be at least 1");
 
+        this.connectorId = connectorId;
         this.nodeManager = nodeManager;
         this.splitsPerNode = splitsPerNode;
     }
@@ -53,7 +55,7 @@ public class TpcdsNodePartitioningProvider
     @Override
     public Map<Integer, Node> getBucketToNode(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorPartitioningHandle partitioningHandle)
     {
-        Set<Node> nodes = nodeManager.getRequiredWorkerNodes();
+        Set<Node> nodes = nodeManager.getActiveDatasourceNodes(connectorId);
         checkState(!nodes.isEmpty(), "No TPCDS nodes available");
 
         // Split the data using split and skew by the number of nodes available.

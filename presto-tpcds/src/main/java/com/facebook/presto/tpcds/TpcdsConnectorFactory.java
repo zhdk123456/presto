@@ -31,20 +31,24 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
+import static java.util.Objects.requireNonNull;
 
 public class TpcdsConnectorFactory
         implements ConnectorFactory
 {
     private final int defaultSplitsPerNode;
+    private final NodeManager nodeManager;
 
-    public TpcdsConnectorFactory()
+    public TpcdsConnectorFactory(NodeManager nodeManager)
     {
-        this(Runtime.getRuntime().availableProcessors());
+        this(Runtime.getRuntime().availableProcessors(), nodeManager);
     }
 
-    public TpcdsConnectorFactory(int defaultSplitsPerNode)
+    public TpcdsConnectorFactory(int defaultSplitsPerNode, NodeManager nodeManager)
     {
         checkState(defaultSplitsPerNode > 0, "default splits per node is negative");
+
+        this.nodeManager = requireNonNull(nodeManager);
         this.defaultSplitsPerNode = defaultSplitsPerNode;
     }
 
@@ -64,7 +68,6 @@ public class TpcdsConnectorFactory
     public Connector create(String connectorId, Map<String, String> config, ConnectorContext context)
     {
         int splitsPerNode = getSplitsPerNode(config);
-        NodeManager nodeManager = context.getNodeManager();
         return new Connector()
         {
             @Override
@@ -82,7 +85,7 @@ public class TpcdsConnectorFactory
             @Override
             public ConnectorSplitManager getSplitManager()
             {
-                return new TpcdsSplitManager(nodeManager, splitsPerNode, isWithNoSexism(config));
+                return new TpcdsSplitManager(connectorId, nodeManager, splitsPerNode, isWithNoSexism(config));
             }
 
             @Override
@@ -94,7 +97,7 @@ public class TpcdsConnectorFactory
             @Override
             public ConnectorNodePartitioningProvider getNodePartitioningProvider()
             {
-                return new TpcdsNodePartitioningProvider(nodeManager, splitsPerNode);
+                return new TpcdsNodePartitioningProvider(connectorId, nodeManager, splitsPerNode);
             }
         };
     }

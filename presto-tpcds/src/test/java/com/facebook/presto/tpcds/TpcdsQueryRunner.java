@@ -14,7 +14,6 @@
 package com.facebook.presto.tpcds;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.tests.DistributedQueryRunner;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.log.Logger;
@@ -49,7 +48,7 @@ public final class TpcdsQueryRunner
                 .setSchema("sf1")
                 .build();
 
-        DistributedQueryRunner queryRunner = new DistributedQueryRunner(session, 4, extraProperties, coordinatorProperties, new SqlParserOptions());
+        DistributedQueryRunner queryRunner = new DistributedQueryRunner(session, 4, extraProperties, coordinatorProperties);
 
         try {
             queryRunner.installPlugin(new TpcdsPlugin());
