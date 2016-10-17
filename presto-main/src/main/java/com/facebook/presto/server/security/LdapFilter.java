@@ -18,15 +18,19 @@ import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
+import io.airlift.http.client.HttpStatus;
 import io.airlift.log.Logger;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import javax.naming.AuthenticationException;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -36,21 +40,27 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotNull;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import static com.facebook.presto.server.security.LdapServerConfig.ServerType.GENERIC;
-import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
+import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
+import static io.airlift.http.client.HttpStatus.UNAUTHORIZED;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -59,38 +69,52 @@ import static javax.naming.Context.PROVIDER_URL;
 import static javax.naming.Context.SECURITY_AUTHENTICATION;
 import static javax.naming.Context.SECURITY_CREDENTIALS;
 import static javax.naming.Context.SECURITY_PRINCIPAL;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 
 public class LdapFilter
         implements Filter
 {
     private static final Logger log = Logger.get(LdapFilter.class);
-    private static final String AUTHENTICATION_TYPE = "Basic";
+
+    private static final String BASIC_AUTHENTICATION_PREFIX = "Basic ";
     private static final String LDAP_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
 
     private final LdapServerConfig serverConfig;
     private final GenericLdapBinder genericLdapBinder;
-    private final long ldapCacheTtl;
+    private final Map<String, String> basicEnvironment;
+    private final LoadingCache<Credentials, Principal> authenticationCache;
 
     @Inject
     public LdapFilter(LdapServerConfig serverConfig, GenericLdapBinder genericLdapBinder)
     {
         this.serverConfig = requireNonNull(serverConfig, "serverConfig is null");
         this.genericLdapBinder = requireNonNull(genericLdapBinder, "genericLdapBinder is null");
-        this.ldapCacheTtl = requireNonNull(serverConfig.getLdapCacheTtl(), "ldapCacheTtl is null").toMillis();
+        ImmutableMap<String, String> environment = ImmutableMap.of(
+                INITIAL_CONTEXT_FACTORY, LDAP_CONTEXT_FACTORY,
+                PROVIDER_URL, serverConfig.getLdapUrl());
+        checkEnvironment(environment);
+        this.basicEnvironment = environment;
+        this.authenticationCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(serverConfig.getLdapCacheTtl().toMillis(), MILLISECONDS)
+                .build(new CacheLoader<Credentials, Principal>()
+                {
+                    @Override
+                    public Principal load(@Nonnull Credentials key)
+                            throws AuthenticationException
+                    {
+                        return authenticate(key);
+                    }
+                });
+    }
+
+    private static void checkEnvironment(Map<String, String> environment)
+    {
         try {
-            authenticate(getBasicEnvironment());
+            InitialDirContext authenticate = createDirContext(environment);
+            closeContext(authenticate);
         }
         catch (NamingException e) {
             throw Throwables.propagate(e);
         }
-    }
-
-    private InitialDirContext authenticate(Hashtable<String, String> environment)
-            throws NamingException
-    {
-        return new InitialDirContext(environment);
     }
 
     @Override
@@ -106,153 +130,178 @@ public class LdapFilter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header == null) {
-            // request for user/password for LDAP authentication
-            sendChallenge(response, SC_UNAUTHORIZED, null);
-            return;
-        }
-
-        List<String> parts = Splitter.on(WHITESPACE).splitToList(header);
-        if (parts.size() != 2) {
-            sendChallenge(response, SC_BAD_REQUEST, "Invalid value for authorization header");
-            return;
-        }
-
-        String authenticationType = parts.get(0);
-        if (!authenticationType.equalsIgnoreCase(AUTHENTICATION_TYPE)) {
-            sendChallenge(response, SC_BAD_REQUEST, format("Incorrect authentication type (expected %s): %s", AUTHENTICATION_TYPE, authenticationType));
-            return;
-        }
-
-        String[] credentials = new String(Base64.getDecoder().decode(parts.get(1))).split(":", 2);
-        if (credentials.length != 2) {
-            sendChallenge(response, SC_BAD_REQUEST, "Username/password missing in the request header");
-            return;
-        }
-
-        DirContext context = null;
-        String user = credentials[0];
-
         try {
-            String password = credentials[1];
-            if (user.isEmpty() || password.isEmpty()) {
-                throw new AuthenticationException("Username or password is empty");
-            }
-
-            Hashtable<String, String> environment = getBasicEnvironment();
-            String principal = genericLdapBinder.getUserBindSearchPattern().replaceAll("\\$\\{USER\\}", user);
-
-            environment.put(SECURITY_AUTHENTICATION, "simple");
-            environment.put(SECURITY_PRINCIPAL, principal);
-            environment.put(SECURITY_CREDENTIALS, password);
-
-            CacheLoader<Hashtable<String, String>, DirContext> loader = new CacheLoader<Hashtable<String, String>, DirContext>()
-            {
-                @Override
-                public DirContext load(Hashtable<String, String> environment)
-                        throws NamingException
-                {
-                    return authenticate(environment);
-                }
-            };
-
-            LoadingCache authenticationCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
-            try {
-                context = (DirContext) authenticationCache.get(environment);
-            }
-            catch (ExecutionException e) {
-                Throwable throwable = e.getCause();
-                if (throwable instanceof AuthenticationException) {
-                    throw new AuthenticationException(throwable.getMessage());
-                }
-                else {
-                    throw Throwables.propagate(e);
-                }
-            }
-
-            log.debug("Authentication successful for user %s.", user);
-
-            if (genericLdapBinder.getGroupAuthorizationSearchPattern().isPresent()) {
-                checkForGroupMembership(genericLdapBinder.getGroupAuthorizationSearchPattern().get(), user, context);
-            }
-
+            String header = request.getHeader(AUTHORIZATION);
+            Credentials credentials = getCredentials(header);
+            Principal principal = getPrincipal(credentials);
             // ldap authentication ok, continue
             nextFilter.doFilter(new HttpServletRequestWrapper(request)
             {
                 @Override
                 public Principal getUserPrincipal()
                 {
-                    return new LdapPrincipal(user);
+                    return principal;
                 }
             }, servletResponse);
         }
         catch (AuthenticationException e) {
-            // log the failure since the exception goes directly to the client
-            log.debug("Authentication failed for user %s. Invalid credentials: %s", user, e.getMessage());
-            throw new RuntimeException("Invalid credentials: " + e.getMessage());
-        }
-        finally {
-            try {
-                if (context != null) {
-                    context.close();
-                }
-            }
-            catch (NamingException ignored) {
-            }
+            log.debug(e, "LDAP authentication failed");
+            processAuthenticationException(e, response);
         }
     }
 
-    private void checkForGroupMembership(String searchFilterPattern, String user, DirContext context)
-    {
-        checkState(serverConfig.getUserBaseDistinguishedName() != null, "Base distinguished name (DN) for user %s is null", user);
-
-        try {
-            String searchFilter = searchFilterPattern.replaceAll("\\$\\{USER\\}", user);
-            GroupAuthorizationFilter groupFilter = new GroupAuthorizationFilter(serverConfig.getUserBaseDistinguishedName(), searchFilter);
-
-            CacheLoader<GroupAuthorizationFilter, Boolean> loader = new CacheLoader<GroupAuthorizationFilter, Boolean>()
-            {
-                @Override
-                public Boolean load(@NotNull GroupAuthorizationFilter groupFilter)
-                        throws NamingException
-                {
-                    return groupFilter.authorize(context);
-                }
-            };
-            LoadingCache groupFilterCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
-
-            String groupNameIfPresent = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
-            if (Boolean.FALSE.equals(groupFilterCache.get(groupFilter))) {
-                String errorMessage = format("User %s not a member of the group %s", user, groupNameIfPresent);
-                log.debug("Authorization failed for user. " + errorMessage);
-                throw new RuntimeException("Unauthorized user: " + errorMessage);
-            }
-            log.debug("Authorization succeeded for user %s in group %s", user, groupNameIfPresent);
-        }
-        catch (ExecutionException e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
-    private Hashtable<String, String> getBasicEnvironment()
-    {
-        Hashtable<String, String> environment = new Hashtable<>();
-        environment.put(INITIAL_CONTEXT_FACTORY, LDAP_CONTEXT_FACTORY);
-        environment.put(PROVIDER_URL, serverConfig.getLdapUrl());
-        return environment;
-    }
-
-    private static void sendChallenge(HttpServletResponse response, int status, String errorMessage)
+    private static void processAuthenticationException(AuthenticationException e, HttpServletResponse response)
             throws IOException
     {
-        if (errorMessage != null) {
-            response.sendError(status, errorMessage);
+        if (e.getStatus() == UNAUTHORIZED) {
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"presto\"");
         }
-        else {
-            response.setStatus(status);
+        response.sendError(e.getStatus().code(), e.getMessage());
+    }
+
+    private static Credentials getCredentials(String header)
+            throws AuthenticationException
+    {
+        if (header == null) {
+            throw new AuthenticationException(UNAUTHORIZED, "Unauthorized");
         }
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, format("%s realm=\"presto\"", AUTHENTICATION_TYPE));
+        if (!header.startsWith(BASIC_AUTHENTICATION_PREFIX)) {
+            throw new AuthenticationException(BAD_REQUEST, "Basic authentication is expected");
+        }
+        String base64EncodedCredentials = header.substring(BASIC_AUTHENTICATION_PREFIX.length());
+        String credentials = decodeCredentials(base64EncodedCredentials);
+        List<String> parts = Splitter.on(':').limit(2).splitToList(credentials);
+        if (parts.size() != 2 || parts.stream().anyMatch(String::isEmpty)) {
+            throw new AuthenticationException(BAD_REQUEST, "Invalid credentials: " + credentials);
+        }
+        return new Credentials(parts.get(0), parts.get(1));
+    }
+
+    private static String decodeCredentials(String base64EncodedCredentials)
+            throws AuthenticationException
+    {
+        byte[] bytes;
+        try {
+            bytes = Base64.getDecoder().decode(base64EncodedCredentials);
+        }
+        catch (IllegalArgumentException e) {
+            throw new AuthenticationException(BAD_REQUEST, "Invalid base64 string: " + base64EncodedCredentials);
+        }
+        return new String(bytes, UTF_8);
+    }
+
+    private Principal getPrincipal(Credentials credentials)
+            throws AuthenticationException
+    {
+        try {
+            return authenticationCache.get(credentials);
+        }
+        catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            propagateIfInstanceOf(cause, AuthenticationException.class);
+            throw Throwables.propagate(cause);
+        }
+    }
+
+    private Principal authenticate(Credentials credentials)
+            throws AuthenticationException
+    {
+        Map<String, String> environment = createEnvironment(credentials);
+        String user = credentials.getUser();
+        InitialDirContext context = null;
+        try {
+            context = createDirContext(environment);
+            checkForGroupMembership(user, context);
+            log.debug("Authentication successful for user %s.", user);
+            return new LdapPrincipal(user);
+        }
+        catch (javax.naming.AuthenticationException e) {
+            log.debug("Authentication failed for user %s. Invalid credentials: %s", user, e.getMessage());
+            throw new AuthenticationException(UNAUTHORIZED, "Invalid credentials", e);
+        }
+        catch (NamingException e) {
+            throw new AuthenticationException(INTERNAL_SERVER_ERROR, "Authentication failed", e);
+        }
+        finally {
+            closeContext(context);
+        }
+    }
+
+    private Map<String, String> createEnvironment(Credentials credentials)
+    {
+        ImmutableMap.Builder<String, String> environment = ImmutableMap.builder();
+        environment.putAll(basicEnvironment);
+        environment.put(SECURITY_AUTHENTICATION, "simple");
+        environment.put(SECURITY_PRINCIPAL, createPrincipal(credentials.getUser()));
+        environment.put(SECURITY_CREDENTIALS, credentials.getPassword());
+        return environment.build();
+    }
+
+    private String createPrincipal(String user)
+    {
+        return genericLdapBinder.getUserBindSearchPattern().replaceAll("\\$\\{USER\\}", user);
+    }
+
+    private static InitialDirContext createDirContext(Map<String, String> environment)
+            throws NamingException
+    {
+        return new InitialDirContext(new Hashtable<>(environment));
+    }
+
+    private void checkForGroupMembership(String user, DirContext context)
+            throws AuthenticationException
+    {
+        Optional<String> pattern = genericLdapBinder.getGroupAuthorizationSearchPattern();
+        if (!pattern.isPresent()) {
+            return;
+        }
+
+        checkState(serverConfig.getUserBaseDistinguishedName() != null, "Base distinguished name (DN) for user %s is null", user);
+
+        String searchFilter = pattern.get().replaceAll("\\$\\{USER\\}", user);
+        String userBaseDistinguishedName = requireNonNull(serverConfig.getUserBaseDistinguishedName(), "userBaseDistinguishedName is null");
+        String groupName = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
+
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+
+        boolean authorized;
+        NamingEnumeration<SearchResult> search = null;
+        try {
+            search = context.search(userBaseDistinguishedName, searchFilter, searchControls);
+            authorized = search.hasMoreElements();
+        }
+        catch (NamingException e) {
+            throw new AuthenticationException(INTERNAL_SERVER_ERROR, "Authentication failed", e);
+        }
+        finally {
+            if (search != null) {
+                try {
+                    search.close();
+                }
+                catch (NamingException ignore) {
+                }
+            }
+        }
+
+        if (!authorized) {
+            String message = format("Unauthorized user: User %s not a member of the group %s", user, groupName);
+            log.debug("Authorization failed for user. " + message);
+            throw new AuthenticationException(UNAUTHORIZED, message);
+        }
+
+        log.debug("Authorization succeeded for user %s in group %s", user, groupName);
+    }
+
+    private static void closeContext(InitialDirContext context)
+    {
+        if (context != null) {
+            try {
+                context.close();
+            }
+            catch (NamingException ignore) {
+            }
+        }
     }
 
     @Override
@@ -266,7 +315,60 @@ public class LdapFilter
     {
     }
 
-    private static final class LdapPrincipal
+    private static class Credentials
+    {
+        private final String user;
+        private final String password;
+
+        private Credentials(String user, String password)
+        {
+            this.user = requireNonNull(user);
+            this.password = requireNonNull(password);
+        }
+
+        public String getUser()
+        {
+            return user;
+        }
+
+        public String getPassword()
+        {
+            return password;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            Credentials that = (Credentials) o;
+
+            return Objects.equals(this.user, that.user) &&
+                    Objects.equals(this.password, that.password);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(user, password);
+        }
+
+        @Override
+        public String toString()
+        {
+            return toStringHelper(this)
+                    .add("user", user)
+                    .add("password", password)
+                    .toString();
+        }
+    }
+
+    private static class LdapPrincipal
             implements Principal
     {
         private final String name;
@@ -308,53 +410,26 @@ public class LdapFilter
         }
     }
 
-    private final class GroupAuthorizationFilter
+    private static class AuthenticationException
+            extends Exception
     {
-        private final String userBaseDistinguishedName;
-        private final String searchFilter;
+        private final HttpStatus status;
 
-        public GroupAuthorizationFilter(String userBaseDistinguishedName, String searchFilter)
+        private AuthenticationException(HttpStatus status, String message)
         {
-            this.userBaseDistinguishedName = requireNonNull(userBaseDistinguishedName, "userBaseDistinguishedName is null");
-            this.searchFilter = requireNonNull(searchFilter, "searchFilter is null");
+            this(status, message, null);
         }
 
-        @Override
-        public boolean equals(Object o)
+        private AuthenticationException(HttpStatus status, String message, Throwable cause)
         {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            GroupAuthorizationFilter that = (GroupAuthorizationFilter) o;
-            return Objects.equals(userBaseDistinguishedName, that.userBaseDistinguishedName)
-                    && Objects.equals(searchFilter, that.searchFilter);
+            super(message, cause);
+            requireNonNull(message, "message is null");
+            this.status = requireNonNull(status, "status is null");
         }
 
-        @Override
-        public int hashCode()
+        public HttpStatus getStatus()
         {
-            return Objects.hash(this.userBaseDistinguishedName, this.searchFilter);
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("userBaseDistinguishedName", userBaseDistinguishedName)
-                    .add("searchFilter", searchFilter)
-                    .toString();
-        }
-
-        public boolean authorize(DirContext context)
-                throws NamingException
-        {
-            SearchControls searchControls = new SearchControls();
-            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-            return context.search(userBaseDistinguishedName, searchFilter, searchControls).hasMoreElements();
+            return status;
         }
     }
 }
