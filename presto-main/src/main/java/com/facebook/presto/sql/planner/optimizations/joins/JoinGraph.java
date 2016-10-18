@@ -20,6 +20,7 @@ import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
+import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -30,7 +31,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static com.facebook.presto.sql.planner.optimizations.PruneIdentityProjections.isIdentityProjection;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
@@ -43,6 +46,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class JoinGraph
 {
+    private final Optional<Map<Symbol, Expression>> assignments;
     private final List<Expression> filters;
     private final List<PlanNode> nodes; // nodes in order of they appearance in plan
     private final Multimap<PlanNode, Edge> edges;
@@ -60,15 +64,31 @@ public class JoinGraph
 
     public JoinGraph(PlanNode node)
     {
-        this(ImmutableList.of(node), ImmutableMultimap.of(), node.getId(), ImmutableList.of());
+        this(ImmutableList.of(node), ImmutableMultimap.of(), node.getId(), ImmutableList.of(), Optional.empty());
     }
 
-    public JoinGraph(List<PlanNode> nodes, Multimap<PlanNode, Edge> edges, PlanNodeId rootId, List<Expression> filters)
+    public JoinGraph(
+            List<PlanNode> nodes,
+            Multimap<PlanNode, Edge> edges,
+            PlanNodeId rootId,
+            List<Expression> filters,
+            Optional<Map<Symbol, Expression>> assignments)
     {
         this.nodes = nodes;
         this.edges = edges;
         this.rootId = rootId;
         this.filters = filters;
+        this.assignments = assignments;
+    }
+
+    public JoinGraph withAssignments(Map<Symbol, Expression> assignments)
+    {
+        return new JoinGraph(nodes, edges, rootId, filters, Optional.of(assignments));
+    }
+
+    public Optional<Map<Symbol, Expression>> getAssignments()
+    {
+        return assignments;
     }
 
     public JoinGraph withFilter(Expression expression)
@@ -77,7 +97,7 @@ public class JoinGraph
         filters.addAll(this.filters);
         filters.add(expression);
 
-        return new JoinGraph(nodes, edges, rootId, filters.build());
+        return new JoinGraph(nodes, edges, rootId, filters.build(), assignments);
     }
 
     public List<Expression> getFilters()
@@ -92,7 +112,7 @@ public class JoinGraph
 
     public JoinGraph withRootId(PlanNodeId rootId)
     {
-        return new JoinGraph(nodes, edges, rootId, filters);
+        return new JoinGraph(nodes, edges, rootId, filters, assignments);
     }
 
     public boolean isEmpty()
@@ -165,7 +185,7 @@ public class JoinGraph
             joinedEdges.put(right, new Edge(left, symbol2, symbol1));
         }
 
-        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId, other.filters);
+        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId, other.filters, Optional.empty());
     }
 
     private static class Builder
@@ -212,6 +232,16 @@ public class JoinGraph
                 return graph.withFilter(node.getFilter().get());
             }
             return graph;
+        }
+
+        @Override
+        public JoinGraph visitProject(ProjectNode node, Context context)
+        {
+            if (isIdentityProjection(node)) {
+                JoinGraph graph = node.getSource().accept(this, context);
+                return graph.withAssignments(node.getAssignments());
+            }
+            return visitPlan(node, context);
         }
     }
 
