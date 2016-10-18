@@ -103,7 +103,7 @@ public class HashAggregationOperator
                     new SpillerFactory()
                     {
                         @Override
-                        public Spiller create(List<Type> types)
+                        public Spiller create(List<Type> types, AbstractOperatorSpillContext operatorSpillContext)
                         {
                             throw new UnsupportedOperationException();
                         }

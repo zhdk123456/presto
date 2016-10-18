@@ -551,7 +551,7 @@ public class TestHashAggregationOperator
             extends SpillerFactoryWithStats
     {
         @Override
-        public Spiller create(List<Type> types)
+        public Spiller create(List<Type> types, AbstractOperatorSpillContext operatorSpillContext)
         {
             return new Spiller()
             {
@@ -582,7 +582,7 @@ public class TestHashAggregationOperator
             extends SpillerFactoryWithStats
     {
         @Override
-        public Spiller create(List<Type> types)
+        public Spiller create(List<Type> types, AbstractOperatorSpillContext operatorSpillContext)
         {
             return new Spiller() {
                 @Override
