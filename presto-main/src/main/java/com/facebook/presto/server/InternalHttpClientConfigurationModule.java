@@ -15,10 +15,12 @@ package com.facebook.presto.server;
 
 import com.google.inject.Binder;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.airlift.http.client.BasicAuthenticationFilter;
 import io.airlift.http.client.HttpClientDefaultsBinder;
 
 import java.nio.file.Paths;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.http.client.HttpClientDefaultsBinder.httpClientDefaultsBinder;
 import static java.nio.file.Files.isReadable;
@@ -39,5 +41,12 @@ public class InternalHttpClientConfigurationModule
             }
             configDefaults.setKeyStorePassword(configuration.getKeyStorePassword());
         });
+
+        String ldapUser = configuration.getLdapUser();
+        if (ldapUser != null) {
+            String ldapPassword = configuration.getLdapPassword();
+            checkArgument(ldapPassword != null, "ldap password must be set");
+            httpClientDefaultsBinder.addFilterBinding().toInstance(new BasicAuthenticationFilter(ldapUser, ldapPassword));
+        }
     }
 }
