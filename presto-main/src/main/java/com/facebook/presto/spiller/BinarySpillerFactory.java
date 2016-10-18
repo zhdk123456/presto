@@ -70,6 +70,6 @@ public class BinarySpillerFactory
     @Override
     public Spiller create(List<Type> types, AbstractOperatorSpillContext operatorSpillContext)
     {
-        return new BinaryFileSpiller(serde.createPagesSerde(), executor, spillPath, totalSpilledBytes);
+        return new BinaryFileSpiller(serde.createPagesSerde(), executor, spillPath, totalSpilledBytes, operatorSpillContext);
     }
 }
