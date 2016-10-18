@@ -15,6 +15,7 @@ package com.facebook.presto.spiller;
 
 import com.facebook.presto.execution.buffer.PagesSerde;
 import com.facebook.presto.execution.buffer.PagesSerdeUtil;
+import com.facebook.presto.operator.AbstractOperatorSpillContext;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
 import com.google.common.io.Closer;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.facebook.presto.execution.buffer.PagesSerdeUtil.writePage;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkState;
@@ -57,8 +59,10 @@ public class BinaryFileSpiller
     private final Closer closer = Closer.create();
     private final PagesSerde serde;
     private final AtomicLong totalSpilledDataSize;
+    private final AbstractOperatorSpillContext operatorSpillContext;
 
     private final ListeningExecutorService executor;
+    private long spillerDataSize = 0L; // TODO: is there ever concurrent access to Spillers?
 
     private int spillsCount;
     private CompletableFuture<?> previousSpill = CompletableFuture.completedFuture(null);
@@ -67,11 +71,13 @@ public class BinaryFileSpiller
             PagesSerde serde,
             ListeningExecutorService executor,
             Path spillPath,
-            AtomicLong totalSpilledDataSize)
+            AtomicLong totalSpilledDataSize,
+            AbstractOperatorSpillContext operatorSpillContext)
     {
         this.serde = requireNonNull(serde, "serde is null");
         this.executor = requireNonNull(executor, "executor is null");
         this.totalSpilledDataSize = requireNonNull(totalSpilledDataSize, "totalSpilledDataSize is null");
+        this.operatorSpillContext = operatorSpillContext;
         try {
             this.targetDirectory = Files.createTempDirectory(spillPath, "presto-spill");
         }
@@ -94,7 +100,14 @@ public class BinaryFileSpiller
     private void writePages(Iterator<Page> pageIterator, Path spillPath)
     {
         try (SliceOutput output = new OutputStreamSliceOutput(new BufferedOutputStream(new FileOutputStream(spillPath.toFile())))) {
-            totalSpilledDataSize.addAndGet(PagesSerdeUtil.writePages(serde, output, pageIterator));
+            while (pageIterator.hasNext()) {
+                Page page = pageIterator.next();
+                long pageSize = page.getSizeInBytes();
+                operatorSpillContext.updateBytes(pageSize);
+                writePage(serde, output, page);
+                spillerDataSize += pageSize;
+                totalSpilledDataSize.addAndGet(pageSize);
+            }
         }
         catch (RuntimeIOException | IOException e) {
             throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to spill pages", e);
@@ -137,6 +150,10 @@ public class BinaryFileSpiller
                     GENERIC_INTERNAL_ERROR,
                     String.format("Failed to delete directory [%s]", targetDirectory),
                     e);
+        }
+        finally {
+            operatorSpillContext.updateBytes(-spillerDataSize);
+            spillerDataSize = 0;
         }
     }
 
