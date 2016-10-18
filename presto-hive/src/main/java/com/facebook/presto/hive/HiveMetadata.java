@@ -55,6 +55,7 @@ import com.facebook.presto.spi.statistics.TableStatistics;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -355,8 +356,9 @@ public class HiveMetadata
         }
         HiveTableLayoutHandle layout = (HiveTableLayoutHandle) tableLayouts.get(0).getTableLayout().getHandle();
         List<HivePartition> hivePartitions = layout.getPartitions().orElse(ImmutableList.of());
-        List<Long> knownPartitionRowCounts = hivePartitions.stream()
-                .map(this::getPartitionStatistics)
+
+        Map<String, PartitionStatistics> statisticsByPartitionName = getPartitionsStatistics(hivePartitions);
+        List<Long> knownPartitionRowCounts = statisticsByPartitionName.values().stream()
                 .map(PartitionStatistics::getRowCount)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -375,21 +377,56 @@ public class HiveMetadata
         return tableStatistics;
     }
 
-    private PartitionStatistics getPartitionStatistics(HivePartition hivePartition)
+    private Map<String, PartitionStatistics> getPartitionsStatistics(List<HivePartition> hivePartitions)
     {
-        String databaseName = hivePartition.getTableName().getSchemaName();
-        String tableName = hivePartition.getTableName().getTableName();
-        String partitionId = hivePartition.getPartitionId();
-        if (partitionId.equals(HivePartition.UNPARTITIONED_ID)) {
-            Table table = metastore.getTable(databaseName, tableName)
-                    .orElseThrow(() -> new IllegalArgumentException(format("Could not get metadata for table %s.%s", databaseName, tableName)));
-            return readStatisticsFromParameters(table.getParameters());
+        if (hivePartitions.isEmpty()) {
+            return ImmutableMap.of();
+        }
+        boolean unpartitioned = hivePartitions.stream().anyMatch(partition -> partition.getPartitionId().equals(HivePartition.UNPARTITIONED_ID));
+        if (unpartitioned) {
+            checkArgument(hivePartitions.size() == 1, "expected only one hive partition");
+        }
+        SchemaTableName tableName = getTableName(hivePartitions);
+
+        if (unpartitioned) {
+            return ImmutableMap.of(HivePartition.UNPARTITIONED_ID, getUnpartitionedStatistics(tableName));
         }
         else {
-            Partition partition = metastore.getPartition(databaseName, tableName, toPartitionValues(partitionId))
-                    .orElseThrow(() -> new IllegalArgumentException(format("Could not get metadata for partition %s.%s.%s", databaseName, tableName, partitionId)));
-            return readStatisticsFromParameters(partition.getParameters());
+            return getPartitionedStatistics(tableName, hivePartitions);
         }
+    }
+
+    private SchemaTableName getTableName(List<HivePartition> hivePartitions)
+    {
+        Set<SchemaTableName> tableNames = hivePartitions.stream().map(HivePartition::getTableName).collect(toSet());
+        Preconditions.checkArgument(tableNames.size() == 1, "all hive partitions must have same table name; got %s", tableNames);
+        return Iterables.getOnlyElement(tableNames);
+    }
+
+    private PartitionStatistics getUnpartitionedStatistics(SchemaTableName schemaTableName)
+    {
+        String databaseName = schemaTableName.getSchemaName();
+        String tableName = schemaTableName.getTableName();
+        Table table = metastore.getTable(databaseName, tableName)
+                .orElseThrow(() -> new IllegalArgumentException(format("Could not get metadata for table %s.%s", databaseName, tableName)));
+
+        return readStatisticsFromParameters(table.getParameters());
+    }
+
+    private Map<String, PartitionStatistics> getPartitionedStatistics(SchemaTableName schemaTableName, List<HivePartition> hivePartitions)
+    {
+        String databaseName = schemaTableName.getSchemaName();
+        String tableName = schemaTableName.getTableName();
+
+        ImmutableMap.Builder<String, PartitionStatistics> resultMap = ImmutableMap.builder();
+        for (HivePartition hivePartition : hivePartitions) {
+            String partitionId = hivePartition.getPartitionId();
+            Partition partition = metastore
+                    .getPartition(databaseName, tableName, toPartitionValues(partitionId))
+                    .orElseThrow(() -> new IllegalArgumentException(format("Could not get metadata for partition %s.%s.%s", databaseName, tableName, partitionId)));
+            resultMap.put(partitionId, readStatisticsFromParameters(partition.getParameters()));
+        }
+        return resultMap.build();
     }
 
     private PartitionStatistics readStatisticsFromParameters(Map<String, String> parameters)
