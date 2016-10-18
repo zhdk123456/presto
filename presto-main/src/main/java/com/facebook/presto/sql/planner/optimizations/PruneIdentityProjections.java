@@ -48,6 +48,18 @@ public class PruneIdentityProjections
         return SimplePlanRewriter.rewriteWith(new Rewriter(), plan);
     }
 
+    public static boolean isIdentityProjection(ProjectNode node)
+    {
+        for (Map.Entry<Symbol, Expression> entry : node.getAssignments().entrySet()) {
+            Expression expression = entry.getValue();
+            Symbol symbol = entry.getKey();
+            if (!(expression instanceof SymbolReference && ((SymbolReference) expression).getName().equals(symbol.getName()))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static class Rewriter
             extends SimplePlanRewriter<Void>
     {
@@ -61,17 +73,7 @@ public class PruneIdentityProjections
                 return replaceChildren(node, ImmutableList.of(source));
             }
 
-            boolean canElide = true;
-            for (Map.Entry<Symbol, Expression> entry : node.getAssignments().entrySet()) {
-                Expression expression = entry.getValue();
-                Symbol symbol = entry.getKey();
-                if (!(expression instanceof SymbolReference && ((SymbolReference) expression).getName().equals(symbol.getName()))) {
-                    canElide = false;
-                    break;
-                }
-            }
-
-            if (canElide) {
+            if (isIdentityProjection(node)) {
                 return source;
             }
 
