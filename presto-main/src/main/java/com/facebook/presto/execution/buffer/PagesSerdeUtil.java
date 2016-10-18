@@ -97,11 +97,16 @@ public class PagesSerdeUtil
     {
         long size = 0;
         while (pages.hasNext()) {
-            Page page = pages.next();
-            writeSerializedPage(sliceOutput, serde.serialize(page));
-            size += page.getSizeInBytes();
+            long sizeInBytes = writePage(serde, sliceOutput, pages.next());
+            size += sizeInBytes;
         }
         return size;
+    }
+
+    public static long writePage(PagesSerde serde, SliceOutput sliceOutput, Page page)
+    {
+        writeSerializedPage(sliceOutput, serde.serialize(page));
+        return page.getSizeInBytes();
     }
 
     public static Iterator<Page> readPages(PagesSerde serde, SliceInput sliceInput)
