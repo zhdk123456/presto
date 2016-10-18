@@ -105,6 +105,10 @@ function stop_docker_compose_containers() {
   echo "Docker compose containers stopped: [$ENVIRONMENT]"
 }
 
+function docker_images_used() {
+  environment_compose config | grep 'image:' | awk '{ print $2 }' | sort | uniq
+}
+
 function prefetch_images_silently() {
   local IMAGES=$( docker_images_used )
   for IMAGE in $IMAGES
@@ -177,6 +181,8 @@ fi
 # check docker and docker compose installation
 docker-compose version
 docker version
+echo "Docker images used:"
+docker_images_used | xargs -n 1 docker inspect --format='ID: {{.ID}}, tags: {{.RepoTags}}'
 
 stop_all_containers
 
