@@ -19,6 +19,8 @@ public class InternalHttpClientConfiguration
 {
     private String keyStorePath;
     private String keyStorePassword;
+    private String ldapUser;
+    private String ldapPassword;
 
     public String getKeyStorePath()
     {
@@ -42,5 +44,27 @@ public class InternalHttpClientConfiguration
     {
         this.keyStorePassword = keyStorePassword;
         return this;
+    }
+
+    public String getLdapUser()
+    {
+        return ldapUser;
+    }
+
+    @Config("http-client.authentication.ldap.user")
+    public void setLdapUser(String ldapUser)
+    {
+        this.ldapUser = ldapUser;
+    }
+
+    public String getLdapPassword()
+    {
+        return ldapPassword;
+    }
+
+    @Config("http-client.authentication.ldap.password")
+    public void setLdapPassword(String ldapPassword)
+    {
+        this.ldapPassword = ldapPassword;
     }
 }
