@@ -104,7 +104,8 @@ public class PlanOptimizers
                 new MetadataQueryOptimizer(metadata),
                 new EvaluateConstantApply(),
                 new RemoveRedundantApply(),
-                new EliminateCrossJoins());
+                new EliminateCrossJoins(), // This can pull up Filter nodes from between Joins, so we need to push them down again
+                new PredicatePushDown(metadata, sqlParser));
 
         if (featuresConfig.isOptimizeSingleDistinct()) {
             builder.add(new SingleDistinctOptimizer());

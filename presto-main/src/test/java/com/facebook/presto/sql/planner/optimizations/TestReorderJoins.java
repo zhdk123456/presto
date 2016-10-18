@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aliasPair;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
+import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.filter;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.join;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.tableScan;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
@@ -91,6 +92,32 @@ public class TestReorderJoins
                                                         anyTree(tableScan("lineitem")))),
                                         anyTree(tableScan("orders")))),
                                 anyTree())));
+    }
+
+    @Test
+    public void testEliminateCrossJoinWithNonEqualityCondition()
+    {
+        assertPlan("SELECT o.orderkey FROM part p, orders o, lineitem l WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND p.partkey <> o.orderkey",
+                anyTree(
+                        join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
+                                anyTree(
+                                        join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
+                                                anyTree(tableScan("part")),
+                                                anyTree(filter("partkey_3 <> orderkey_2", tableScan("lineitem"))))),
+                                anyTree(tableScan("orders")))));
+    }
+
+    @Test
+    public void testEliminateCrossJoinPreserveFilters()
+    {
+        assertPlan("SELECT o.orderkey FROM part p, orders o, lineitem l " +
+                        "WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND l.returnflag = 'R' AND shippriority >= 10",
+                anyTree(join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
+                        anyTree(
+                                join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
+                                        anyTree(tableScan("part")),
+                                        anyTree(filter("returnflag = 'R'", tableScan("lineitem"))))),
+                        anyTree(filter("shippriority >= 10", tableScan("orders"))))));
     }
 
     private void assertPlan(String sql, PlanMatchPattern pattern)
