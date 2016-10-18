@@ -170,12 +170,12 @@ shift 1
 PRESTO_SERVICES="presto-master"
 if [[ "$ENVIRONMENT" == "multinode" ]]; then
    PRESTO_SERVICES="${PRESTO_SERVICES} presto-worker"
-elif [[ "$ENVIRONMENT" == "multinode-tls" ]]; then
+elif [[ "$ENVIRONMENT" == "multinode-tls-ldap" ]]; then
    PRESTO_SERVICES="${PRESTO_SERVICES} presto-worker-1 presto-worker-2"
 fi
 
 CLI_ARGUMENTS="--server presto-master:8080"
-if [[ "$ENVIRONMENT" == "multinode-tls" ]]; then
+if [[ "$ENVIRONMENT" == "multinode-tls-ldap" ]]; then
     CLI_ARGUMENTS="--server https://presto-master.docker.cluster:7778 --keystore-path /docker/volumes/conf/presto/etc/docker.cluster.jks --keystore-password 123456"
 fi
 
