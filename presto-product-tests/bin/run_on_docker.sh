@@ -177,7 +177,7 @@ PRESTO_SERVICES="presto-master"
 if [[ "$ENVIRONMENT" == "multinode" ]]; then
    PRESTO_SERVICES="${PRESTO_SERVICES} presto-worker"
 elif [[ "$ENVIRONMENT" == "multinode-tls-ldap" ]]; then
-   PRESTO_SERVICES="${PRESTO_SERVICES} presto-worker-1 presto-worker-2"
+   PRESTO_SERVICES="${PRESTO_SERVICES} presto-worker-1 presto-worker-2 ldapserver"
 fi
 
 CLI_ARGUMENTS="--server presto-master:8080"
