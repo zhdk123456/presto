@@ -24,7 +24,7 @@ public interface ConnectionProperty<T>
 
     Optional<String> getDefault();
 
-    DriverPropertyInfo getDriverPropertyInfo(Properties mergedProperties);
+    DriverPropertyInfo getDriverPropertyInfo(Properties properties);
 
     boolean isRequired(Properties properties);
 

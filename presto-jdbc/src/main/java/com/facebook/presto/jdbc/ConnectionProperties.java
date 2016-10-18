@@ -33,14 +33,14 @@ public class ConnectionProperties
     public static final ConnectionProperty SSL_TRUST_STORE_PATH = new SslTrustStorePath();
     public static final ConnectionProperty SSL_TRUST_STORE_PASSWORD = new SslTrustStorePassword();
 
-    public static Set<ConnectionProperty> allOf = ImmutableSet.of(
+    public static final Set<ConnectionProperty> allOf = ImmutableSet.of(
             USER,
             PASSWORD,
             SSL,
             SSL_TRUST_STORE_PATH,
             SSL_TRUST_STORE_PASSWORD);
 
-    private static Map<String, ConnectionProperty> keyLookup;
+    private static final Map<String, ConnectionProperty> keyLookup;
 
     static {
         ImmutableMap.Builder<String, ConnectionProperty> builder = ImmutableMap.builder();
@@ -89,14 +89,16 @@ public class ConnectionProperties
         }
     }
 
+    private static final Integer SSL_DISABLED = 0;
+    private static final Integer SSL_ENABLED = 1;
     private static class Ssl
             extends BaseConnectionProperty<Integer>
     {
-        private static final ImmutableSet<Integer> allowed = ImmutableSet.of(0, 1);
+        private static final ImmutableSet<Integer> allowed = ImmutableSet.of(SSL_DISABLED, SSL_ENABLED);
 
         private Ssl()
         {
-            super("SSL", Optional.of("0"), notRequired, integerConverter);
+            super("SSL", Optional.of(SSL_DISABLED.toString()), notRequired, integerConverter);
         }
 
         @Override
@@ -119,7 +121,7 @@ public class ConnectionProperties
     {
         private SslTrustStorePath()
         {
-            super("SSLTrustStorePath", dependsKeyValue(new Ssl(), "1"), stringConverter);
+            super("SSLTrustStorePath", dependsKeyValue(new Ssl(), SSL_ENABLED.toString()), stringConverter);
         }
     }
 
@@ -128,7 +130,7 @@ public class ConnectionProperties
     {
         private SslTrustStorePassword()
         {
-            super("SSLTrustStorePassword", dependsKeyValue(new Ssl(), "1"), stringConverter);
+            super("SSLTrustStorePassword", dependsKeyValue(new Ssl(), SSL_ENABLED.toString()), stringConverter);
         }
     }
 }

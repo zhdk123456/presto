@@ -104,8 +104,8 @@ public class PrestoDriver
      * connection could use the same HTTP client, life would be simple.
      * Unfortunately, some things that can be specified at the PrestoConnection
      * level must be configured at the HTTP client level. The obvious case of
-     * this is the ssl/TLS trust store configuration: An HTTP client has to be
-     * configured with the appropriate trust store to make ssl connections to a
+     * this is the SSL/TLS trust store configuration: An HTTP client has to be
+     * configured with the appropriate trust store to make SSL connections to a
      * Presto server.
      *
      * The PrestoDriver deals in QueryExecutors, which have a 1:1 relationship

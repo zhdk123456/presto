@@ -110,7 +110,7 @@ public class TestPrestoDriverUri
     }
 
     @Test
-    public void testUriWithSsl1()
+    public void testUriWithSslEnabled()
             throws SQLException
     {
         PrestoDriverUri parameters = new PrestoDriverUri("presto://localhost:8080/blackhole?SSL=1&SSLTrustStorePath=truststore.jks&SSLTrustStorePassword=password", minimalProperties);
@@ -125,7 +125,7 @@ public class TestPrestoDriverUri
     }
 
     @Test
-    public void testUriWithSsl0()
+    public void testUriWithSslDisabled()
             throws SQLException
     {
         PrestoDriverUri parameters = new PrestoDriverUri("presto://localhost:8080/blackhole?SSL=0", minimalProperties);
