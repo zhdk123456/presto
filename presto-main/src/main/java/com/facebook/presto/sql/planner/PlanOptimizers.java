@@ -99,7 +99,8 @@ public class PlanOptimizers
                 new PruneIdentityProjections(), // This MUST run after PruneUnreferencedOutputs as it may introduce new redundant projections
                 new MetadataQueryOptimizer(metadata),
                 new EvaluateConstantApply(),
-                new CrossJoinsElimination());
+                new CrossJoinsElimination(), // This can pull up Filter nodes from between Joins, so we need to push them down again
+                new PredicatePushDown(metadata, sqlParser));
 
         if (featuresConfig.isOptimizeSingleDistinct()) {
             builder.add(new SingleDistinctOptimizer());
