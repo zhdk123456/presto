@@ -44,7 +44,6 @@ import static com.facebook.presto.operator.GroupByHash.createGroupByHash;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class InMemoryHashAggregationBuilder
         implements HashAggregationBuilder
@@ -146,12 +145,6 @@ public class InMemoryHashAggregationBuilder
     public boolean isFull()
     {
         return full;
-    }
-
-    @Override
-    public CompletableFuture<?> isBlocked()
-    {
-        return completedFuture(null);
     }
 
     @Override
