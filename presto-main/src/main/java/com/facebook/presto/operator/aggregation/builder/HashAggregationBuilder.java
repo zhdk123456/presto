@@ -17,6 +17,7 @@ import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.spi.Page;
 
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 public interface HashAggregationBuilder
         extends AutoCloseable
@@ -27,12 +28,12 @@ public interface HashAggregationBuilder
 
     boolean isFull();
 
-    boolean isBusy();
-
     void updateMemory();
 
     void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter);
 
     @Override
     void close();
+
+    CompletableFuture<?> isBlocked();
 }

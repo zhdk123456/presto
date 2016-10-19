@@ -29,6 +29,7 @@ import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.type.TypeUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.aggregation.builder.InMemoryHashAggregationBuilder.toTypes;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Objects.requireNonNull;
 
@@ -330,12 +332,21 @@ public class HashAggregationOperator
     }
 
     @Override
+    public ListenableFuture<?> isBlocked()
+    {
+        if (aggregationBuilder != null) {
+            return toListenableFuture(aggregationBuilder.isBlocked());
+        }
+        return NOT_BLOCKED;
+    }
+
+    @Override
     public boolean needsInput()
     {
         if (finishing || outputIterator != null) {
             return false;
         }
-        else if (aggregationBuilder != null && (aggregationBuilder.isFull() || aggregationBuilder.isBusy())) {
+        else if (aggregationBuilder != null && aggregationBuilder.isFull()) {
             return false;
         }
         else {
@@ -410,11 +421,6 @@ public class HashAggregationOperator
 
             // only flush if we are finishing or the aggregation builder is full
             if (!finishing && (aggregationBuilder == null || !aggregationBuilder.isFull())) {
-                return null;
-            }
-
-            // don't ask for output if builder is busy
-            if (aggregationBuilder.isBusy()) {
                 return null;
             }
 

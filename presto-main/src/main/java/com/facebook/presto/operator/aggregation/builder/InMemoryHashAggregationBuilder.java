@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 import static com.facebook.presto.operator.GroupByHash.createGroupByHash;
@@ -139,6 +140,12 @@ public class InMemoryHashAggregationBuilder
     public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
     {
         hashCollisionsCounter.recordHashCollision(groupByHash.getHashCollisions(), groupByHash.getExpectedHashCollisions());
+    }
+
+    @Override
+    public CompletableFuture<?> isBlocked()
+    {
+        return CompletableFuture.completedFuture(null);
     }
 
     public long getHashCollisions()

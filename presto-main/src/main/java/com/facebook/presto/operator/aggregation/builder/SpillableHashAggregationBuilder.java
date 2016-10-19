@@ -127,14 +127,14 @@ public class SpillableHashAggregationBuilder
     }
 
     @Override
-    public boolean isBusy()
+    public CompletableFuture<?> isBlocked()
     {
-        return !hasPreviousSpillCompletedSuccessfully();
+        return spillInProgress;
     }
 
     private boolean hasPreviousSpillCompletedSuccessfully()
     {
-        if (spillInProgress.isDone()) {
+        if (isBlocked().isDone()) {
             // check for exception from previous spill for early failure
             getFutureValue(spillInProgress);
             return true;
