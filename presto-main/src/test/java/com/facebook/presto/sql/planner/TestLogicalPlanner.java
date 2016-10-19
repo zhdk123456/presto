@@ -19,10 +19,12 @@ import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.EnforceSingleRowNode;
+import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
+import com.facebook.presto.sql.planner.plan.TableScanNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tpch.TpchConnectorFactory;
@@ -356,6 +358,111 @@ public class TestLogicalPlanner
                                         node(ValuesNode.class)))))
         );
     }
+
+    @Test
+    public void testNoExtraSymbolsInJoinRemoteExchange()
+    {
+        assertDistributedPlan("SELECT c.custkey FROM customer c, orders o WHERE c.custkey = o.custkey AND c.name LIKE '%green%'",
+                anyTree(
+                        node(JoinNode.class,
+                                node(ExchangeNode.class,
+                                        anyTree(
+                                                node(TableScanNode.class).withExactSymbol("custkey", "C1"))
+                                ).withNumberOfOutputColumns(2)
+                                        .withExactSymbol("custkey", "C1")
+                                        .withExactSymbol("hash", "H1"),
+                                node(ExchangeNode.class,
+                                        anyTree(
+                                                node(TableScanNode.class).withExactSymbol("custkey", "C2"))
+                                ).withNumberOfOutputColumns(2)
+                                        .withExactSymbol("custkey", "C2")
+                                        .withExactSymbol("hash", "H2"))));
+    }
+
+    @Test
+    public void testNoExtraSymbolsInUnionRemoteExchange()
+    {
+        assertDistributedPlan("(SELECT custkey, custkey FROM orders) UNION ALL (SELECT orderkey, orderkey FROM orders)",
+                anyTree(
+                        node(ExchangeNode.class, anyTree(), anyTree())
+                                .withNumberOfOutputColumns(1)));
+
+        assertDistributedPlan("(SELECT custkey, orderkey, custkey, orderkey FROM orders) UNION ALL (SELECT orderkey, custkey, custkey, custkey FROM orders)",
+                anyTree(
+                        node(ExchangeNode.class, anyTree(), anyTree())
+                                .withNumberOfOutputColumns(3)));
+    }
+
+    @Test
+    public void testDoesNotAliasUnionRemoteExchangeSymbols()
+    {
+        assertDistributedPlan("(SELECT custkey, custkey FROM orders) UNION ALL (SELECT custkey, orderkey FROM orders)",
+                anyTree(
+                        node(ExchangeNode.class, anyTree(), anyTree())
+                                .withNumberOfOutputColumns(2)));
+
+        assertDistributedPlan("(SELECT custkey, orderkey, custkey FROM orders) UNION ALL (SELECT orderkey, custkey, custkey FROM orders)",
+                anyTree(
+                        node(ExchangeNode.class, anyTree(), anyTree())
+                                .withNumberOfOutputColumns(3)));
+    }
+
+    @Test
+    public void testAliasCriteriaSymbolsAfterJoin()
+    {
+        assertPlan("SELECT c.custkey, o.orderkey FROM customer c, orders o WHERE c.custkey = o.orderkey",
+                anyTree(
+                        project(
+                                node(JoinNode.class,
+                                        anyTree(
+                                                tableScan("customer").withExactSymbol("custkey", "C")),
+                                        anyTree())
+                        ).withExactSymbol("custkey", "C").withNumberOfOutputColumns(1)));
+    }
+
+    @Test
+    public void testDoesNotAliasCriteriaSymbolsAfterJoinWithDifferentTypes()
+    {
+        assertPlan("SELECT b.val AS val FROM (VALUES (DECIMAL '1.23')) AS a (val), (VALUES (DECIMAL '232.32')) AS b (val) WHERE a.val = b.val",
+                anyTree(
+                        project(
+                                anyTree(
+                                        anyTree(),
+                                        anyTree(node(ValuesNode.class).withExactSymbol("field", "V"))
+                                )
+                        ).withExactSymbol("field", "V")));
+    }
+
+    @Test
+    public void testExecutesCanonicalizedJoinsInSameStage()
+    {
+        assertDistributedPlan("" +
+                        "  SELECT" +
+                        "   ps.partkey," +
+                        "   ps.suppkey" +
+                        "  FROM" +
+                        "   part p," +
+                        "   supplier s," +
+                        "   lineitem l," +
+                        "   partsupp ps" +
+                        "  WHERE" +
+                        "   s.suppkey = l.suppkey AND" +
+                        "   ps.suppkey = l.suppkey AND" +
+                        "   ps.partkey = l.partkey AND" +
+                        "   p.partkey = l.partkey",
+                anyTree(
+                        project(
+                                node(JoinNode.class,
+                                        project(
+                                                node(JoinNode.class,
+                                                        node(ExchangeNode.class, anyTree())
+                                                                .withExactSymbol("partkey", "P")
+                                                                .withExactSymbol("suppkey", "S"),
+                                                        anyTree())),
+                                        anyTree())
+                        ).withExactSymbol("partkey", "P").withExactSymbol("suppkey", "S")));
+    }
+
 
     private void assertPlan(String sql, PlanMatchPattern pattern)
     {
