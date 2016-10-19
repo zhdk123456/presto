@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import static com.facebook.presto.jdbc.ConnectionProperties.USER;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
@@ -120,7 +121,9 @@ public class TestProgressMonitor
         HttpClient client = new TestingHttpClient(new TestingHttpClientProcessor(RESPONSES));
         QueryExecutor testQueryExecutor = QueryExecutor.create(client);
         String uri = format("prestotest://%s", SERVER_ADDRESS);
-        return new PrestoConnection(new PrestoDriverUri(uri, new Properties()), "test", testQueryExecutor);
+        Properties properties = new Properties();
+        properties.put(USER.getKey(), "BobPeoples");
+        return new PrestoConnection(new PrestoDriverUri(uri, properties), "test", testQueryExecutor);
     }
 
     private static class TestingHttpClientProcessor
