@@ -237,7 +237,7 @@ public class PruneUnreferencedOutputs
                     node.getSemiJoinOutput(),
                     node.getSourceHashSymbol(),
                     node.getFilteringSourceHashSymbol(),
-                    node.getMethod());
+                    node.getDistributionType());
         }
 
         @Override

@@ -23,9 +23,7 @@ import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Optional;
 
-import static com.facebook.presto.sql.planner.plan.SemiJoinNode.Method.DISTRIBUTED;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 @Immutable
@@ -39,7 +37,7 @@ public class SemiJoinNode
     private final Symbol semiJoinOutput;
     private final Optional<Symbol> sourceHashSymbol;
     private final Optional<Symbol> filteringSourceHashSymbol;
-    private final Optional<Method> method;
+    private final Optional<DistributionType> distributionType;
 
     @JsonCreator
     public SemiJoinNode(@JsonProperty("id") PlanNodeId id,
@@ -50,7 +48,7 @@ public class SemiJoinNode
             @JsonProperty("semiJoinOutput") Symbol semiJoinOutput,
             @JsonProperty("sourceHashSymbol") Optional<Symbol> sourceHashSymbol,
             @JsonProperty("filteringSourceHashSymbol") Optional<Symbol> filteringSourceHashSymbol,
-            @JsonProperty("method") Optional<Method> method)
+            @JsonProperty("distributionType") Optional<DistributionType> distributionType)
     {
         super(id);
         this.source = requireNonNull(source, "source is null");
@@ -60,16 +58,16 @@ public class SemiJoinNode
         this.semiJoinOutput = requireNonNull(semiJoinOutput, "semiJoinOutput is null");
         this.sourceHashSymbol = requireNonNull(sourceHashSymbol, "sourceHashSymbol is null");
         this.filteringSourceHashSymbol = requireNonNull(filteringSourceHashSymbol, "filteringSourceHashSymbol is null");
-        this.method = requireNonNull(method, "method is null");
+        this.distributionType = requireNonNull(distributionType, "distributionType is null");
 
         checkArgument(source.getOutputSymbols().contains(sourceJoinSymbol), "Source does not contain join symbol");
         checkArgument(filteringSource.getOutputSymbols().contains(filteringSourceJoinSymbol), "Filtering source does not contain filtering join symbol");
     }
 
-    public enum Method
+    public enum DistributionType
     {
-        DISTRIBUTED,
-        BROADCAST
+        PARTITIONED,
+        REPLICATED
     }
 
     @JsonProperty("source")
@@ -114,16 +112,10 @@ public class SemiJoinNode
         return filteringSourceHashSymbol;
     }
 
-    @JsonProperty("method")
-    public Optional<Method> getMethod()
+    @JsonProperty("distributionType")
+    public Optional<DistributionType> getDistributionType()
     {
-        return method;
-    }
-
-    public boolean isDistributed()
-    {
-        checkState(method.isPresent(), "method not yet set");
-        return method.get() == DISTRIBUTED;
+        return distributionType;
     }
 
     @Override
