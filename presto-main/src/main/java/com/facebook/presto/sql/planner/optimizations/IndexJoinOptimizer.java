@@ -188,7 +188,7 @@ public class IndexJoinOptimizer
                         node.getFilter(),
                         node.getLeftHashSymbol(),
                         node.getRightHashSymbol(),
-                        node.getMethod());
+                        node.getDistributionType());
             }
             return node;
         }

@@ -206,7 +206,7 @@ public class PruneUnreferencedOutputs
                     node.getFilter(),
                     node.getLeftHashSymbol(),
                     node.getRightHashSymbol(),
-                    node.getMethod());
+                    node.getDistributionType());
         }
 
         @Override

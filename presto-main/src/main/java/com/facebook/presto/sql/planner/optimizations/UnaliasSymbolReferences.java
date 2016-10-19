@@ -544,10 +544,10 @@ public class UnaliasSymbolReferences
                     left,
                     right,
                     canonicalCriteria,
-                    canoninicalFilter,
+                    canonicalFilter,
                     canonicalLeftHashSymbol,
                     canonicalRightHashSymbol,
-                    node.getMethod());
+                    node.getDistributionType());
         }
 
         @Override
