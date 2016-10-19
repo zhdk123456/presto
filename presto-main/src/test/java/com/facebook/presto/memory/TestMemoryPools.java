@@ -248,10 +248,16 @@ public class TestMemoryPools
         }
 
         @Override
-        public ListenableFuture<?> revokeMemory()
+        public ListenableFuture<?> startMemoryRevoke()
         {
             memoryContext.setRevocableBytes(0);
             return Futures.immediateFuture(null);
+        }
+
+        @Override
+        public void finishMemoryRevoke()
+        {
+            memoryContext.setRevocableBytes(0);
         }
 
         @Override
