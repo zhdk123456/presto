@@ -123,7 +123,7 @@ public class TestProgressMonitor
         String uri = format("prestotest://%s", SERVER_ADDRESS);
         Properties properties = new Properties();
         properties.put(USER.getKey(), "BobPeoples");
-        return new PrestoConnection(new PrestoDriverUri(uri, properties), "test", testQueryExecutor);
+        return new PrestoConnection(new PrestoConnectionConfig(uri, properties), "test", testQueryExecutor);
     }
 
     private static class TestingHttpClientProcessor

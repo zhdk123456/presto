@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Parses and extracts parameters from a Presto JDBC URL.
  */
-final class PrestoDriverUri
+final class PrestoConnectionConfig
 {
     private static final String JDBC_URL_START = "jdbc:";
 
@@ -60,13 +60,13 @@ final class PrestoDriverUri
             SSL_TRUST_STORE_PATH, HttpClientConfig::setTrustStorePath,
             SSL_TRUST_STORE_PASSWORD, HttpClientConfig::setTrustStorePassword);
 
-    public PrestoDriverUri(String url, Properties driverProperties)
+    public PrestoConnectionConfig(String url, Properties driverProperties)
             throws SQLException
     {
         this(parseDriverUrl(url), driverProperties);
     }
 
-    private PrestoDriverUri(URI uri, Properties driverProperties)
+    private PrestoConnectionConfig(URI uri, Properties driverProperties)
             throws SQLException
     {
         this.uri = requireNonNull(uri, "uri is null");

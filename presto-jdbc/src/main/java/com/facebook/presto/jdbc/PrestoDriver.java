@@ -396,7 +396,7 @@ public class PrestoDriver
             return null;
         }
 
-        PrestoDriverUri uri = new PrestoDriverUri(url, driverProperties);
+        PrestoConnectionConfig uri = new PrestoConnectionConfig(url, driverProperties);
         String user = USER.getValue(uri.getConnectionProperties()).get();
 
         HttpClientCreator clientCreator = uri.getCreator(DRIVER_NAME + "/" + DRIVER_VERSION, jettyIoPool);
@@ -424,7 +424,7 @@ public class PrestoDriver
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties driverProperties)
             throws SQLException
     {
-        PrestoDriverUri uri = new PrestoDriverUri(url, driverProperties);
+        PrestoConnectionConfig uri = new PrestoConnectionConfig(url, driverProperties);
         ImmutableList.Builder<DriverPropertyInfo> result = ImmutableList.builder();
 
         Properties mergedProperties = uri.getConnectionProperties();
