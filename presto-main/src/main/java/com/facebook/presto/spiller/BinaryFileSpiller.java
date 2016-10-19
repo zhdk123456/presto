@@ -15,7 +15,6 @@ package com.facebook.presto.spiller;
 
 import com.facebook.presto.execution.buffer.PagesSerde;
 import com.facebook.presto.execution.buffer.PagesSerdeUtil;
-import com.facebook.presto.operator.AbstractOperatorSpillContext;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
 import com.google.common.io.Closer;
@@ -59,10 +58,9 @@ public class BinaryFileSpiller
     private final Closer closer = Closer.create();
     private final PagesSerde serde;
     private final AtomicLong totalSpilledDataSize;
-    private final AbstractOperatorSpillContext operatorSpillContext;
+    private final LocalSpillContext localSpillContext;
 
     private final ListeningExecutorService executor;
-    private long spillerDataSize = 0L; // TODO: is there ever concurrent access to Spillers?
 
     private int spillsCount;
     private CompletableFuture<?> previousSpill = CompletableFuture.completedFuture(null);
@@ -72,12 +70,12 @@ public class BinaryFileSpiller
             ListeningExecutorService executor,
             Path spillPath,
             AtomicLong totalSpilledDataSize,
-            AbstractOperatorSpillContext operatorSpillContext)
+            LocalSpillContext localSpillContext)
     {
         this.serde = requireNonNull(serde, "serde is null");
         this.executor = requireNonNull(executor, "executor is null");
         this.totalSpilledDataSize = requireNonNull(totalSpilledDataSize, "totalSpilledDataSize is null");
-        this.operatorSpillContext = operatorSpillContext;
+        this.localSpillContext = localSpillContext;
         try {
             this.targetDirectory = Files.createTempDirectory(spillPath, "presto-spill");
         }
@@ -103,10 +101,9 @@ public class BinaryFileSpiller
             while (pageIterator.hasNext()) {
                 Page page = pageIterator.next();
                 long pageSize = page.getSizeInBytes();
-                operatorSpillContext.updateBytes(pageSize);
-                writePage(serde, output, page);
-                spillerDataSize += pageSize;
+                localSpillContext.updateBytes(pageSize);
                 totalSpilledDataSize.addAndGet(pageSize);
+                writePage(serde, output, page);
             }
         }
         catch (RuntimeIOException | IOException e) {
@@ -152,8 +149,7 @@ public class BinaryFileSpiller
                     e);
         }
         finally {
-            operatorSpillContext.updateBytes(-spillerDataSize);
-            spillerDataSize = 0;
+            localSpillContext.close();
         }
     }
 
