@@ -824,7 +824,7 @@ public class AddExchanges
             PlanWithProperties source;
             PlanWithProperties filteringSource;
 
-            if (node.isDistributed()) {
+            if (node.getDistributionType().orElseThrow(() -> new IllegalStateException("distributionType not yet set")) == SemiJoinNode.DistributionType.PARTITIONED) {
                 List<Symbol> sourceSymbols = ImmutableList.of(node.getSourceJoinSymbol());
                 List<Symbol> filteringSourceSymbols = ImmutableList.of(node.getFilteringSourceJoinSymbol());
 
