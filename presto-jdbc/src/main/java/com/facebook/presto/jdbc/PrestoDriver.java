@@ -390,12 +390,25 @@ public class PrestoDriver
         }
     }
 
+    private static HttpClientConfig getClientConfig(Properties connectionProperties)
+            throws SQLException
+    {
+        HttpClientConfig result = QueryExecutor.baseClientConfig();
+
+        for (String key : connectionProperties.stringPropertyNames()) {
+            ConnectionProperty property = ConnectionProperties.forKey(key);
+            setClientConfig(result, connectionProperties, property);
+        }
+
+        return result;
+    }
+
     private static void setClientConfig(HttpClientConfig config, Properties properties, ConnectionProperty property)
             throws SQLException
     {
-        Map<ConnectionProperty, BiConsumer<HttpClientConfig, String>> clientSetters = ImmutableMap.of(
-            SSL_TRUST_STORE_PATH, HttpClientConfig::setTrustStorePath,
-            SSL_TRUST_STORE_PASSWORD, HttpClientConfig::setTrustStorePassword);
+        final Map<ConnectionProperty, BiConsumer<HttpClientConfig, String>> clientSetters = ImmutableMap.of(
+                SSL_TRUST_STORE_PATH, HttpClientConfig::setTrustStorePath,
+                SSL_TRUST_STORE_PASSWORD, HttpClientConfig::setTrustStorePassword);
 
         String key = property.getKey();
         String value = properties.getProperty(key);
@@ -409,19 +422,6 @@ public class PrestoDriver
         }
 
         clientSetter.accept(config, value);
-    }
-
-    private static HttpClientConfig getClientConfig(Properties connectionProperties)
-            throws SQLException
-    {
-        HttpClientConfig result = QueryExecutor.baseClientConfig();
-
-        for (String key : connectionProperties.stringPropertyNames()) {
-            ConnectionProperty property = ConnectionProperties.forKey(key);
-            setClientConfig(result, connectionProperties, property);
-        }
-
-        return result;
     }
 
     @Override
@@ -472,7 +472,7 @@ public class PrestoDriver
         ImmutableList.Builder<DriverPropertyInfo> result = ImmutableList.builder();
 
         Properties mergedProperties = uri.getConnectionProperties();
-        for (ConnectionProperty property : ConnectionProperties.allOf) {
+        for (ConnectionProperty property : ConnectionProperties.allOf()) {
             result.add(property.getDriverPropertyInfo(mergedProperties));
         }
 

@@ -22,32 +22,42 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.function.Function.identity;
 
 public class ConnectionProperties
 {
-    public static final ConnectionProperty USER = new User();
-    public static final ConnectionProperty PASSWORD = new Password();
-    public static final ConnectionProperty SSL = new Ssl();
-    public static final ConnectionProperty SSL_TRUST_STORE_PATH = new SslTrustStorePath();
-    public static final ConnectionProperty SSL_TRUST_STORE_PASSWORD = new SslTrustStorePassword();
+    public static final ConnectionProperty<String> USER = new User();
+    public static final ConnectionProperty<String> PASSWORD = new Password();
+    public static final ConnectionProperty<Integer> SSL = new Ssl();
+    public static final ConnectionProperty<String> SSL_TRUST_STORE_PATH = new SslTrustStorePath();
+    public static final ConnectionProperty<String> SSL_TRUST_STORE_PASSWORD = new SslTrustStorePassword();
 
-    public static final Set<ConnectionProperty> allOf = ImmutableSet.of(
+    private static final Set<ConnectionProperty> ALL_OF = ImmutableSet.of(
             USER,
             PASSWORD,
             SSL,
             SSL_TRUST_STORE_PATH,
             SSL_TRUST_STORE_PASSWORD);
 
-    private static final Map<String, ConnectionProperty> keyLookup;
+    private static final Map<String, ConnectionProperty> keyLookup = unmodifiableMap(allOf()
+                .stream()
+                .collect(Collectors.toMap(ConnectionProperty::getKey, identity())));
+
+    private static final Map<String, String> DEFAULTS;
 
     static {
-        ImmutableMap.Builder<String, ConnectionProperty> builder = ImmutableMap.builder();
-        for (ConnectionProperty property : allOf) {
-            builder.put(property.getKey(), property);
+        ImmutableMap.Builder<String, String> defaults = ImmutableMap.builder();
+        for (ConnectionProperty property : ALL_OF) {
+            Optional<String> value = property.getDefault();
+            if (value.isPresent()) {
+                defaults.put(property.getKey(), value.get());
+            }
         }
-        keyLookup = builder.build();
+        DEFAULTS = defaults.build();
     }
 
     private ConnectionProperties()
@@ -59,16 +69,14 @@ public class ConnectionProperties
         return keyLookup.get(propertiesKey);
     }
 
+    public static Set<ConnectionProperty> allOf()
+    {
+        return ALL_OF;
+    }
+
     public static Map<String, String> getDefaults()
     {
-        ImmutableMap.Builder<String, String> result = ImmutableMap.builder();
-        for (ConnectionProperty property : allOf) {
-            Optional<String> value = property.getDefault();
-            if (value.isPresent()) {
-                result.put(property.getKey(), value.get());
-            }
-        }
-        return result.build();
+        return DEFAULTS;
     }
 
     private static class User
@@ -76,7 +84,7 @@ public class ConnectionProperties
     {
         private User()
         {
-            super("user", required, stringConverter);
+            super("user", REQUIRED, STRING_CONVERTER);
         }
     }
 
@@ -85,12 +93,12 @@ public class ConnectionProperties
     {
         private Password()
         {
-            super("password", notRequired, stringConverter);
+            super("password", NOT_REQUIRED, STRING_CONVERTER);
         }
     }
 
-    private static final Integer SSL_DISABLED = 0;
-    private static final Integer SSL_ENABLED = 1;
+    public static final int SSL_DISABLED = 0;
+    public static final int SSL_ENABLED = 1;
     private static class Ssl
             extends BaseConnectionProperty<Integer>
     {
@@ -98,7 +106,7 @@ public class ConnectionProperties
 
         private Ssl()
         {
-            super("SSL", Optional.of(SSL_DISABLED.toString()), notRequired, integerConverter);
+            super("SSL", Optional.of(Integer.toString(SSL_DISABLED)), NOT_REQUIRED, INTEGER_CONVERTER);
         }
 
         @Override
@@ -121,7 +129,7 @@ public class ConnectionProperties
     {
         private SslTrustStorePath()
         {
-            super("SSLTrustStorePath", dependsKeyValue(new Ssl(), SSL_ENABLED.toString()), stringConverter);
+            super("SSLTrustStorePath", dependsKeyValue(SSL, SSL_ENABLED), STRING_CONVERTER);
         }
     }
 
@@ -130,7 +138,7 @@ public class ConnectionProperties
     {
         private SslTrustStorePassword()
         {
-            super("SSLTrustStorePassword", dependsKeyValue(new Ssl(), SSL_ENABLED.toString()), stringConverter);
+            super("SSLTrustStorePassword", dependsKeyValue(SSL, SSL_ENABLED), STRING_CONVERTER);
         }
     }
 }

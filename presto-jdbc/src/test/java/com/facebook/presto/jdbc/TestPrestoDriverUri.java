@@ -34,6 +34,14 @@ public class TestPrestoDriverUri
         minimalProperties.put("user", "BaltimoreJack");
     }
 
+    @Test(expectedExceptions = SQLException.class, expectedExceptionsMessageRegExp = "Connection property/URL parameter user is required")
+    public void testRequireUser()
+            throws Exception
+    {
+        String url = format("jdbc:presto://%s", SERVER);
+        new PrestoDriverUri(url, new Properties());
+    }
+
     @Test(expectedExceptions = SQLException.class, expectedExceptionsMessageRegExp = "Invalid path segments in URL: .*")
     public void testBadUrlExtraPathSegments()
             throws Exception

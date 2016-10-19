@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL;
+import static com.facebook.presto.jdbc.ConnectionProperties.SSL_ENABLED;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static java.util.Objects.requireNonNull;
@@ -58,12 +59,12 @@ final class PrestoDriverUri
             throws SQLException
     {
         this.uri = requireNonNull(uri, "uri is null");
-        this.address = HostAndPort.fromParts(uri.getHost(), uri.getPort());
-        this.connectionProperties = getMergedProperties(uri, driverProperties);
+        address = HostAndPort.fromParts(uri.getHost(), uri.getPort());
+        connectionProperties = mergeConnectionProperties(uri, driverProperties);
 
-        validateConnectionProperties(this.connectionProperties);
+        validateConnectionProperties(connectionProperties);
 
-        useSecureConnection = Integer.parseInt(connectionProperties.getProperty(SSL.getKey())) == 1;
+        useSecureConnection = SSL.getValue(connectionProperties).get() == SSL_ENABLED;
 
         initCatalogAndSchema();
     }
@@ -95,7 +96,7 @@ final class PrestoDriverUri
 
     private static Map<String, String> parseParameters(String query)
     {
-        Map<String, String> result = new HashMap<>(ConnectionProperties.getDefaults());
+        Map<String, String> result = new HashMap<>();
 
         if (query != null) {
             Iterable<String> queryArgs = QUERY_SPLITTER.split(query);
@@ -177,7 +178,7 @@ final class PrestoDriverUri
         }
     }
 
-    private static Properties getMergedProperties(URI uri, Properties driverProperties)
+    private static Properties mergeConnectionProperties(URI uri, Properties driverProperties)
             throws SQLException
     {
         Properties result = new Properties();
@@ -190,7 +191,7 @@ final class PrestoDriverUri
     private static void validateConnectionProperties(Properties connectionProperties)
             throws SQLException
     {
-        for (ConnectionProperty property : ConnectionProperties.allOf) {
+        for (ConnectionProperty property : ConnectionProperties.allOf()) {
             property.validate(connectionProperties);
         }
     }

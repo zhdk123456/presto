@@ -23,35 +23,35 @@ import static java.lang.String.format;
 
 public class BaseConnectionProperty<T> implements ConnectionProperty<T>
 {
-    private final String propertiesKey;
+    private final String key;
     private final Optional<String> defaultValue;
     private final Predicate<Properties> isRequired;
     private final Converter<T> converter;
 
     protected BaseConnectionProperty(
-            String propertiesKey,
+            String key,
             Optional<String> defaultValue,
             Predicate<Properties> isRequired,
             Converter<T> converter)
     {
-        this.propertiesKey = propertiesKey;
+        this.key = key;
         this.defaultValue = defaultValue;
         this.isRequired = isRequired;
         this.converter = converter;
     }
 
     protected BaseConnectionProperty(
-            String propertiesKey,
+            String key,
             Predicate<Properties> required,
             Converter<T> converter)
     {
-        this(propertiesKey, Optional.empty(), required, converter);
+        this(key, Optional.empty(), required, converter);
     }
 
     @Override
     public String getKey()
     {
-        return propertiesKey;
+        return key;
     }
 
     @Override
@@ -63,8 +63,8 @@ public class BaseConnectionProperty<T> implements ConnectionProperty<T>
     @Override
     public DriverPropertyInfo getDriverPropertyInfo(Properties mergedProperties)
     {
-        String currentValue = mergedProperties.getProperty(propertiesKey);
-        DriverPropertyInfo result = new DriverPropertyInfo(propertiesKey, currentValue);
+        String currentValue = mergedProperties.getProperty(key);
+        DriverPropertyInfo result = new DriverPropertyInfo(key, currentValue);
         result.required = isRequired.test(mergedProperties);
         return result;
     }
@@ -79,10 +79,10 @@ public class BaseConnectionProperty<T> implements ConnectionProperty<T>
     public Optional<T> getValue(Properties properties)
             throws SQLException
     {
-        String value = properties.getProperty(propertiesKey);
+        String value = properties.getProperty(key);
         if (value == null) {
             if (isRequired(properties)) {
-                throw new SQLException(format("Connection property/URL parameter %s is required", propertiesKey));
+                throw new SQLException(format("Connection property/URL parameter %s is required", key));
             }
             else {
                 return Optional.empty();
@@ -93,7 +93,7 @@ public class BaseConnectionProperty<T> implements ConnectionProperty<T>
             return Optional.of(converter.convert(value));
         }
         catch (Exception e) {
-            throw new SQLException(format("Failed to convert value %s for key %s", value, propertiesKey), e);
+            throw new SQLException(format("Failed to convert value %s for key %s", value, key), e);
         }
     }
 
@@ -104,8 +104,8 @@ public class BaseConnectionProperty<T> implements ConnectionProperty<T>
         getValue(properties);
     }
 
-    protected static final Predicate<Properties> required = (properties) -> true;
-    protected static final Predicate<Properties> notRequired = (properties) -> false;
+    protected static final Predicate<Properties> REQUIRED = (properties) -> true;
+    protected static final Predicate<Properties> NOT_REQUIRED = (properties) -> false;
 
     private interface Converter<T>
     {
@@ -113,10 +113,10 @@ public class BaseConnectionProperty<T> implements ConnectionProperty<T>
                 throws Exception;
     }
 
-    protected static final Converter<String> stringConverter = (value) -> value;
-    protected static final Converter<Integer> integerConverter = (value) -> Integer.parseInt(value);
-    protected static Predicate<Properties> dependsKeyValue(ConnectionProperty property, String value)
+    protected static final Converter<String> STRING_CONVERTER = (value) -> value;
+    protected static final Converter<Integer> INTEGER_CONVERTER = (value) -> Integer.parseInt(value);
+    protected static <T> Predicate<Properties> dependsKeyValue(ConnectionProperty property, T value)
     {
-        return (properties -> properties.get(property.getKey()).equals(value));
+        return (properties -> properties.get(property.getKey()).equals(value.toString()));
     }
 }
