@@ -51,6 +51,7 @@ public class JoinGraph
     private final List<PlanNode> nodes; // nodes in order of they appearance in plan
     private final Multimap<PlanNode, Edge> edges;
     private final PlanNodeId rootId;
+    private boolean originalPlanWithCrossJoin;
 
     public static List<JoinGraph> buildFrom(PlanNode plan)
     {
@@ -64,7 +65,7 @@ public class JoinGraph
 
     public JoinGraph(PlanNode node)
     {
-        this(ImmutableList.of(node), ImmutableMultimap.of(), node.getId(), ImmutableList.of(), Optional.empty());
+        this(ImmutableList.of(node), ImmutableMultimap.of(), node.getId(), ImmutableList.of(), Optional.empty(), false);
     }
 
     public JoinGraph(
@@ -72,18 +73,25 @@ public class JoinGraph
             Multimap<PlanNode, Edge> edges,
             PlanNodeId rootId,
             List<Expression> filters,
-            Optional<Map<Symbol, Expression>> assignments)
+            Optional<Map<Symbol, Expression>> assignments,
+            boolean originalPlanWithCrossJoin)
     {
         this.nodes = nodes;
         this.edges = edges;
         this.rootId = rootId;
         this.filters = filters;
         this.assignments = assignments;
+        this.originalPlanWithCrossJoin = originalPlanWithCrossJoin;
+    }
+
+    public boolean isOriginalPlanWithCrossJoin()
+    {
+        return originalPlanWithCrossJoin;
     }
 
     public JoinGraph withAssignments(Map<Symbol, Expression> assignments)
     {
-        return new JoinGraph(nodes, edges, rootId, filters, Optional.of(assignments));
+        return new JoinGraph(nodes, edges, rootId, filters, Optional.of(assignments), originalPlanWithCrossJoin);
     }
 
     public Optional<Map<Symbol, Expression>> getAssignments()
@@ -97,7 +105,7 @@ public class JoinGraph
         filters.addAll(this.filters);
         filters.add(expression);
 
-        return new JoinGraph(nodes, edges, rootId, filters.build(), assignments);
+        return new JoinGraph(nodes, edges, rootId, filters.build(), assignments, originalPlanWithCrossJoin);
     }
 
     public List<Expression> getFilters()
@@ -112,7 +120,7 @@ public class JoinGraph
 
     public JoinGraph withRootId(PlanNodeId rootId)
     {
-        return new JoinGraph(nodes, edges, rootId, filters, assignments);
+        return new JoinGraph(nodes, edges, rootId, filters, assignments, originalPlanWithCrossJoin);
     }
 
     public boolean isEmpty()
@@ -185,7 +193,13 @@ public class JoinGraph
             joinedEdges.put(right, new Edge(left, symbol2, symbol1));
         }
 
-        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId, other.filters, Optional.empty());
+        return new JoinGraph(
+                joinedNodes.build(),
+                joinedEdges.build(),
+                rootId,
+                other.filters,
+                Optional.empty(),
+                originalPlanWithCrossJoin || joinClauses.size() == 0);
     }
 
     private static class Builder

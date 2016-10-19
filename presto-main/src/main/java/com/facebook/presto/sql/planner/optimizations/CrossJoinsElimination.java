@@ -61,6 +61,11 @@ public class CrossJoinsElimination
 
         for (int i = 0; i < joinGraphs.size(); i++) {
             JoinGraph graph = joinGraphs.get(i);
+            if (!graph.isOriginalPlanWithCrossJoin()) {
+                // If there was no cross join in original plan do not reorder joins
+                continue;
+            }
+
             Optional<List<Integer>> joinOrder = getJoinOrder(graph);
 
             if (joinOrder.isPresent()) {
