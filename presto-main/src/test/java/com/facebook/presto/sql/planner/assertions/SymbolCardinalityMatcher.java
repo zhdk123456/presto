@@ -30,9 +30,15 @@ final class SymbolCardinalityMatcher
     }
 
     @Override
-    public boolean matches(PlanNode node, Session session, Metadata metadata, ExpressionAliases expressionAliases)
+    public boolean shapeMatches(PlanNode node)
     {
-        return node.getOutputSymbols().size() == numberOfSymbols;
+        return true;
+    }
+
+    @Override
+    public MatchResult detailMatches(PlanNode node, Session session, Metadata metadata, SymbolAliases symbolAliases)
+    {
+        return new MatchResult(node.getOutputSymbols().size() == numberOfSymbols);
     }
 
     @Override

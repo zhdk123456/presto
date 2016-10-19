@@ -81,6 +81,7 @@ public final class PlanMatchPattern
      * Matches to any tree of nodes with children matching to given source matchers.
      * anyNodeTree(tableScanNode("nation")) - will match to any plan which all leafs contain
      * any node containing table scan from nation table.
+     *
      * @note anyTree does not match zero nodes. E.g. output(anyTree(tableScan)) will NOT match TableScan node followed by OutputNode.
      */
     public static PlanMatchPattern anyTree(PlanMatchPattern... sources)
@@ -328,11 +329,6 @@ public final class PlanMatchPattern
         return match(newAliases.build());
     }
 
-    public PlanMatchPattern withNumberOfOutputColumns(int numberOfSymbols)
-    {
-        return with(new SymbolCardinalityMatcher(numberOfSymbols));
-    }
-
     public PlanMatchPattern with(Matcher matcher)
     {
         matchers.add(matcher);
@@ -347,6 +343,12 @@ public final class PlanMatchPattern
     public PlanMatchPattern withAlias(Optional<String> alias, RvalueMatcher matcher)
     {
         matchers.add(new Alias(alias, matcher));
+        return this;
+    }
+
+    public PlanMatchPattern withNumberOfOutputColumns(int numberOfSymbols)
+    {
+        matchers.add(new SymbolCardinalityMatcher(numberOfSymbols));
         return this;
     }
 
