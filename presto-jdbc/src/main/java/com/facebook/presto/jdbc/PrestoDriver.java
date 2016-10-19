@@ -20,8 +20,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyIoPool;
 import io.airlift.http.client.jetty.JettyIoPoolConfig;
 
@@ -32,21 +30,17 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PASSWORD;
-import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PATH;
+import static com.facebook.presto.jdbc.ConnectionProperties.USER;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -73,7 +67,7 @@ public class PrestoDriver
 
     private final JettyIoPool jettyIoPool;
 
-    private final ReferenceCountingLoadingCache<HttpClientConfig, QueryExecutor> queryExecutorCache;
+    private final ReferenceCountingLoadingCache<HttpClientCreator, QueryExecutor> queryExecutorCache;
 
     static {
         try {
@@ -371,11 +365,11 @@ public class PrestoDriver
     {
         this.jettyIoPool = new JettyIoPool("presto-jdbc", new JettyIoPoolConfig());
         this.queryExecutorCache = new ReferenceCountingLoadingCache<>(
-                new CacheLoader<HttpClientConfig, QueryExecutor>() {
+                new CacheLoader<HttpClientCreator, QueryExecutor>() {
                     @Override
-                    public QueryExecutor load(HttpClientConfig clientConfig)
+                    public QueryExecutor load(HttpClientCreator clientCreator)
                     {
-                        return QueryExecutor.create(DRIVER_NAME + "/" + DRIVER_VERSION, clientConfig, jettyIoPool);
+                        return QueryExecutor.create(clientCreator.create(QueryExecutor.baseClientConfig()));
                     }
                 },
                 QueryExecutor::close);
@@ -388,40 +382,6 @@ public class PrestoDriver
             queryExecutorCache.close();
             jettyIoPool.close();
         }
-    }
-
-    private static HttpClientConfig getClientConfig(Properties connectionProperties)
-            throws SQLException
-    {
-        HttpClientConfig result = QueryExecutor.baseClientConfig();
-
-        for (String key : connectionProperties.stringPropertyNames()) {
-            ConnectionProperty property = ConnectionProperties.forKey(key);
-            setClientConfig(result, connectionProperties, property);
-        }
-
-        return result;
-    }
-
-    private static void setClientConfig(HttpClientConfig config, Properties properties, ConnectionProperty property)
-            throws SQLException
-    {
-        final Map<ConnectionProperty, BiConsumer<HttpClientConfig, String>> clientSetters = ImmutableMap.of(
-                SSL_TRUST_STORE_PATH, HttpClientConfig::setTrustStorePath,
-                SSL_TRUST_STORE_PASSWORD, HttpClientConfig::setTrustStorePassword);
-
-        String key = property.getKey();
-        String value = properties.getProperty(key);
-        if (property.isRequired(properties) && value == null) {
-            throw new SQLException(format("Missing required property %s", key));
-        }
-
-        BiConsumer<HttpClientConfig, String> clientSetter = clientSetters.get(property);
-        if (clientSetter == null) {
-            return;
-        }
-
-        clientSetter.accept(config, value);
     }
 
     @Override
@@ -437,21 +397,17 @@ public class PrestoDriver
         }
 
         PrestoDriverUri uri = new PrestoDriverUri(url, driverProperties);
-        Properties connectionProperties = uri.getConnectionProperties();
+        String user = USER.getValue(uri.getConnectionProperties()).get();
 
-        String user = connectionProperties.getProperty(USER_PROPERTY);
-        if (isNullOrEmpty(user)) {
-            throw new SQLException(format("Username property (%s) must be set", USER_PROPERTY));
-        }
+        HttpClientCreator clientCreator = uri.getCreator(DRIVER_NAME + "/" + DRIVER_VERSION, jettyIoPool);
 
-        HttpClientConfig clientConfig = getClientConfig(connectionProperties);
-        QueryExecutor queryExecutor = queryExecutorCache.acquire(clientConfig);
+        QueryExecutor queryExecutor = queryExecutorCache.acquire(clientCreator);
         return new PrestoConnection(uri, user, queryExecutor) {
             @Override
             public void close()
                     throws SQLException
             {
-                queryExecutorCache.release(clientConfig);
+                queryExecutorCache.release(clientCreator);
                 super.close();
             }
         };

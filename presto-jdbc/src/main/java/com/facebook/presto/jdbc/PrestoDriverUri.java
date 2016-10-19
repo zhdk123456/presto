@@ -14,7 +14,10 @@
 package com.facebook.presto.jdbc;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.jetty.JettyIoPool;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,11 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.BiConsumer;
 
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL;
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL_ENABLED;
+import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PASSWORD;
+import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PATH;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,6 +55,10 @@ final class PrestoDriverUri
     private String schema;
 
     private final boolean useSecureConnection;
+
+    private static final Map<ConnectionProperty, BiConsumer<HttpClientConfig, String>> CLIENT_SETTERS = ImmutableMap.of(
+            SSL_TRUST_STORE_PATH, HttpClientConfig::setTrustStorePath,
+            SSL_TRUST_STORE_PASSWORD, HttpClientConfig::setTrustStorePassword);
 
     public PrestoDriverUri(String url, Properties driverProperties)
             throws SQLException
@@ -92,6 +103,33 @@ final class PrestoDriverUri
     public Properties getConnectionProperties()
     {
         return connectionProperties;
+    }
+
+    public HttpClientCreator getCreator(String userAgent, JettyIoPool jettyIoPool)
+            throws SQLException
+    {
+        return new HttpClientCreator(userAgent, jettyIoPool, getConfigSetters());
+    }
+
+    private Map<String, BiConsumer<HttpClientConfig, String>> getConfigSetters()
+            throws SQLException
+    {
+        ImmutableMap.Builder<String, BiConsumer<HttpClientConfig, String>> result = ImmutableMap.builder();
+        for (String key : connectionProperties.stringPropertyNames()) {
+            ConnectionProperty property = ConnectionProperties.forKey(key);
+            String value = connectionProperties.getProperty(key);
+
+            if (property.isRequired(connectionProperties) && value == null) {
+                throw new SQLException(format("Missing required property %s", key));
+            }
+
+            BiConsumer<HttpClientConfig, String> setter = CLIENT_SETTERS.get(property);
+            if (CLIENT_SETTERS.containsKey(property)) {
+                result.put(value, setter);
+            }
+        }
+
+        return result.build();
     }
 
     private static Map<String, String> parseParameters(String query)
