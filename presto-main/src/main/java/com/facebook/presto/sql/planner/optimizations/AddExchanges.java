@@ -732,7 +732,7 @@ public class AddExchanges
             PlanWithProperties left;
             PlanWithProperties right;
 
-            if (node.isDistributed()) {
+            if (node.getDistributionType().orElseThrow(() -> new IllegalStateException("distributionType not yet set")) == JoinNode.DistributionType.PARTITIONED) {
                 SetMultimap<Symbol, Symbol> rightToLeft = createMapping(rightSymbols, leftSymbols);
                 SetMultimap<Symbol, Symbol> leftToRight = createMapping(leftSymbols, rightSymbols);
 
