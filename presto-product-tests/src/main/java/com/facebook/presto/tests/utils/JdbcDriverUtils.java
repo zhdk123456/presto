@@ -83,12 +83,14 @@ public class JdbcDriverUtils
 
     public static boolean usingTeradataJdbcDriver(Connection connection)
     {
-        return  getClassNameForJdbcDriver(connection).startsWith("com.teradata.jdbc.");
+        String className = getClassNameForJdbcDriver(connection);
+        return className != null && className.startsWith("com.teradata.jdbc.");
     }
 
     public static boolean usingTeradataJdbc4Driver(Connection connection)
     {
-        return getClassNameForJdbcDriver(connection).startsWith("com.teradata.jdbc.jdbc4.");
+        String className = getClassNameForJdbcDriver(connection);
+        return className != null && className.startsWith("com.teradata.jdbc.jdbc4.");
     }
 
     private static String getClassNameForJdbcDriver(Connection connection)
