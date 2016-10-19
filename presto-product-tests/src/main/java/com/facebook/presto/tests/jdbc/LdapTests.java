@@ -66,7 +66,7 @@ public class LdapTests
     private static final String INVALID_CREDENTIALS_ERROR =
             "[Teradata][Presto](100240) Authentication failed: Invalid credentials.";
     private static final String UNAUTHORIZED_USER_ERROR =
-            "[Teradata][Presto](100240) Authentication failed: Unauthorized User.";
+            "[Teradata][Presto](100240) Authentication failed: Unauthorized user.";
     private static final String INVALID_SSL_PROPERTY =
             "[Teradata][Presto](100200) Connection string is invalid: SSL value is not valid for given AuthenticationType.";
 
