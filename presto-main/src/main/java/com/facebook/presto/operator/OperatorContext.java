@@ -284,7 +284,7 @@ public class OperatorContext
         systemMemoryContext.close();
     }
 
-    public OperatorSpillContext getSpillContext()
+    public AbstractOperatorSpillContext getSpillContext()
     {
         return spillContext;
     }
@@ -584,7 +584,7 @@ public class OperatorContext
     }
 
     private class OperatorSpillContext
-        implements AbstractOperatorSpillContext
+        extends AbstractOperatorSpillContext
     {
         private final DriverContext driverContext;
 
