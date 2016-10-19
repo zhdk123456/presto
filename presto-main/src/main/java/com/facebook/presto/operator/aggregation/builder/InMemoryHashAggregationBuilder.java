@@ -150,12 +150,6 @@ public class InMemoryHashAggregationBuilder
     }
 
     @Override
-    public CompletableFuture<?> isBlocked()
-    {
-        return completedFuture(null);
-    }
-
-    @Override
     public CompletableFuture<?> startMemoryRevoke()
     {
         return null;
