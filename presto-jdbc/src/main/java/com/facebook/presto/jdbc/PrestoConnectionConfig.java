@@ -124,7 +124,7 @@ final class PrestoConnectionConfig
             }
 
             BiConsumer<HttpClientConfig, String> setter = CLIENT_SETTERS.get(property);
-            if (CLIENT_SETTERS.containsKey(property)) {
+            if (setter != null) {
                 result.put(value, setter);
             }
         }

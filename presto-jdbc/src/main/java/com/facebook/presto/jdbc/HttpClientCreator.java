@@ -37,11 +37,11 @@ public class HttpClientCreator
     public HttpClientCreator(
             String userAgent,
             JettyIoPool jettyIoPool,
-            Map<String, BiConsumer<HttpClientConfig, String>> configshit)
+            Map<String, BiConsumer<HttpClientConfig, String>> configSetters)
     {
         this.userAgent = requireNonNull(userAgent, "userAgent is null");
         this.jettyIoPool = requireNonNull(jettyIoPool, "jettyIoPool is null");
-        this.configSetters = requireNonNull(configshit, "configSetters is null");
+        this.configSetters = requireNonNull(configSetters, "configSetters is null");
     }
 
     private ImmutableSet<? extends HttpRequestFilter> getFilters()

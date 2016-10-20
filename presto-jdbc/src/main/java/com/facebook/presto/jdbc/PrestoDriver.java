@@ -57,11 +57,7 @@ public class PrestoDriver
     static final String DRIVER_NAME = "Presto JDBC Driver";
     static final String DRIVER_VERSION = VERSION_MAJOR + "." + VERSION_MINOR;
 
-    private static final DriverPropertyInfo[] DRIVER_PROPERTY_INFOS = {};
-
     private static final String DRIVER_URL_START = "jdbc:presto:";
-
-    private static final String USER_PROPERTY = "user";
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
