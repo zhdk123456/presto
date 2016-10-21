@@ -22,7 +22,6 @@ import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.intellij.lang.annotations.Language;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aliasPair;
@@ -97,16 +96,15 @@ public class TestReorderJoins
     @Test
     public void testEliminateCrossJoinWithNonEqualityCondition()
     {
-        assertPlan("SELECT o.orderkey FROM part p, orders o, lineitem l WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND p.partkey <> o.orderkey",
-                anyTree(
-                        join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
+        assertPlan("SELECT o.orderkey FROM part p, orders o, lineitem l " +
+                        "WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND p.partkey <> o.orderkey AND p.name < l.comment",
+                anyTree(join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
                                 anyTree(
                                         join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
                                                 anyTree(tableScan("part")),
                                                 anyTree(filter("partkey_3 <> orderkey_2", tableScan("lineitem"))))),
                                 anyTree(tableScan("orders")))));
     }
-
     private void assertPlan(String sql, PlanMatchPattern pattern)
     {
         //Plan actualPlan = plan(sql);
