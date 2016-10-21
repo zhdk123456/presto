@@ -25,6 +25,8 @@ import io.airlift.slice.OutputStreamSliceOutput;
 import io.airlift.slice.RuntimeIOException;
 import io.airlift.slice.SliceOutput;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -43,9 +45,11 @@ import java.util.stream.Stream;
 
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+@NotThreadSafe
 public class BinaryFileSpiller
         implements Spiller
 {
@@ -54,8 +58,10 @@ public class BinaryFileSpiller
     private final BlockEncodingSerde blockEncodingSerde;
     private final AtomicLong spilledDataSize;
 
-    private int spillsCount;
     private final ListeningExecutorService executor;
+
+    private int spillsCount;
+    private CompletableFuture<?> previousSpill = CompletableFuture.completedFuture(null);
 
     public BinaryFileSpiller(
             BlockEncodingSerde blockEncodingSerde,
@@ -77,11 +83,12 @@ public class BinaryFileSpiller
     @Override
     public CompletableFuture<?> spill(Iterator<Page> pageIterator)
     {
+        checkState(previousSpill.isDone());
         Path spillPath = getPath(spillsCount++);
 
-        return MoreFutures.toCompletableFuture(executor.submit(
-                () -> writePages(pageIterator, spillPath)
-        ));
+        previousSpill = MoreFutures.toCompletableFuture(executor.submit(
+                () -> writePages(pageIterator, spillPath)));
+        return previousSpill;
     }
 
     private void writePages(Iterator<Page> pageIterator, Path spillPath)
@@ -97,6 +104,7 @@ public class BinaryFileSpiller
     @Override
     public List<Iterator<Page>> getSpills()
     {
+        checkState(previousSpill.isDone());
         return IntStream.range(0, spillsCount)
                 .mapToObj(i -> readPages(getPath(i)))
                 .collect(toImmutableList());
