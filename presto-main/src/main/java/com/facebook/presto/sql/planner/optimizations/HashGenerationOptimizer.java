@@ -613,7 +613,7 @@ public class HashGenerationOptimizer
                                     .addAll(hashSymbols.values())
                                     .build(),
                             node.getUnnestSymbols(),
-                            node.getOrdinalitySymbol()),
+                            node.getOrdinalitySymbol(), node.isUnnestTable()),
                     hashSymbols);
         }
 

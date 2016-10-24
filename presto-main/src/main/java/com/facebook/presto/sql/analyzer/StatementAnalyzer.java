@@ -567,10 +567,19 @@ class StatementAnalyzer
         ImmutableList.Builder<Field> outputFields = ImmutableList.builder();
         for (Expression expression : node.getExpressions()) {
             ExpressionAnalysis expressionAnalysis = analyzeExpression(expression, scope);
+            Type expressionType = expressionAnalysis.getType(expression);
             if (node.isUnnestTable()) {
-                throw SemanticExceptions.throwNotSupportedException(node, "TABLE expression");
-            } else {
-                Type expressionType = expressionAnalysis.getType(expression);
+                if (expressionType instanceof ArrayType && ((ArrayType) expressionType).getElementType() instanceof RowType) {
+                    Type elementType = ((ArrayType) expressionType).getElementType();
+                    ((RowType) elementType).getFields().forEach(field -> {
+                        outputFields.add(Field.newUnqualified(field.getName(), field.getType()));
+                    });
+                }
+                else {
+                    throw new PrestoException(INVALID_FUNCTION_ARGUMENT, "Unsupported TABLE expression type: " + expressionType);
+                }
+            }
+            else {
                 if (expressionType instanceof ArrayType) {
                     outputFields.add(Field.newUnqualified(Optional.empty(), ((ArrayType) expressionType).getElementType()));
                 }

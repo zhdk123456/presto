@@ -50,7 +50,6 @@ import com.facebook.presto.sql.tree.Intersect;
 import com.facebook.presto.sql.tree.Join;
 import com.facebook.presto.sql.tree.JoinUsing;
 import com.facebook.presto.sql.tree.LambdaArgumentDeclaration;
-import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.QuerySpecification;
@@ -66,6 +65,7 @@ import com.facebook.presto.sql.tree.Unnest;
 import com.facebook.presto.sql.tree.Values;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
+import com.facebook.presto.type.RowType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -389,20 +389,34 @@ class RelationPlanner
         for (Expression expression : node.getExpressions()) {
             Type type = analysis.getType(expression);
             Symbol inputSymbol = translations.get(expression);
-            if (type instanceof ArrayType) {
-                unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
-            }
-            else if (type instanceof MapType) {
-                unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
+            if (node.isUnnestTable()) {
+                if (((ArrayType) type).getElementType() instanceof RowType) {
+                    RowType elementType = (RowType) ((ArrayType) type).getElementType();
+                    List<Symbol> arrayUnnestedSymbols = elementType.getFields().stream()
+                            .map(f -> unnestedSymbolsIterator.next())
+                            .collect(toImmutableList());
+                    unnestSymbols.put(inputSymbol, arrayUnnestedSymbols);
+                }
+                else {
+                    throw new IllegalArgumentException("Unsupported type for TABLE unnest: " + type);
+                }
             }
             else {
-                throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
+                if (type instanceof ArrayType) {
+                    unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
+                }
+                else if (type instanceof MapType) {
+                    unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
+                }
+                else {
+                    throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
+                }
             }
         }
         Optional<Symbol> ordinalitySymbol = node.isWithOrdinality() ? Optional.of(unnestedSymbolsIterator.next()) : Optional.empty();
         checkState(!unnestedSymbolsIterator.hasNext(), "Not all output symbols were matched with input symbols");
 
-        UnnestNode unnestNode = new UnnestNode(idAllocator.getNextId(), projectNode, leftPlan.getFieldMappings(), unnestSymbols.build(), ordinalitySymbol);
+        UnnestNode unnestNode = new UnnestNode(idAllocator.getNextId(), projectNode, leftPlan.getFieldMappings(), unnestSymbols.build(), ordinalitySymbol, node.isUnnestTable());
         return new RelationPlan(unnestNode, analysis.getScope(joinNode), unnestNode.getOutputSymbols());
     }
 
@@ -475,21 +489,35 @@ class RelationPlanner
             values.add(LiteralInterpreter.toExpression(constantValue, type));
             Symbol inputSymbol = symbolAllocator.newSymbol(expression, type);
             argumentSymbols.add(inputSymbol);
-            if (type instanceof ArrayType) {
-                unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
-            }
-            else if (type instanceof MapType) {
-                unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
+            if (node.isUnnestTable()) {
+                if (((ArrayType) type).getElementType() instanceof RowType) {
+                    RowType elementType = (RowType) ((ArrayType) type).getElementType();
+                    List<Symbol> arrayUnnestedSymbols = elementType.getFields().stream()
+                            .map(f -> unnestedSymbolsIterator.next())
+                            .collect(toImmutableList());
+                    unnestSymbols.put(inputSymbol, arrayUnnestedSymbols);
+                }
+                else {
+                    throw new IllegalArgumentException("Unsupported type for TABLE unnest: " + type);
+                }
             }
             else {
-                throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
+                if (type instanceof ArrayType) {
+                    unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next()));
+                }
+                else if (type instanceof MapType) {
+                    unnestSymbols.put(inputSymbol, ImmutableList.of(unnestedSymbolsIterator.next(), unnestedSymbolsIterator.next()));
+                }
+                else {
+                    throw new IllegalArgumentException("Unsupported type for UNNEST: " + type);
+                }
             }
         }
         Optional<Symbol> ordinalitySymbol = node.isWithOrdinality() ? Optional.of(unnestedSymbolsIterator.next()) : Optional.empty();
         checkState(!unnestedSymbolsIterator.hasNext(), "Not all output symbols were matched with input symbols");
         ValuesNode valuesNode = new ValuesNode(idAllocator.getNextId(), argumentSymbols.build(), ImmutableList.of(values.build()));
 
-        UnnestNode unnestNode = new UnnestNode(idAllocator.getNextId(), valuesNode, ImmutableList.of(), unnestSymbols.build(), ordinalitySymbol);
+        UnnestNode unnestNode = new UnnestNode(idAllocator.getNextId(), valuesNode, ImmutableList.of(), unnestSymbols.build(), ordinalitySymbol, node.isUnnestTable());
         return new RelationPlan(unnestNode, scope, unnestedSymbols);
     }
 
