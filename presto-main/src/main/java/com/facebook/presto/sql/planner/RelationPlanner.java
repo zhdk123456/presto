@@ -430,11 +430,7 @@ class RelationPlanner
     protected RelationPlan visitValues(Values node, Void context)
     {
         Scope scope = analysis.getScope(node);
-        ImmutableList.Builder<Symbol> outputSymbolsBuilder = ImmutableList.builder();
-        for (Field field : scope.getRelationType().getVisibleFields()) {
-            Symbol symbol = symbolAllocator.newSymbol(field);
-            outputSymbolsBuilder.add(symbol);
-        }
+        List<Symbol> outputSymbols = getOutputSymbols(scope);
 
         ImmutableList.Builder<List<Expression>> rows = ImmutableList.builder();
         for (Expression row : node.getRows()) {
@@ -457,20 +453,15 @@ class RelationPlanner
             rows.add(values.build());
         }
 
-        ValuesNode valuesNode = new ValuesNode(idAllocator.getNextId(), outputSymbolsBuilder.build(), rows.build());
-        return new RelationPlan(valuesNode, scope, outputSymbolsBuilder.build());
+        ValuesNode valuesNode = new ValuesNode(idAllocator.getNextId(), outputSymbols, rows.build());
+        return new RelationPlan(valuesNode, scope, outputSymbols);
     }
 
     @Override
     protected RelationPlan visitUnnest(Unnest node, Void context)
     {
         Scope scope = analysis.getScope(node);
-        ImmutableList.Builder<Symbol> outputSymbolsBuilder = ImmutableList.builder();
-        for (Field field : scope.getRelationType().getVisibleFields()) {
-            Symbol symbol = symbolAllocator.newSymbol(field);
-            outputSymbolsBuilder.add(symbol);
-        }
-        List<Symbol> unnestedSymbols = outputSymbolsBuilder.build();
+        List<Symbol> unnestedSymbols = getOutputSymbols(scope);
 
         // If we got here, then we must be unnesting a constant, and not be in a join (where there could be column references)
         ImmutableList.Builder<Symbol> argumentSymbols = ImmutableList.builder();
@@ -500,6 +491,13 @@ class RelationPlanner
 
         UnnestNode unnestNode = new UnnestNode(idAllocator.getNextId(), valuesNode, ImmutableList.of(), unnestSymbols.build(), ordinalitySymbol);
         return new RelationPlan(unnestNode, scope, unnestedSymbols);
+    }
+
+    private List<Symbol> getOutputSymbols(Scope scope)
+    {
+        return scope.getRelationType().getVisibleFields().stream()
+                .map(symbolAllocator::newSymbol)
+                .collect(toImmutableList());
     }
 
     private RelationPlan processAndCoerceIfNecessary(Relation node, Void context)
