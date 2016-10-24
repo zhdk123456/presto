@@ -388,7 +388,7 @@ public class TestLogicalPlanner
 
     private void assertPlan(String sql, LogicalPlanner.Stage stage, PlanMatchPattern pattern)
     {
-        assertPlan(sql, pattern);
+        assertPlan(sql, stage, false, pattern);
     }
 
     private void assertPlan(String sql, LogicalPlanner.Stage stage, boolean distributed, PlanMatchPattern pattern)
