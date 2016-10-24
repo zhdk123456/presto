@@ -1,5 +1,13 @@
 databases:
   presto:
+    host: presto-master
     port: 8080
     jdbc_driver_class: com.teradata.presto.jdbc42.Driver
     jdbc_url:  jdbc:presto://${databases.presto.host}:${databases.presto.port}/hive/${databases.hive.schema};TimeZoneID=Africa/Abidjan;
+    configured_hdfs_user: hive
+    cli_ldap_truststore_path: /etc/ldap/cacerts.jks
+    cli_ldap_truststore_password: testldap
+    cli_ldap_user_name: DefaultGroupUser
+    cli_ldap_user_password: LDAPPass123
+    cli_ldap_server_address: https://${databases.presto.host}:8443
+
