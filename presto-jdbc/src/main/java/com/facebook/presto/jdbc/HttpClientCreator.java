@@ -14,6 +14,7 @@
 package com.facebook.presto.jdbc;
 
 import com.google.common.collect.ImmutableSet;
+import io.airlift.http.client.BasicAuthRequestFilter;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -22,6 +23,7 @@ import io.airlift.http.client.jetty.JettyIoPool;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -32,20 +34,31 @@ public class HttpClientCreator
     private final String userAgent;
     private final JettyIoPool jettyIoPool;
     private final Map<String, BiConsumer<HttpClientConfig, String>> configSetters;
+    private final String user;
+    private final Optional<String> password;
 
     public HttpClientCreator(
             String userAgent,
             JettyIoPool jettyIoPool,
-            Map<String, BiConsumer<HttpClientConfig, String>> configSetters)
+            Map<String, BiConsumer<HttpClientConfig, String>> configSetters,
+            String user,
+            Optional<String> password)
     {
         this.userAgent = requireNonNull(userAgent, "userAgent is null");
         this.jettyIoPool = requireNonNull(jettyIoPool, "jettyIoPool is null");
         this.configSetters = requireNonNull(configSetters, "configSetters is null");
+        this.user = requireNonNull(user, "user is null");
+        this.password = requireNonNull(password, "password is null");
     }
 
     private Set<? extends HttpRequestFilter> getFilters()
     {
-        return ImmutableSet.of(new UserAgentRequestFilter(userAgent));
+        ImmutableSet.Builder<HttpRequestFilter> filters = ImmutableSet.builder();
+        filters.add(new UserAgentRequestFilter(userAgent));
+        if (password.isPresent()) {
+            filters.add(new BasicAuthRequestFilter(user, password.get()));
+        }
+        return filters.build();
     }
 
     private HttpClientConfig getClientConfig(HttpClientConfig config)
@@ -64,7 +77,7 @@ public class HttpClientCreator
     @Override
     public int hashCode()
     {
-        return Objects.hash(userAgent, jettyIoPool, configSetters.keySet());
+        return Objects.hash(userAgent, jettyIoPool, configSetters.keySet(), user, password);
     }
 
     @Override
@@ -82,6 +95,8 @@ public class HttpClientCreator
 
         return Objects.equals(this.userAgent, other.userAgent) &&
                 Objects.equals(jettyIoPool, other.jettyIoPool) &&
-                Objects.equals(this.configSetters.keySet(), other.configSetters.keySet());
+                Objects.equals(this.configSetters.keySet(), other.configSetters.keySet()) &&
+                Objects.equals(this.user, other.user) &&
+                Objects.equals(this.password, other.password);
     }
 }
