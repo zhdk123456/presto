@@ -61,7 +61,6 @@ import static com.facebook.presto.client.ClientSession.withTransactionId;
 import static com.facebook.presto.sql.parser.StatementSplitter.Statement;
 import static com.facebook.presto.sql.parser.StatementSplitter.isEmptyStatement;
 import static com.facebook.presto.sql.parser.StatementSplitter.squeezeStatement;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.io.ByteStreams.nullOutputStream;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
@@ -134,7 +133,7 @@ public class Console
                 Optional.ofNullable(clientOptions.truststorePath),
                 Optional.ofNullable(clientOptions.truststorePassword),
                 Optional.ofNullable(clientOptions.user),
-                Optional.ofNullable(promptFor(clientOptions.password)),
+                getPassword(),
                 Optional.ofNullable(clientOptions.krb5Principal),
                 Optional.ofNullable(clientOptions.krb5RemoteServiceName),
                 clientOptions.authenticationEnabled,
@@ -148,23 +147,28 @@ public class Console
         }
     }
 
-    private String promptFor(boolean password)
+    private Optional<String> getPassword()
     {
-        if (password) {
-            checkState(clientOptions.user != null, "Username must be specified along with password");
-            ConsoleReader consoleReader = null;
-            try {
-                consoleReader = new ConsoleReader();
-                consoleReader.setExpandEvents(false);
-                return consoleReader.readLine("Password: ", '*');
-            }
-            catch (IOException e) {
-                System.err.println("Console read error: " + e.getMessage());
-            }
-            finally {
-                if (consoleReader != null) {
-                    consoleReader.shutdown();
-                }
+        if (clientOptions.showPasswordPrompt) {
+            return Optional.ofNullable(promptPassword());
+        }
+        return Optional.ofNullable(clientOptions.password);
+    }
+
+    private String promptPassword()
+    {
+        ConsoleReader consoleReader = null;
+        try {
+            consoleReader = new ConsoleReader();
+            consoleReader.setExpandEvents(false);
+            return consoleReader.readLine("Password: ", '*');
+        }
+        catch (IOException e) {
+            System.err.println("Console read error: " + e.getMessage());
+        }
+        finally {
+            if (consoleReader != null) {
+                consoleReader.shutdown();
             }
         }
         return null;
