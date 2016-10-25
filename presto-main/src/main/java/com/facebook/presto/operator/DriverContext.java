@@ -205,6 +205,20 @@ public class DriverContext
         return future;
     }
 
+    public ListenableFuture<?> reserveSpill(long bytes)
+    {
+        return pipelineContext.reserveSpill(bytes);
+    }
+
+    public void freeSpill(long bytes)
+    {
+        if (bytes == 0) {
+            return;
+        }
+        checkArgument(bytes >= 0, "bytes is negative");
+        pipelineContext.freeSpill(bytes);
+    }
+
     public boolean tryReserveMemory(long bytes)
     {
         if (pipelineContext.tryReserveMemory(bytes)) {
