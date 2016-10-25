@@ -135,6 +135,7 @@ public class SqlTaskManager
 
         this.memoryRevokingScheduler = requireNonNull(memoryRevokingScheduler, "memoryRevokingScheduler can not be null");
         this.localSpillManager = requireNonNull(localSpillManager, "localSpillManager is null");
+        DataSize maxQuerySpillPerNode = nodeSpillConfig.getQueryMaxSpillPerNode();
 
         queryContexts = CacheBuilder.newBuilder().weakValues().build(new CacheLoader<QueryId, QueryContext>()
         {
@@ -142,7 +143,14 @@ public class SqlTaskManager
             public QueryContext load(QueryId key)
                     throws Exception
             {
-                return new QueryContext(key, maxQueryMemoryPerNode, localMemoryManager.getPool(LocalMemoryManager.GENERAL_POOL), localMemoryManager.getPool(LocalMemoryManager.SYSTEM_POOL), taskNotificationExecutor);
+                return new QueryContext(
+                        key,
+                        maxQueryMemoryPerNode,
+                        localMemoryManager.getPool(LocalMemoryManager.GENERAL_POOL),
+                        localMemoryManager.getPool(LocalMemoryManager.SYSTEM_POOL),
+                        taskNotificationExecutor,
+                        maxQuerySpillPerNode,
+                        localSpillManager.getSpillSpaceTracker());
             }
         });
 
