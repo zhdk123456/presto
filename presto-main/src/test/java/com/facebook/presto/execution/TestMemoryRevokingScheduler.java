@@ -28,6 +28,7 @@ import com.facebook.presto.operator.PipelineContext;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.memory.MemoryPoolId;
+import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.testing.TestingSession;
@@ -62,6 +63,7 @@ public class TestMemoryRevokingScheduler
     private final MemoryPool memoryPool = new MemoryPool(LocalMemoryManager.GENERAL_POOL, new DataSize(10, DataSize.Unit.BYTE));
     private Session session = TestingSession.testSessionBuilder().build();
     private final AtomicInteger idGeneator = new AtomicInteger();
+    private final SpillSpaceTracker spillSpaceTracker = new SpillSpaceTracker(new DataSize(10, GIGABYTE));
 
     private Set<OperatorContext> allOperatorContexts;
 
@@ -174,7 +176,7 @@ public class TestMemoryRevokingScheduler
         return new SqlTask(
                 taskId,
                 location,
-                new QueryContext(new QueryId("query"), new DataSize(1, MEGABYTE), memoryPool, new MemoryPool(new MemoryPoolId("test"), new DataSize(1, GIGABYTE)), executor),
+                new QueryContext(new QueryId("query"), new DataSize(1, MEGABYTE), memoryPool, new MemoryPool(new MemoryPoolId("test"), new DataSize(1, GIGABYTE)), executor, new DataSize(1, GIGABYTE), spillSpaceTracker),
                 sqlTaskExecutionFactory,
                 executor,
                 Functions.<SqlTask>identity(),
