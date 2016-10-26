@@ -181,19 +181,27 @@ fi
 trap terminate INT TERM EXIT
 
 # start hadoop container
-environment_compose up -d hadoop-master
+if environment_compose config | grep hadoop-master -q; then 
+  environment_compose up -d hadoop-master
+fi
 
 # start external database containers
-environment_compose up -d mysql
-environment_compose up -d postgres
+if environment_compose config | grep mysql -q; then 
+  environment_compose up -d mysql
+fi
+if environment_compose config | grep postgres -q; then 
+  environment_compose up -d postgres
+fi
 
-# start docker logs for hadoop container
-environment_compose logs --no-color hadoop-master &
-HADOOP_LOGS_PID=$!
+if hadoop_master_container > /dev/null 2>&1; then
+  # start docker logs for hadoop container
+  environment_compose logs --no-color hadoop-master &
+  HADOOP_LOGS_PID=$!
 
-# wait until hadoop processes is started
-retry check_hadoop
-stop_unnecessary_hadoop_services
+  # wait until hadoop processes is started
+  retry check_hadoop
+  stop_unnecessary_hadoop_services
+fi
 
 # start presto containers
 environment_compose up -d ${PRESTO_SERVICES}
