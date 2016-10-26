@@ -13,6 +13,8 @@
  */
 package com.facebook.presto.sql.planner.optimizations;
 
+import com.facebook.presto.cost.CoefficientBasedCostCalculator;
+import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.Plan;
@@ -44,6 +46,7 @@ import static java.lang.String.format;
 public class TestReorderWindows
 {
     private final LocalQueryRunner queryRunner;
+    private final CostCalculator costCalculator;
 
     private final Optional<WindowFrame> commonFrame;
 
@@ -73,6 +76,8 @@ public class TestReorderWindows
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(1),
                 ImmutableMap.of());
+
+        costCalculator = new CoefficientBasedCostCalculator(queryRunner.getMetadata());
 
         commonFrame = Optional.empty();
 
@@ -146,7 +151,7 @@ public class TestReorderWindows
 
         Plan actualPlan = queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
         queryRunner.inTransaction(transactionSession -> {
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
             return null;
         });
     }
@@ -233,7 +238,7 @@ public class TestReorderWindows
     {
         Plan actualPlan = unitPlan(sql);
         queryRunner.inTransaction(transactionSession -> {
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
             return null;
         });
     }

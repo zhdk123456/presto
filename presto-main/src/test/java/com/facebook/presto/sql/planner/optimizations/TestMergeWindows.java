@@ -14,6 +14,8 @@
 package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.cost.CoefficientBasedCostCalculator;
+import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.Plan;
@@ -63,6 +65,7 @@ public class TestMergeWindows
     private final Optional<WindowFrame> commonFrame;
     private final Optional<WindowFrame> defaultFrame;
 
+    private final CostCalculator costCalculator;
     private final WindowNode.Specification specificationA;
     private final WindowNode.Specification specificationB;
 
@@ -76,6 +79,8 @@ public class TestMergeWindows
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(1),
                 ImmutableMap.<String, String>of());
+
+        costCalculator = new CoefficientBasedCostCalculator(queryRunner.getMetadata());
 
         commonFrame = Optional.of(new WindowFrame(
                 WindowFrame.Type.ROWS,
@@ -154,7 +159,7 @@ public class TestMergeWindows
 
         Plan actualPlan = queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
         queryRunner.inTransaction(transactionSession -> {
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
             return null;
         });
     }
@@ -451,7 +456,7 @@ public class TestMergeWindows
     {
         queryRunner.inTransaction(transactionSession -> {
             Plan actualPlan = unitPlan(transactionSession, sql);
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), actualPlan, pattern);
+            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
             return null;
         });
     }
