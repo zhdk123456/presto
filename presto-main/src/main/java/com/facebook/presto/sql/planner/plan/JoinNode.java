@@ -25,6 +25,7 @@ import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Optional;
 
+import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static java.util.Objects.requireNonNull;
 
 @Immutable
@@ -35,6 +36,7 @@ public class JoinNode
     private final PlanNode left;
     private final PlanNode right;
     private final List<EquiJoinClause> criteria;
+    private final List<Symbol> outputSymbols;
     private final Optional<Expression> filter;
     private final Optional<Symbol> leftHashSymbol;
     private final Optional<Symbol> rightHashSymbol;
@@ -45,6 +47,7 @@ public class JoinNode
             @JsonProperty("left") PlanNode left,
             @JsonProperty("right") PlanNode right,
             @JsonProperty("criteria") List<EquiJoinClause> criteria,
+            @JsonProperty("outputSymbols") List<Symbol> outputSymbols,
             @JsonProperty("filter") Optional<Expression> filter,
             @JsonProperty("leftHashSymbol") Optional<Symbol> leftHashSymbol,
             @JsonProperty("rightHashSymbol") Optional<Symbol> rightHashSymbol)
@@ -54,6 +57,7 @@ public class JoinNode
         requireNonNull(left, "left is null");
         requireNonNull(right, "right is null");
         requireNonNull(criteria, "criteria is null");
+        requireNonNull(outputSymbols, "outputSymbols is null");
         requireNonNull(filter, "filter is null");
         requireNonNull(leftHashSymbol, "leftHashSymbol is null");
         requireNonNull(rightHashSymbol, "rightHashSymbol is null");
@@ -62,6 +66,7 @@ public class JoinNode
         this.left = left;
         this.right = right;
         this.criteria = ImmutableList.copyOf(criteria);
+        this.outputSymbols = ImmutableList.copyOf(outputSymbols);
         this.filter = filter;
         this.leftHashSymbol = leftHashSymbol;
         this.rightHashSymbol = rightHashSymbol;
@@ -168,6 +173,11 @@ public class JoinNode
     public <C, R> R accept(PlanVisitor<C, R> visitor, C context)
     {
         return visitor.visitJoin(this, context);
+    }
+
+    public boolean isNestedLoopJoin()
+    {
+        return criteria.isEmpty() && !filter.isPresent() && type == INNER;
     }
 
     public static class EquiJoinClause
