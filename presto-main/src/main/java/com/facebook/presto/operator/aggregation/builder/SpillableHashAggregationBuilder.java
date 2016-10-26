@@ -94,7 +94,7 @@ public class SpillableHashAggregationBuilder
 
         hashAggregationBuilder.processPage(page);
 
-        if (shouldSpill(hashAggregationBuilder.getSizeInMemory())) {
+        if (shouldSpill(getSizeInMemory())) {
             spillToDisk();
         }
     }
@@ -102,11 +102,20 @@ public class SpillableHashAggregationBuilder
     @Override
     public void updateMemory()
     {
-        aggregationMemoryContext.setBytes(hashAggregationBuilder.getSizeInMemory());
+        aggregationMemoryContext.setBytes(getSizeInMemory());
 
         if (spillInProgress.isDone()) {
             spillMemoryContext.setBytes(0L);
         }
+    }
+
+    public long getSizeInMemory()
+    {
+        // TODO: we could skip memory reservation for hashAggregationBuilder.getGroupIdsSortingSize()
+        // if before building result from hashAggregationBuilder we would convert it to "read only" version.
+        // Read only version of GroupByHash from hashAggregationBuilder could be compacted by dropping
+        // most of it's field, freeing up some memory that could be used for sorting.
+        return hashAggregationBuilder.getSizeInMemory() + hashAggregationBuilder.getGroupIdsSortingSize();
     }
 
     @Override
@@ -151,7 +160,7 @@ public class SpillableHashAggregationBuilder
         }
 
         try {
-            if (shouldMergeWithMemory(hashAggregationBuilder.getSizeInMemory())) {
+            if (shouldMergeWithMemory(getSizeInMemory())) {
                 return mergeFromDiskAndMemory();
             }
             else {
@@ -184,7 +193,7 @@ public class SpillableHashAggregationBuilder
         if (!spiller.isPresent()) {
             spiller = Optional.of(spillerFactory.create(hashAggregationBuilder.buildTypes()));
         }
-        long spillMemoryUsage = hashAggregationBuilder.getSizeInMemory();
+        long spillMemoryUsage = getSizeInMemory();
 
         // start spilling process with current content of the hashAggregationBuilder builder...
         spillInProgress = spiller.get().spill(hashAggregationBuilder.buildHashSortedResult());
@@ -193,7 +202,7 @@ public class SpillableHashAggregationBuilder
         rebuildHashAggregationBuilder();
 
         // First decrease memory usage of aggregation context...
-        aggregationMemoryContext.setBytes(hashAggregationBuilder.getSizeInMemory());
+        aggregationMemoryContext.setBytes(getSizeInMemory());
         // And then transfer this memory to spill context
         // TODO: is there an easy way to do this atomically?
         spillMemoryContext.setBytes(spillMemoryUsage);

@@ -160,6 +160,15 @@ public class InMemoryHashAggregationBuilder
         return sizeInMemory;
     }
 
+    /**
+     * building hash sorted results requires memory for sorting group IDs.
+     * This method returns size of that memory requirement.
+     */
+    public long getGroupIdsSortingSize()
+    {
+        return getGroupCount() * Integer.BYTES;
+    }
+
     public void setOutputPartial()
     {
         for (Aggregator aggregator : aggregators) {
