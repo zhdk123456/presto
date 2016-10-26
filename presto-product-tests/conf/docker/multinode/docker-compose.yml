@@ -6,7 +6,7 @@ services:
 
   presto-worker:
     extends:
-      file: ../common/standard.yml
+      file: ../common/base.yml
       service: java-8-base
     command: /docker/volumes/conf/docker/files/presto-launcher-wrapper.sh multinode-worker run
     depends_on:

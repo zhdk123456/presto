@@ -1,0 +1,13 @@
+version: '2'
+services:
+
+  presto-master:
+    extends:
+      file: base.yml
+      service: java-8-base
+    hostname: presto-master
+    command: /docker/volumes/conf/docker/files/presto-launcher-wrapper.sh singlenode run
+    ports:
+      - '8080:8080'
+    volumes:
+       - ${PRESTO_SERVER_DIR}:/docker/volumes/presto-server

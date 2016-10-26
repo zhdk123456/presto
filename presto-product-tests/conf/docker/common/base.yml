@@ -6,32 +6,6 @@ services:
     volumes:
       - ../..:/docker/volumes/conf
 
-  hadoop-master:
-    extends:
-      service: java-8-base
-    image: ${HADOOP_MASTER_IMAGE}
-    hostname: hadoop-master
-    ports:
-      - '${HIVE_PROXY_PORT}:1180'
-      - '8020:8020'
-      - '8088:8088'
-      - '9083:9083'
-      - '10000:10000'
-      - '50070:50070'
-      - '50075:50075'
-
-  presto-master:
-    extends:
-      service: java-8-base
-    hostname: presto-master
-    command: /docker/volumes/conf/docker/files/presto-launcher-wrapper.sh singlenode run
-    ports:
-      - '8080:8080'
-    depends_on:
-       - hadoop-master
-    volumes:
-       - ${PRESTO_SERVER_DIR}:/docker/volumes/presto-server
-
   application-runner:
     extends:
       service: java-8-base
