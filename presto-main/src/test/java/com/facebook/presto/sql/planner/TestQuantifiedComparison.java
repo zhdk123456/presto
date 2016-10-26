@@ -120,12 +120,11 @@ public class TestQuantifiedComparison
     private void assertOrderedQuantifiedComparison(String query, String filter, String columnMapping, String function, String functionAlias)
     {
         assertPlan(query, anyTree(
-                project(
-                        join(INNER, ImmutableList.of(), Optional.of(filter),
-                                tableScan("orders", ImmutableMap.of(columnMapping, "orderkey")),
-                                aggregation(
-                                        ImmutableMap.of(
-                                                functionAlias, functionCall(function, ImmutableList.of("FIELD"))),
-                                        values(ImmutableMap.of("FIELD", 0)))))));
+                join(INNER, ImmutableList.of(), Optional.of(filter),
+                        tableScan("orders", ImmutableMap.of(columnMapping, "orderkey")),
+                        aggregation(
+                                ImmutableMap.of(
+                                        functionAlias, functionCall(function, ImmutableList.of("FIELD"))),
+                                values(ImmutableMap.of("FIELD", 0))))));
     }
 }
