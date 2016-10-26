@@ -550,6 +550,7 @@ public class UnaliasSymbolReferences
             PlanNode right = context.rewrite(node.getRight());
 
             List<JoinNode.EquiJoinClause> canonicalCriteria = canonicalizeJoinCriteria(node.getCriteria());
+            List<Symbol> canonicalOutputSymbols = canonicalize(node.getOutputSymbols());
             Optional<Expression> canonicalFilter = node.getFilter().map(this::canonicalize);
             Optional<Symbol> canonicalLeftHashSymbol = canonicalize(node.getLeftHashSymbol());
             Optional<Symbol> canonicalRightHashSymbol = canonicalize(node.getRightHashSymbol());
@@ -560,7 +561,7 @@ public class UnaliasSymbolReferences
                         .forEach(equiJoinClause -> map(equiJoinClause.getRight(), equiJoinClause.getLeft()));
             }
 
-            return new JoinNode(node.getId(), node.getType(), left, right, canonicalCriteria, canonicalFilter, canonicalLeftHashSymbol, canonicalRightHashSymbol);
+            return new JoinNode(node.getId(), node.getType(), left, right, canonicalCriteria, canonicalOutputSymbols, canonicalFilter, canonicalLeftHashSymbol, canonicalRightHashSymbol);
         }
 
         @Override
