@@ -40,7 +40,7 @@ script:
   - |
     test ! -v PRODUCT_TESTS ||
       presto-product-tests/bin/run_on_docker.sh \
-        multinode -x quarantine,big_query,storage_formats,profile_specific_tests
+        multinode -x quarantine,big_query,storage_formats,profile_specific_tests,tpcds
   - |
     test ! -v PRODUCT_TESTS ||
       presto-product-tests/bin/run_on_docker.sh \

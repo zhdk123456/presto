@@ -1,0 +1,32 @@
+-- delimiter: |; types: INTEGER|INTEGER|LONGNVARCHAR|DECIMAL
+1998|10012004|importoamalgamalg #4|466.35|
+1998|6009007|maxicorp #7|434.27|
+1998|6001007|amalgcorp #7|379.96|
+1998|8013003|exportimaxi #3|285.50|
+1998|4001002|amalgedu pack #2|233.58|
+1998|6013004|exportibrand #4|185.39|
+1998|10014015|edu packamalgamalg #15|37.36|
+1999|6013004|exportibrand #4|721.30|
+1999|10012004|importoamalgamalg #4|403.84|
+1999|4001002|amalgedu pack #2|391.24|
+1999|10014015|edu packamalgamalg #15|357.39|
+1999|8013003|exportimaxi #3|345.22|
+1999|6001007|amalgcorp #7|284.05|
+1999|6009007|maxicorp #7|85.61|
+2000|4001002|amalgedu pack #2|400.39|
+2000|6001007|amalgexporti #2|376.93|
+2000|10014015|edu packamalgamalg #15|368.99|
+2000|6009007|maxicorp #7|367.69|
+2000|8013003|exportimaxi #3|352.16|
+2000|6013004|exportibrand #4|141.05|
+2001|6009007|amalgscholar #2|477.59|
+2001|4001002|amalgedu pack #2|421.87|
+2001|6001007|amalgexporti #2|332.63|
+2001|8013003|exportinameless #4|245.53|
+2001|6013004|exportibrand #4|75.10|
+2002|6009007|amalgscholar #2|666.54|
+2002|6013004|exportibrand #4|532.81|
+2002|8013003|exportinameless #4|441.42|
+2002|4001002|amalgedu pack #2|306.02|
+2002|3002001|importoexporti #1|226.92|
+2002|10002005|importounivamalg #5|205.88|
