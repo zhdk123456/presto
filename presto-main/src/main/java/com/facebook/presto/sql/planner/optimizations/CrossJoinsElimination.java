@@ -170,6 +170,7 @@ public class CrossJoinsElimination
                         criteria.build(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         Optional.empty());
             }
 

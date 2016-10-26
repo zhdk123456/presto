@@ -164,6 +164,7 @@ public class TestCrossJoinElimination
                 criteria.build(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
     }
 
