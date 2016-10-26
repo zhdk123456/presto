@@ -2,7 +2,7 @@ language: java
 
 env:
   global:
-    - MAVEN_OPTS="-Xmx256M"
+    - MAVEN_OPTS="-Xmx512M"
     - MAVEN_SKIP_CHECKS_AND_DOCS="-Dair.check.skip-all=true -Dmaven.javadoc.skip=true"
   matrix:
     - MAVEN_CHECKS=true
