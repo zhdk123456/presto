@@ -253,8 +253,20 @@ public class PlanOptimizers
 
         builder.add(new OptimizeMixedDistinctAggregations(metadata));
 
+        // TODO
+        // This is not obvious where JoinReorderingOptimizer should be put in optimizer pipeline.
+        // For now we place it before AddExchanges/PickLayout optimizer.
+        // This implies that that default layout returned by connector will be used for determining statistics for TableScan nodes - which
+        // is not necessarily the same layout which would be selected by latter optimizers.
+        //
+        // The other options are to:
+        // - make join reordering part of AddExchanges optimizer. Downside of that approach is that we would bloat already complex class.
+        //   Especially as we add more complex join reordering logic.
+        // - put the JoinReorderingOptimizer after AddExchanges/PickLayout. It can work for distributed joins as JoinNode. But for broadcast joins
+        //   it might be possible that would have to undo the decision on what is broadcast made by AddExchanges.
+        builder.add(new DetermineJoinDistributionType(costCalculator, globalProperties, nodeCount)); // Must run before AddExchanges
+
         if (!forceSingleNode) {
-            builder.add(new DetermineJoinDistributionType()); // Must run before AddExchanges
             builder.add(new PushTableWriteThroughUnion()); // Must run before AddExchanges
             builder.add(new AddExchanges(metadata, sqlParser));
         }
