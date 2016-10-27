@@ -132,9 +132,9 @@ public class PlanOptimizers
         // - put the JoinReorderingOptimizer after AddExchanges/PickLayout. It can work for distributed joins as JoinNode. But for broadcast joins
         //   it might be possible that would have to undo the decision on what is broadcast made by AddExchanges.
         builder.add(new JoinReorderingOptimizer(costCalculator));
+        builder.add(new DetermineJoinDistributionType(costCalculator)); // Must run before AddExchanges
 
         if (!forceSingleNode) {
-            builder.add(new DetermineJoinDistributionType()); // Must run before AddExchanges
             builder.add(new PushTableWriteThroughUnion()); // Must run before AddExchanges
             builder.add(new AddExchanges(metadata, sqlParser));
         }
