@@ -107,7 +107,7 @@ public class TestMergeWindows
     /**
      * There are two types of tests in here, and they answer two different
      * questions about MergeWindows (MW):
-     *
+     * <p>
      * 1) Is MW working as it's supposed to be? The tests running the minimal
      * set of optimizers can tell us this.
      * 2) Has some other optimizer changed the plan in such a way that MW no
@@ -115,7 +115,7 @@ public class TestMergeWindows
      * that MW sees cannot be optimized by MW? The test running the full set
      * of optimizers answers this, though it isn't actually meaningful unless
      * we know the answer to question 1 is "yes".
-     *
+     * <p>
      * The tests that use only the minimal set of optimizers are closer to true
      * "unit" tests in that they verify the behavior of MW with as few
      * external dependencies as possible. Those dependencies to include the
@@ -125,7 +125,7 @@ public class TestMergeWindows
      * 1) The tests are more self-maintaining.
      * 2) They're a lot easier to read.
      * 3) It's a lot less typing.
-     *
+     * <p>
      * The test that runs with all of the optimzers acts as an integration test
      * and ensures that MW is effective when run with the complete set of
      * optimizers.
@@ -141,14 +141,16 @@ public class TestMergeWindows
 
         PlanMatchPattern pattern =
                 anyTree(
-                        window(specificationA,
+                        window(
+                                specificationB,
                                 ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference),
-                                functionCall("sum", commonFrame, discountReference)),
+                                        functionCall("sum", commonFrame, quantityReference)),
                                 anyTree(
-                                        window(specificationB,
+                                        window(
+                                                specificationA,
                                                 ImmutableList.of(
-                                                functionCall("sum", commonFrame, quantityReference)),
+                                                        functionCall("sum", commonFrame, quantityReference),
+                                                        functionCall("sum", commonFrame, discountReference)),
                                                 anyNot(WindowNode.class,
                                                         anyTree())))));
 
@@ -170,13 +172,15 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationB,
+                        window(
+                                specificationB,
                                 ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
-                                window(specificationA,
+                                        functionCall("sum", commonFrame, quantityReference)),
+                                window(
+                                        specificationA,
                                         ImmutableList.of(
-                                        functionCall("sum", commonFrame, quantityReference),
-                                        functionCall("sum", commonFrame, discountReference)),
+                                                functionCall("sum", commonFrame, quantityReference),
+                                                functionCall("sum", commonFrame, discountReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -191,14 +195,17 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationA,
+                        window(
+                                specificationA,
                                 ImmutableList.of(functionCall("sum", commonFrame, discountReference)),
-                                window(specificationB,
+                                window(
+                                        specificationB,
                                         ImmutableList.of(functionCall("lag", commonFrame, quantityReference, anySymbolReference(), anySymbolReference())),
                                         project(
-                                                window(specificationA,
+                                                window(
+                                                        specificationA,
                                                         ImmutableList.of(
-                                                        functionCall("sum", commonFrame, quantityReference)),
+                                                                functionCall("sum", commonFrame, quantityReference)),
                                                         any()))))));
     }
 
@@ -213,14 +220,16 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationA,
+                        window(
+                                specificationA,
                                 ImmutableList.of(
-                                functionCall("sum", commonFrame, discountReference),
-                                functionCall("lag", commonFrame, quantityReference, anySymbolReference(), anySymbolReference())),
+                                        functionCall("sum", commonFrame, discountReference),
+                                        functionCall("lag", commonFrame, quantityReference, anySymbolReference(), anySymbolReference())),
                                 project(
-                                        window(specificationA,
+                                        window(
+                                                specificationA,
                                                 ImmutableList.of(
-                                                functionCall("sum", commonFrame, quantityReference)),
+                                                        functionCall("sum", commonFrame, quantityReference)),
                                                 any())))));
     }
 
@@ -245,13 +254,15 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationD,
+                        window(
+                                specificationD,
                                 ImmutableList.of(
-                                functionCall("sum", defaultFrame, quantityReference)),
-                                window(specificationC,
+                                        functionCall("sum", defaultFrame, quantityReference)),
+                                window(
+                                        specificationC,
                                         ImmutableList.of(
-                                        functionCall("sum", defaultFrame, quantityReference),
-                                        functionCall("sum", defaultFrame, discountReference)),
+                                                functionCall("sum", defaultFrame, quantityReference),
+                                                functionCall("sum", defaultFrame, discountReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -281,11 +292,12 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationC,
+                        window(
+                                specificationC,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, quantityReference),
-                                functionCall("sum", frameC, discountReference),
-                                functionCall("sum", frameC, quantityReference)),
+                                        functionCall("avg", frameD, quantityReference),
+                                        functionCall("sum", frameC, discountReference),
+                                        functionCall("sum", frameC, quantityReference)),
                                 any())));
     }
 
@@ -310,11 +322,12 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationD,
+                        window(
+                                specificationD,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, quantityReference),
-                                functionCall("sum", defaultFrame, discountReference),
-                                functionCall("sum", defaultFrame, quantityReference)),
+                                        functionCall("avg", frameD, quantityReference),
+                                        functionCall("sum", defaultFrame, discountReference),
+                                        functionCall("sum", defaultFrame, quantityReference)),
                                 any())));
     }
 
@@ -370,10 +383,14 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationC, ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
-                                window(specificationA, ImmutableList.of(
-                                        functionCall("sum", commonFrame, extendedpriceReference)),
+                        window(
+                                specificationC,
+                                ImmutableList.of(
+                                        functionCall("sum", commonFrame, quantityReference)),
+                                window(
+                                        specificationA,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, extendedpriceReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -392,10 +409,14 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationC, ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
-                                window(specificationA, ImmutableList.of(
-                                        functionCall("sum", commonFrame, extendedpriceReference)),
+                        window(
+                                specificationC,
+                                ImmutableList.of(
+                                        functionCall("sum", commonFrame, quantityReference)),
+                                window(
+                                        specificationA,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, extendedpriceReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -415,11 +436,15 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationC, ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
-                                window(specificationA, ImmutableList.of(
-                                        functionCall("sum", commonFrame, extendedpriceReference),
-                                        functionCall("sum", commonFrame, discountReference)),
+                        window(
+                                specificationC,
+                                ImmutableList.of(
+                                        functionCall("sum", commonFrame, quantityReference)),
+                                window(
+                                        specificationA,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, extendedpriceReference),
+                                                functionCall("sum", commonFrame, discountReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -439,11 +464,15 @@ public class TestMergeWindows
 
         assertUnitPlan(sql,
                 anyTree(
-                        window(specificationC, ImmutableList.of(
-                                functionCall("sum", commonFrame, quantityReference)),
-                                window(specificationA, ImmutableList.of(
-                                        functionCall("sum", commonFrame, extendedpriceReference),
-                                        functionCall("sum", commonFrame, discountReference)),
+                        window(
+                                specificationC,
+                                ImmutableList.of(
+                                        functionCall("sum", commonFrame, quantityReference)),
+                                window(
+                                        specificationA,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, extendedpriceReference),
+                                                functionCall("sum", commonFrame, discountReference)),
                                         anyNot(WindowNode.class)))));
     }
 
@@ -463,10 +492,10 @@ public class TestMergeWindows
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
         List<PlanOptimizer> optimizers = ImmutableList.of(
-                        new UnaliasSymbolReferences(),
-                        new PruneIdentityProjections(),
-                        new MergeWindows(),
-                        new PruneUnreferencedOutputs());
+                new UnaliasSymbolReferences(),
+                new PruneIdentityProjections(),
+                new MergeWindows(),
+                new PruneUnreferencedOutputs());
         return queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizers);
     }
 }
