@@ -93,7 +93,7 @@ public class RaptorSplitManager
     }
 
     @Override
-    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, ConnectorTableLayoutHandle layout)
+    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, ConnectorTableLayoutHandle layout, List<ColumnHandle> columns)
     {
         RaptorTableLayoutHandle handle = checkType(layout, RaptorTableLayoutHandle.class, "layout");
         RaptorTableHandle table = handle.getTable();
