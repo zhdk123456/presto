@@ -13,11 +13,14 @@
  */
 package com.facebook.presto.transaction;
 
+import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplitSource;
 import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.connector.ConnectorSplitManager;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,7 +35,7 @@ public class LegacyConnectorSplitManager
     }
 
     @Override
-    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorTableLayoutHandle layout)
+    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorTableLayoutHandle layout, List<ColumnHandle> columns)
     {
         return splitManager.getSplits(session, layout);
     }

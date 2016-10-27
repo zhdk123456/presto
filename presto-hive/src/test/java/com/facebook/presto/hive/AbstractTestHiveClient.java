@@ -890,7 +890,8 @@ public abstract class AbstractTestHiveClient
 
             ConnectorTableHandle tableHandle = getTableHandle(metadata, tablePartitionFormat);
             List<ConnectorTableLayoutResult> tableLayoutResults = metadata.getTableLayouts(session, tableHandle, new Constraint<>(TupleDomain.all(), bindings -> true), Optional.empty());
-            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle());
+            List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
+            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle(), columnHandles);
 
             assertEquals(getSplitCount(splitSource), partitionCount);
         }
@@ -906,7 +907,8 @@ public abstract class AbstractTestHiveClient
 
             ConnectorTableHandle tableHandle = getTableHandle(metadata, tableUnpartitioned);
             List<ConnectorTableLayoutResult> tableLayoutResults = metadata.getTableLayouts(session, tableHandle, new Constraint<>(TupleDomain.all(), bindings -> true), Optional.empty());
-            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle());
+            List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
+            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle(), columnHandles);
 
             assertEquals(getSplitCount(splitSource), 1);
         }
@@ -917,7 +919,7 @@ public abstract class AbstractTestHiveClient
             throws Exception
     {
         try (Transaction transaction = newTransaction()) {
-            splitManager.getSplits(transaction.getTransactionHandle(), newSession(), invalidTableLayoutHandle);
+            splitManager.getSplits(transaction.getTransactionHandle(), newSession(), invalidTableLayoutHandle, ImmutableList.of());
         }
     }
 
@@ -926,7 +928,7 @@ public abstract class AbstractTestHiveClient
             throws Exception
     {
         try (Transaction transaction = newTransaction()) {
-            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), newSession(), emptyTableLayoutHandle);
+            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), newSession(), emptyTableLayoutHandle, ImmutableList.of());
             // fetch full list
             getSplitCount(splitSource);
         }
@@ -967,7 +969,7 @@ public abstract class AbstractTestHiveClient
             TupleDomain<ColumnHandle> tupleDomain = TupleDomain.withColumnDomains(ImmutableMap.of(dsColumn, domain));
             List<ConnectorTableLayoutResult> tableLayoutResults = metadata.getTableLayouts(session, tableHandle, new Constraint<>(tupleDomain, bindings -> true), Optional.empty());
             try {
-                getSplitCount(splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle()));
+                getSplitCount(splitManager.getSplits(transaction.getTransactionHandle(), session, getOnlyElement(tableLayoutResults).getTableLayout().getHandle(), ImmutableList.of(dsColumn)));
                 fail("Expected PartitionOfflineException");
             }
             catch (PartitionOfflineException e) {
@@ -989,7 +991,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            assertTableIsBucketed(tableHandle);
+            assertTableIsBucketed(tableHandle, columnHandles);
 
             String testString = "test";
             Integer testInt = 13;
@@ -1029,7 +1031,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            assertTableIsBucketed(tableHandle);
+            assertTableIsBucketed(tableHandle, columnHandles);
 
             String testString = "test";
             Long testBigint = 89L;
@@ -1068,7 +1070,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            assertTableIsBucketed(tableHandle);
+            assertTableIsBucketed(tableHandle, columnHandles);
 
             ImmutableMap<ColumnHandle, NullableValue> bindings = ImmutableMap.<ColumnHandle, NullableValue>builder()
                     .put(columnHandles.get(columnIndex.get("t_float")), NullableValue.of(REAL, (long) floatToRawIntBits(87.1f)))
@@ -1081,11 +1083,11 @@ public abstract class AbstractTestHiveClient
         }
     }
 
-    private void assertTableIsBucketed(ConnectorTableHandle tableHandle)
+    private void assertTableIsBucketed(ConnectorTableHandle tableHandle, List<ColumnHandle> columns)
             throws Exception
     {
         // the bucketed test tables should have exactly 32 splits
-        List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all());
+        List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all(), columns);
         assertEquals(splits.size(), 32);
 
         // verify all paths are unique
@@ -1108,7 +1110,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all());
+            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all(), columnHandles);
             assertEquals(splits.size(), partitionCount);
             for (ConnectorSplit split : splits) {
                 HiveSplit hiveSplit = (HiveSplit) split;
@@ -1198,7 +1200,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all());
+            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all(), columnHandles);
             assertEquals(splits.size(), partitionCount);
             for (ConnectorSplit split : splits) {
                 HiveSplit hiveSplit = (HiveSplit) split;
@@ -1239,7 +1241,7 @@ public abstract class AbstractTestHiveClient
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
             Map<String, Integer> columnIndex = indexColumns(columnHandles);
 
-            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all());
+            List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all(), columnHandles);
             assertEquals(splits.size(), 1);
 
             for (ConnectorSplit split : splits) {
@@ -1313,10 +1315,10 @@ public abstract class AbstractTestHiveClient
             assertEquals(getAllPartitions(layoutHandle).size(), 1);
             assertEquals(getPartitionId(getAllPartitions(layoutHandle).get(0)), "t_boolean=0");
 
-            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle);
+            ImmutableList<ColumnHandle> columnHandles = ImmutableList.of(column);
+            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle, columnHandles);
             ConnectorSplit split = getOnlyElement(getAllSplits(splitSource));
 
-            ImmutableList<ColumnHandle> columnHandles = ImmutableList.of(column);
             try (ConnectorPageSource ignored = pageSourceProvider.createPageSource(transaction.getTransactionHandle(), session, split, columnHandles)) {
                 fail("expected exception");
             }
@@ -1361,8 +1363,8 @@ public abstract class AbstractTestHiveClient
 
             ConnectorTableHandle tableHandle = getTableHandle(metadata, new SchemaTableName(database, "presto_test_types_rctext"));
             ConnectorTableMetadata tableMetadata = metadata.getTableMetadata(session, tableHandle);
-            HiveSplit hiveSplit = getHiveSplit(tableHandle);
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
+            HiveSplit hiveSplit = getHiveSplit(tableHandle, columnHandles);
 
             ConnectorPageSourceProvider pageSourceProvider = new HivePageSourceProvider(
                     new HiveClientConfig().setTimeZone(timeZone.getID()),
@@ -1397,8 +1399,8 @@ public abstract class AbstractTestHiveClient
 
             ConnectorTableHandle tableHandle = getTableHandle(metadata, new SchemaTableName(database, "presto_test_types_rcbinary"));
             ConnectorTableMetadata tableMetadata = metadata.getTableMetadata(session, tableHandle);
-            HiveSplit hiveSplit = getHiveSplit(tableHandle);
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
+            HiveSplit hiveSplit = getHiveSplit(tableHandle, columnHandles);
 
             ConnectorPageSourceProvider pageSourceProvider = new HivePageSourceProvider(
                     new HiveClientConfig().setTimeZone(timeZone.getID()),
@@ -1812,7 +1814,7 @@ public abstract class AbstractTestHiveClient
             List<ConnectorTableLayoutResult> tableLayoutResults = metadata.getTableLayouts(session, tableHandle, new Constraint<>(TupleDomain.all(), bindings -> true), Optional.empty());
             ConnectorTableLayoutHandle layoutHandle = getOnlyElement(tableLayoutResults).getTableLayout().getHandle();
             assertEquals(getAllPartitions(layoutHandle).size(), 1);
-            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle);
+            ConnectorSplitSource splitSource = splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle, columnHandles);
             ConnectorSplit split = getOnlyElement(getAllSplits(splitSource));
 
             try (ConnectorPageSource pageSource = pageSourceProvider.createPageSource(transaction.getTransactionHandle(), session, split, columnHandles)) {
@@ -2465,19 +2467,18 @@ public abstract class AbstractTestHiveClient
 
             ConnectorTableHandle tableHandle = getTableHandle(metadata, new SchemaTableName(database, tableName));
             ConnectorTableMetadata tableMetadata = metadata.getTableMetadata(session, tableHandle);
-            HiveSplit hiveSplit = getHiveSplit(tableHandle);
-
             List<ColumnHandle> columnHandles = ImmutableList.copyOf(metadata.getColumnHandles(session, tableHandle).values());
+            HiveSplit hiveSplit = getHiveSplit(tableHandle, columnHandles);
 
             ConnectorPageSource pageSource = pageSourceProvider.createPageSource(transaction.getTransactionHandle(), session, hiveSplit, columnHandles);
             assertGetRecords(hiveStorageFormat, tableMetadata, hiveSplit, pageSource, columnHandles);
         }
     }
 
-    protected HiveSplit getHiveSplit(ConnectorTableHandle tableHandle)
+    protected HiveSplit getHiveSplit(ConnectorTableHandle tableHandle, List<ColumnHandle> columns)
             throws InterruptedException
     {
-        List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all());
+        List<ConnectorSplit> splits = getAllSplits(tableHandle, TupleDomain.all(), columns);
         assertEquals(splits.size(), 1);
         return checkType(getOnlyElement(splits), HiveSplit.class, "split");
     }
@@ -2733,7 +2734,7 @@ public abstract class AbstractTestHiveClient
                 new Constraint<>(tupleDomain, bindings -> true),
                 Optional.empty());
         ConnectorTableLayoutHandle layoutHandle = getOnlyElement(tableLayoutResults).getTableLayout().getHandle();
-        List<ConnectorSplit> splits = getAllSplits(splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle));
+        List<ConnectorSplit> splits = getAllSplits(splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle, columnHandles));
         if (expectedSplitCount.isPresent()) {
             assertEquals(splits.size(), expectedSplitCount.getAsInt());
         }
@@ -2772,7 +2773,7 @@ public abstract class AbstractTestHiveClient
         return splitCount;
     }
 
-    private List<ConnectorSplit> getAllSplits(ConnectorTableHandle tableHandle, TupleDomain<ColumnHandle> tupleDomain)
+    private List<ConnectorSplit> getAllSplits(ConnectorTableHandle tableHandle, TupleDomain<ColumnHandle> tupleDomain, List<ColumnHandle> columns)
             throws InterruptedException
     {
         try (Transaction transaction = newTransaction()) {
@@ -2780,7 +2781,7 @@ public abstract class AbstractTestHiveClient
             ConnectorMetadata metadata = transaction.getMetadata();
             List<ConnectorTableLayoutResult> tableLayoutResults = metadata.getTableLayouts(session, tableHandle, new Constraint<>(tupleDomain, bindings -> true), Optional.empty());
             ConnectorTableLayoutHandle layoutHandle = getOnlyElement(tableLayoutResults).getTableLayout().getHandle();
-            return getAllSplits(splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle));
+            return getAllSplits(splitManager.getSplits(transaction.getTransactionHandle(), session, layoutHandle, columns));
         }
     }
 
