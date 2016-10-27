@@ -46,7 +46,7 @@ public class SplitManager
         // assumes connectorId and catalog are the same
         ConnectorSession connectorSession = session.toConnectorSession(connectorId);
 
-        ConnectorSplitSource source = splitManager.getSplits(layout.getTransactionHandle(), connectorSession, layout.getConnectorHandle());
+        ConnectorSplitSource source = splitManager.getSplits(layout.getTransactionHandle(), connectorSession, layout.getConnectorHandle(), columns);
 
         return new ConnectorAwareSplitSource(connectorId, layout.getTransactionHandle(), source);
     }
