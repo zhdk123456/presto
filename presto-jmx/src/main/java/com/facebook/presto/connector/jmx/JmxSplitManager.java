@@ -53,7 +53,7 @@ public class JmxSplitManager
     }
 
     @Override
-    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, ConnectorTableLayoutHandle layout)
+    public ConnectorSplitSource getSplits(ConnectorTransactionHandle transaction, ConnectorSession session, ConnectorTableLayoutHandle layout, List<ColumnHandle> columns)
     {
         JmxTableLayoutHandle jmxLayout = checkType(layout, JmxTableLayoutHandle.class, "layout");
         JmxTableHandle tableHandle = jmxLayout.getTable();

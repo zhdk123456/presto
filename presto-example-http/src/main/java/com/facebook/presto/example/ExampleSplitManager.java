@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.example;
 
+import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorSplitSource;
@@ -46,7 +47,7 @@ public class ExampleSplitManager
     }
 
     @Override
-    public ConnectorSplitSource getSplits(ConnectorTransactionHandle handle, ConnectorSession session, ConnectorTableLayoutHandle layout)
+    public ConnectorSplitSource getSplits(ConnectorTransactionHandle handle, ConnectorSession session, ConnectorTableLayoutHandle layout, List<ColumnHandle> columns)
     {
         ExampleTableLayoutHandle layoutHandle = checkType(layout, ExampleTableLayoutHandle.class, "layout");
         ExampleTableHandle tableHandle = layoutHandle.getTable();
