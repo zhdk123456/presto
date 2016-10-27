@@ -75,7 +75,7 @@ public class TestMergeWindows
 
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(1),
-                ImmutableMap.<String, String>of());
+                ImmutableMap.of());
 
         commonFrame = Optional.of(new WindowFrame(
                 WindowFrame.Type.ROWS,
