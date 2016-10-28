@@ -68,18 +68,6 @@ public class DataDefinitionExecution<T extends Statement>
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.stateMachine = requireNonNull(stateMachine, "stateMachine is null");
         this.parameters = parameters;
-
-        stateMachine.addStateChangeListener(state -> {
-            if (statement instanceof CatalogRelatedStatement) {
-                CatalogRelatedStatement catalogRelatedStatement = (CatalogRelatedStatement) statement;
-                if (state == QueryState.RUNNING) { // DDLs don't have STARTING phase
-                    notifyBeginQuery(catalogRelatedStatement);
-                }
-                if (state.isDone()) {
-                    notifyEndQuery();
-                }
-            }
-        });
     }
 
     private void notifyBeginQuery(CatalogRelatedStatement statement)
@@ -129,18 +117,34 @@ public class DataDefinitionExecution<T extends Statement>
     {
         try {
             // transition to running
-            if (!stateMachine.transitionToRunning()) {
+            if (stateMachine.transitionToRunning()) {
+                if (statement instanceof CatalogRelatedStatement) {
+                    notifyBeginQuery((CatalogRelatedStatement) statement);
+                }
+            }
+            else {
                 // query already running or finished
                 return;
             }
 
             CompletableFuture<?> future = task.execute(statement, transactionManager, metadata, accessControl, stateMachine, parameters);
             future.whenComplete((o, throwable) -> {
-                if (throwable == null) {
+                Throwable failure = throwable;
+                if (statement instanceof CatalogRelatedStatement) {
+                    try {
+                        notifyEndQuery();
+                    }
+                    catch (Throwable t) {
+                        if (failure == null) {
+                            failure = t;
+                        }
+                    }
+                }
+                if (failure == null) {
                     stateMachine.transitionToFinishing();
                 }
                 else {
-                    fail(throwable);
+                    fail(failure);
                 }
             });
         }
