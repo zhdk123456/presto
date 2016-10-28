@@ -579,9 +579,9 @@ public class MetadataManager
     @Override
     public void beginQuery(Session session, String catalogName)
     {
-        ConnectorId connectorId = new ConnectorId(catalogName);
-        ConnectorMetadata metadata = getMetadata(session, connectorId);
-        ConnectorSession connectorSession = session.toConnectorSession(connectorId);
+        CatalogMetadata catalogMetadata = getOptionalCatalogMetadata(session, catalogName).get();
+        ConnectorMetadata metadata = catalogMetadata.getMetadata();
+        ConnectorSession connectorSession = session.toConnectorSession(catalogMetadata.getConnectorId());
         metadata.beginQuery(connectorSession);
         registerCatalogForQueryId(session.getQueryId(), metadata);
     }
