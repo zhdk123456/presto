@@ -26,6 +26,7 @@ import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.metadata.MetadataUtil.createQualifiedObjectName;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class DataDefinitionExecution<T extends Statement>
@@ -72,9 +74,10 @@ public class DataDefinitionExecution<T extends Statement>
 
     private void notifyBeginQuery(Node node, CatalogRelatedStatement statement)
     {
-        Session session = stateMachine.getSession();
-        QualifiedObjectName tableName = createQualifiedObjectName(session, node, statement.getQualifiedName());
-        metadata.beginQuery(session, tableName.getCatalogName());
+        QualifiedObjectName tableName = createQualifiedObjectName(getSession(), node, statement.getQualifiedName());
+        String connectorId = metadata.getCatalogNames().get(tableName.getCatalogName());
+        checkState(connectorId != null, "connectorId must be present here");
+        metadata.beginQuery(getSession(), ImmutableSet.of(connectorId));
     }
 
     private void notifyEndQuery()

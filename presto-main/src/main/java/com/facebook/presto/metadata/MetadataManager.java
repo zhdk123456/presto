@@ -97,7 +97,6 @@ import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.transaction.TransactionManager.createTestTransactionManager;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
-import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.transform;
 import static java.lang.String.format;
@@ -524,11 +523,9 @@ public class MetadataManager
     }
 
     @Override
-    public void beginQuery(Session session, Collection<TableHandle> tableHandles)
+    public void beginQuery(Session session, Set<String> connectors)
     {
-        Set<String> distinctConnectors = tableHandles.stream().map(TableHandle::getConnectorId).collect(toImmutableSet());
-
-        for (String connectorId : distinctConnectors) {
+        for (String connectorId : connectors) {
             ConnectorEntry connector = getConnectorMetadata(connectorId);
             ConnectorMetadata metadata = connector.getMetadata(session);
             ConnectorSession connectorSession = session.toConnectorSession(connectorId);
@@ -541,16 +538,6 @@ public class MetadataManager
     {
         catalogsByQueryId.putIfAbsent(queryId.getId(), new ArrayList<>());
         catalogsByQueryId.get(queryId.getId()).add(metadata);
-    }
-
-    @Override
-    public void beginQuery(Session session, String catalogName)
-    {
-        ConnectorEntry connector = connectorsByCatalog.get(catalogName);
-        ConnectorMetadata metadata = connector.getMetadata(session);
-        ConnectorSession connectorSession = session.toConnectorSession(connector.getConnectorId());
-        metadata.beginQuery(connectorSession);
-        registerCatalogForQueryId(session.getQueryId(), metadata);
     }
 
     @Override
