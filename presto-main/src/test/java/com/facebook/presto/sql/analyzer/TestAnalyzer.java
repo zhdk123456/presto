@@ -21,19 +21,21 @@ import com.facebook.presto.metadata.QualifiedObjectName;
 import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.metadata.TableMetadata;
 import com.facebook.presto.metadata.TablePropertyManager;
-import com.facebook.presto.metadata.TestingMetadata;
 import com.facebook.presto.metadata.ViewDefinition;
 import com.facebook.presto.security.AllowAllAccessControl;
 import com.facebook.presto.spi.ColumnMetadata;
-import com.facebook.presto.spi.ConnectorMetadata;
-import com.facebook.presto.spi.ConnectorSplitManager;
 import com.facebook.presto.spi.ConnectorTableMetadata;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.connector.Connector;
+import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.connector.ConnectorSplitManager;
+import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import com.facebook.presto.spi.transaction.IsolationLevel;
 import com.facebook.presto.spi.type.TypeManager;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.tree.Statement;
-import com.facebook.presto.transaction.LegacyTransactionConnector;
+import com.facebook.presto.testing.TestingMetadata;
+import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.transaction.TransactionManager;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.TypeRegistry;
@@ -1179,12 +1181,18 @@ public class TestAnalyzer
 
     private static Connector createTestingConnector(String connectorId)
     {
-        return new LegacyTransactionConnector(connectorId, new com.facebook.presto.spi.Connector()
+        return new Connector()
         {
             private final ConnectorMetadata metadata = new TestingMetadata();
 
             @Override
-            public ConnectorMetadata getMetadata()
+            public ConnectorTransactionHandle beginTransaction(IsolationLevel isolationLevel, boolean readOnly)
+            {
+                return TestingTransactionHandle.create(connectorId);
+            }
+
+            @Override
+            public ConnectorMetadata getMetadata(ConnectorTransactionHandle transactionHandle)
             {
                 return metadata;
             }
@@ -1194,6 +1202,6 @@ public class TestAnalyzer
             {
                 throw new UnsupportedOperationException();
             }
-        });
+        };
     }
 }
