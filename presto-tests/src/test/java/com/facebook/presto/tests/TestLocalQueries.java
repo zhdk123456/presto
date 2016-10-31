@@ -34,7 +34,7 @@ public class TestLocalQueries
         super(createLocalQueryRunner(), createDefaultSampledSession());
     }
 
-    private static LocalQueryRunner createLocalQueryRunner()
+    public static LocalQueryRunner createLocalQueryRunner()
     {
         Session defaultSession = testSessionBuilder()
                 .setCatalog("local")
