@@ -71,6 +71,10 @@ public class DataDefinitionExecution<T extends Statement>
 
         stateMachine.addStateChangeListener(state -> {
             if (statement instanceof CatalogRelatedStatement) {
+                CatalogRelatedStatement catalogRelatedStatement = (CatalogRelatedStatement) statement;
+                if (state == QueryState.RUNNING) { // DDLs don't have STARTING phase
+                    notifyBeginQuery(catalogRelatedStatement);
+                }
                 if (state.isDone()) {
                     notifyEndQuery();
                 }
@@ -125,12 +129,7 @@ public class DataDefinitionExecution<T extends Statement>
     {
         try {
             // transition to running
-            if (stateMachine.transitionToRunning()) {
-                if (statement instanceof CatalogRelatedStatement) {
-                    notifyBeginQuery((CatalogRelatedStatement) statement);
-                }
-            }
-            else {
+            if (!stateMachine.transitionToRunning()) {
                 // query already running or finished
                 return;
             }
