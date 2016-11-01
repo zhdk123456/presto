@@ -24,6 +24,7 @@ import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.sql.tree.CatalogRelatedStatement;
 import com.facebook.presto.sql.tree.Expression;
+import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Throwables;
@@ -35,7 +36,6 @@ import javax.inject.Inject;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -74,17 +74,12 @@ public class DataDefinitionExecution<T extends Statement>
         this.parameters = parameters;
     }
 
-    private void notifyBeginQuery(CatalogRelatedStatement statement)
+    private void notifyBeginQuery(Node node, CatalogRelatedStatement statement)
     {
-        QualifiedObjectName tableName = createQualifiedObjectName(getSession(), statement, statement.getQualifiedName());
-        Optional<ConnectorId> connectorId = metadata.getCatalogHandle(getSession(), tableName.getCatalogName());
-        checkState(connectorId.isPresent(), "connectorId must be present here");
-        metadata.beginQuery(getSession(), ImmutableSet.of(connectorId.get()));
-    }
-
-    private void notifyEndQuery()
-    {
-        metadata.endQuery(stateMachine.getSession());
+        QualifiedObjectName tableName = createQualifiedObjectName(getSession(), node, statement.getQualifiedName());
+        ConnectorId connectorId = metadata.getCatalogNames().get(tableName.getCatalogName());
+        checkState(connectorId != null, "connectorId must be present here");
+        metadata.beginQuery(getSession(), ImmutableSet.of(connectorId));
     }
 
     @Override
@@ -124,7 +119,7 @@ public class DataDefinitionExecution<T extends Statement>
             // transition to running
             if (stateMachine.transitionToRunning()) {
                 if (statement instanceof CatalogRelatedStatement) {
-                    notifyBeginQuery((CatalogRelatedStatement) statement);
+                    notifyBeginQuery(statement, (CatalogRelatedStatement) statement);
                 }
             }
             else {
@@ -134,22 +129,11 @@ public class DataDefinitionExecution<T extends Statement>
 
             CompletableFuture<?> future = task.execute(statement, transactionManager, metadata, accessControl, stateMachine, parameters);
             future.whenComplete((o, throwable) -> {
-                Throwable failure = throwable;
-                if (statement instanceof CatalogRelatedStatement) {
-                    try {
-                        notifyEndQuery();
-                    }
-                    catch (Throwable t) {
-                        if (failure == null) {
-                            failure = t;
-                        }
-                    }
-                }
-                if (failure == null) {
+                if (throwable == null) {
                     stateMachine.transitionToFinishing();
                 }
                 else {
-                    fail(failure);
+                    fail(throwable);
                 }
             });
         }
@@ -280,7 +264,7 @@ public class DataDefinitionExecution<T extends Statement>
             DataDefinitionTask<Statement> task = getTask(statement);
             checkArgument(task != null, "no task for statement: %s", statement.getClass().getSimpleName());
 
-            QueryStateMachine stateMachine = QueryStateMachine.begin(queryId, query, session, self, task.isTransactionControl(), transactionManager, executor);
+            QueryStateMachine stateMachine = QueryStateMachine.begin(queryId, query, session, self, task.isTransactionControl(), transactionManager, executor, metadata);
             stateMachine.setUpdateType(task.getName());
             return new DataDefinitionExecution<>(task, statement, transactionManager, metadata, accessControl, stateMachine, parameters);
         }

@@ -154,7 +154,7 @@ public final class SqlQueryExecution
             requireNonNull(query, "query is null");
             requireNonNull(session, "session is null");
             requireNonNull(self, "self is null");
-            this.stateMachine = QueryStateMachine.begin(queryId, query, session, self, false, transactionManager, queryExecutor);
+            this.stateMachine = QueryStateMachine.begin(queryId, query, session, self, false, transactionManager, queryExecutor, metadata);
 
             // when the query finishes cache the final query info, and clear the reference to the output stage
             stateMachine.addStateChangeListener(state -> {
@@ -334,7 +334,7 @@ public final class SqlQueryExecution
         Optional<QualifiedObjectName> createTableDestination = analysis.getCreateTableDestination();
         if (createTableDestination.isPresent()) {
             String catalogName = createTableDestination.get().getCatalogName();
-            ConnectorId connectorId = metadata.getCatalogHandle(getSession(), catalogName)
+            ConnectorId connectorId = Optional.ofNullable(metadata.getCatalogNames().get(catalogName))
                     .orElseThrow(() -> new PrestoException(NOT_FOUND, "Catalog does not exist: " + catalogName));
             connectors.add(connectorId);
         }

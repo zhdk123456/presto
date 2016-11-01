@@ -68,9 +68,8 @@ public class TestResetSessionTask
             throws Exception
     {
         Session session = TEST_SESSION.withSystemProperty("foo", "bar").withCatalogProperty("catalog", "baz", "blah");
-
         TransactionManager transactionManager = createTestTransactionManager();
-        QueryStateMachine stateMachine = QueryStateMachine.begin(new QueryId("query"), "reset foo", session, URI.create("fake://uri"), false, transactionManager, executor);
+        QueryStateMachine stateMachine = QueryStateMachine.begin(new QueryId("query"), "reset foo", session, URI.create("fake://uri"), false, transactionManager, executor, metadata);
         new ResetSessionTask().execute(new ResetSession(QualifiedName.of("catalog", "baz")), transactionManager, metadata, new AllowAllAccessControl(), stateMachine, emptyList()).join();
 
         Set<String> sessionProperties = stateMachine.getResetSessionProperties();
