@@ -98,9 +98,8 @@ public class TestSetSessionTask
             throws Exception
     {
         TransactionManager transactionManager = createTestTransactionManager();
-        QueryStateMachine stateMachine = QueryStateMachine.begin(new QueryId("query"), "set foo.bar = 'baz'", TEST_SESSION, URI.create("fake://uri"), false, transactionManager, executor);
+        QueryStateMachine stateMachine = QueryStateMachine.begin(new QueryId("query"), "set foo.bar = 'baz'", TEST_SESSION, URI.create("fake://uri"), false, transactionManager, executor, metadata);
         new SetSessionTask().execute(new SetSession(QualifiedName.of("foo", "bar"), expression), transactionManager, metadata, new AllowAllAccessControl(), stateMachine, parameters).join();
-
         Map<String, String> sessionProperties = stateMachine.getSetSessionProperties();
         assertEquals(sessionProperties, ImmutableMap.of("foo.bar", expectedValue));
     }
