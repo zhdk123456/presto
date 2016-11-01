@@ -78,9 +78,10 @@ public class DataDefinitionExecution<T extends Statement>
         });
     }
 
-    private void notifyBeginQuery(QualifiedObjectName tableName)
+    private void notifyBeginQuery(CatalogRelatedStatement statement)
     {
         Session session = stateMachine.getSession();
+        QualifiedObjectName tableName = createQualifiedObjectName(session, statement, statement.getQualifiedName());
         metadata.beginQuery(session, tableName.getCatalogName());
     }
 
@@ -126,7 +127,7 @@ public class DataDefinitionExecution<T extends Statement>
             // transition to running
             if (stateMachine.transitionToRunning()) {
                 if (statement instanceof CatalogRelatedStatement) {
-                    notifyBeginQuery(createQualifiedObjectName(stateMachine.getSession(), statement, ((CatalogRelatedStatement) statement).getQualifiedName()));
+                    notifyBeginQuery((CatalogRelatedStatement) statement);
                 }
             }
             else {
