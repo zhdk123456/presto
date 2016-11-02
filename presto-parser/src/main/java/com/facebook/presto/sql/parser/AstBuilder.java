@@ -115,7 +115,6 @@ import com.facebook.presto.sql.tree.Select;
 import com.facebook.presto.sql.tree.SelectItem;
 import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.ShowCatalogs;
-import com.facebook.presto.sql.tree.ShowColumnStats;
 import com.facebook.presto.sql.tree.ShowColumns;
 import com.facebook.presto.sql.tree.ShowCreate;
 import com.facebook.presto.sql.tree.ShowFunctions;
@@ -123,6 +122,7 @@ import com.facebook.presto.sql.tree.ShowGrants;
 import com.facebook.presto.sql.tree.ShowPartitions;
 import com.facebook.presto.sql.tree.ShowSchemas;
 import com.facebook.presto.sql.tree.ShowSession;
+import com.facebook.presto.sql.tree.ShowStats;
 import com.facebook.presto.sql.tree.ShowTables;
 import com.facebook.presto.sql.tree.SimpleCaseExpression;
 import com.facebook.presto.sql.tree.SimpleGroupBy;
@@ -670,9 +670,9 @@ class AstBuilder
     }
 
     @Override
-    public Node visitShowColumnStats(SqlBaseParser.ShowColumnStatsContext context)
+    public Node visitShowStats(SqlBaseParser.ShowStatsContext context)
     {
-        return new ShowColumnStats(getLocation(context), getQualifiedName(context.qualifiedName()));
+        return new ShowStats(getLocation(context), getQualifiedName(context.qualifiedName()));
     }
 
     @Override
