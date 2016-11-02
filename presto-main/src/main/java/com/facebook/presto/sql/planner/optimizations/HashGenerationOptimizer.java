@@ -576,7 +576,8 @@ public class HashGenerationOptimizer
                 allHashSymbols.put(hashComputation, hashSymbol);
             }
 
-            return new PlanWithProperties(new ProjectNode(idAllocator.getNextId(), child.getNode(), newAssignments), allHashSymbols);
+            ProjectNode projectNode = new ProjectNode(idAllocator.getNextId(), child.getNode(), newAssignments);
+            return new PlanWithProperties(projectNode, allHashSymbols);
         }
 
         @Override
