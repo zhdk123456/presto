@@ -67,7 +67,6 @@ import com.facebook.presto.sql.tree.Select;
 import com.facebook.presto.sql.tree.SelectItem;
 import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.ShowCatalogs;
-import com.facebook.presto.sql.tree.ShowColumnStats;
 import com.facebook.presto.sql.tree.ShowColumns;
 import com.facebook.presto.sql.tree.ShowCreate;
 import com.facebook.presto.sql.tree.ShowFunctions;
@@ -75,6 +74,7 @@ import com.facebook.presto.sql.tree.ShowGrants;
 import com.facebook.presto.sql.tree.ShowPartitions;
 import com.facebook.presto.sql.tree.ShowSchemas;
 import com.facebook.presto.sql.tree.ShowSession;
+import com.facebook.presto.sql.tree.ShowStats;
 import com.facebook.presto.sql.tree.ShowTables;
 import com.facebook.presto.sql.tree.SingleColumn;
 import com.facebook.presto.sql.tree.StartTransaction;
@@ -639,9 +639,9 @@ public final class SqlFormatter
         }
 
         @Override
-        protected Void visitShowColumnStats(ShowColumnStats node, Integer context)
+        protected Void visitShowStats(ShowStats node, Integer context)
         {
-            builder.append("SHOW COLUMN STATS ")
+            builder.append("SHOW STATS FROM ")
                     .append(node.getTable());
 
             return null;
