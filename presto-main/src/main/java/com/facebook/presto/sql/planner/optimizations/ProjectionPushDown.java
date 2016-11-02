@@ -97,7 +97,7 @@ public class ProjectionPushDown
                 ImmutableMap.Builder<Symbol, Expression> assignments = ImmutableMap.builder();      // assignments for the new ProjectNode
 
                 // mapping from current ProjectNode to new ProjectNode, used to identify the output layout
-                Map<Symbol, Symbol> projectSymbolMapping = new HashMap<>();
+                Map<Symbol, Symbol> projectSymbolMapping = new LinkedHashMap<>();
 
                 // Translate the assignments in the ProjectNode using symbols of the source of the UnionNode
                 for (Map.Entry<Symbol, Expression> entry : node.getAssignments().entrySet()) {
@@ -180,7 +180,7 @@ public class ProjectionPushDown
 
     private static Map<Symbol, SymbolReference> extractExchangeOutputToInput(ExchangeNode exchange, int sourceIndex)
     {
-        Map<Symbol, SymbolReference> outputToInputMap = new HashMap<>();
+        Map<Symbol, SymbolReference> outputToInputMap = new LinkedHashMap<>();
         for (int i = 0; i < exchange.getOutputSymbols().size(); i++) {
             outputToInputMap.put(exchange.getOutputSymbols().get(i), exchange.getInputs().get(sourceIndex).get(i).toSymbolReference());
         }

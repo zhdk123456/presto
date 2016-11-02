@@ -43,8 +43,8 @@ import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -131,7 +131,7 @@ public class EffectivePredicateExtractor
     public Expression visitExchange(ExchangeNode node, Void context)
     {
         return deriveCommonPredicates(node, source -> {
-            Map<Symbol, SymbolReference> mappings = new HashMap<>();
+            Map<Symbol, SymbolReference> mappings = new LinkedHashMap<>();
             for (int i = 0; i < node.getInputs().get(source).size(); i++) {
                 mappings.put(
                         node.getOutputSymbols().get(i),

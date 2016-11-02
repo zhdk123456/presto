@@ -68,7 +68,7 @@ import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -170,7 +170,7 @@ public class PruneUnreferencedOutputs
         @Override
         public PlanNode visitJoin(JoinNode node, RewriteContext<Set<Symbol>> context)
         {
-            Set<Symbol> expectedFilterInputs = new HashSet<>();
+            Set<Symbol> expectedFilterInputs = new LinkedHashSet<>();
             if (node.getFilter().isPresent()) {
                 expectedFilterInputs = ImmutableSet.<Symbol>builder()
                         .addAll(DependencyExtractor.extractUnique(node.getFilter().get()))

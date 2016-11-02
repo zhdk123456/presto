@@ -454,9 +454,9 @@ class QueryPlanner
 
         // 2.d. Mark distinct rows for each aggregate that has DISTINCT
         // Map from aggregate function arguments to marker symbols, so that we can reuse the markers, if two aggregates have the same argument
-        Map<Set<Expression>, Symbol> argumentMarkers = new HashMap<>();
+        Map<Set<Expression>, Symbol> argumentMarkers = new LinkedHashMap<>();
         // Map from aggregate functions to marker symbols
-        Map<Symbol, Symbol> masks = new HashMap<>();
+        Map<Symbol, Symbol> masks = new LinkedHashMap<>();
         for (FunctionCall aggregate : Iterables.filter(analysis.getAggregates(node), FunctionCall::isDistinct)) {
             Set<Expression> args = ImmutableSet.copyOf(aggregate.getArguments());
             Symbol marker = argumentMarkers.get(args);
@@ -701,7 +701,7 @@ class QueryPlanner
         Iterator<SortItem> sortItems = orderBy.iterator();
 
         ImmutableList.Builder<Symbol> orderBySymbols = ImmutableList.builder();
-        Map<Symbol, SortOrder> orderings = new HashMap<>();
+        Map<Symbol, SortOrder> orderings = new LinkedHashMap<>();
         for (Expression fieldOrExpression : orderByExpressions) {
             Symbol symbol = subPlan.translate(fieldOrExpression);
 

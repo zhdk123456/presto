@@ -57,7 +57,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -283,7 +283,7 @@ public class HashGenerationOptimizer
                 // join does not need any hash symbols, so drop all hash symbols from build to save memory
                 PlanWithProperties right = planAndEnforce(node.getRight(), new HashComputationSet(), true, new HashComputationSet());
 
-                Map<HashComputation, Symbol> allHashSymbols = new HashMap<>();
+                Map<HashComputation, Symbol> allHashSymbols = new LinkedHashMap<>();
                 allHashSymbols.putAll(right.getHashSymbols());
                 allHashSymbols.putAll(left.getHashSymbols());
 
@@ -313,7 +313,7 @@ public class HashGenerationOptimizer
 
             // build map of all hash symbols
             // NOTE: Full outer join doesn't use hash symbols
-            Map<HashComputation, Symbol> allHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> allHashSymbols = new LinkedHashMap<>();
             if (node.getType() == INNER || node.getType() == LEFT) {
                 allHashSymbols.putAll(left.getHashSymbols());
             }
@@ -384,7 +384,7 @@ public class HashGenerationOptimizer
             Symbol indexHashSymbol = index.getRequiredHashSymbol(indexHashComputation.get());
 
             // build map of all hash symbols
-            Map<HashComputation, Symbol> allHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> allHashSymbols = new LinkedHashMap<>();
             if (node.getType() == IndexJoinNode.Type.INNER) {
                 allHashSymbols.putAll(probe.getHashSymbols());
             }
@@ -450,7 +450,7 @@ public class HashGenerationOptimizer
 
             // establish fixed ordering for hash symbols
             List<HashComputation> hashSymbolOrder = ImmutableList.copyOf(preference.getHashes());
-            Map<HashComputation, Symbol> newHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> newHashSymbols = new LinkedHashMap<>();
             for (HashComputation preferredHashSymbol : hashSymbolOrder) {
                 newHashSymbols.put(preferredHashSymbol, symbolAllocator.newHashSymbol());
             }
@@ -475,7 +475,7 @@ public class HashGenerationOptimizer
                 PlanNode source = node.getSources().get(sourceId);
                 List<Symbol> inputSymbols = node.getInputs().get(sourceId);
 
-                Map<Symbol, Symbol> outputToInputMap = new HashMap<>();
+                Map<Symbol, Symbol> outputToInputMap = new LinkedHashMap<>();
                 for (int symbolId = 0; symbolId < inputSymbols.size(); symbolId++) {
                     outputToInputMap.put(node.getOutputSymbols().get(symbolId), inputSymbols.get(symbolId));
                 }
@@ -514,7 +514,7 @@ public class HashGenerationOptimizer
             HashComputationSet preference = parentPreference.pruneSymbols(node.getOutputSymbols());
 
             // create new hash symbols
-            Map<HashComputation, Symbol> newHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> newHashSymbols = new LinkedHashMap<>();
             for (HashComputation preferredHashSymbol : preference.getHashes()) {
                 newHashSymbols.put(preferredHashSymbol, symbolAllocator.newHashSymbol());
             }
@@ -525,7 +525,7 @@ public class HashGenerationOptimizer
             ImmutableList.Builder<PlanNode> newSources = ImmutableList.builder();
             for (int sourceId = 0; sourceId < node.getSources().size(); sourceId++) {
                 // translate preference to input symbols
-                Map<Symbol, Symbol> outputToInputMap = new HashMap<>();
+                Map<Symbol, Symbol> outputToInputMap = new LinkedHashMap<>();
                 for (Symbol outputSymbol : node.getOutputSymbols()) {
                     outputToInputMap.put(outputSymbol, node.getSymbolMapping().get(outputSymbol).get(sourceId));
                 }
@@ -559,11 +559,11 @@ public class HashGenerationOptimizer
             PlanWithProperties child = plan(node.getSource(), sourceContext);
 
             // create a new project node with all assignments from the original node
-            Map<Symbol, Expression> newAssignments = new HashMap<>();
+            Map<Symbol, Expression> newAssignments = new LinkedHashMap<>();
             newAssignments.putAll(node.getAssignments());
 
             // and all hash symbols that could be translated to the source symbols
-            Map<HashComputation, Symbol> allHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> allHashSymbols = new LinkedHashMap<>();
             for (HashComputation hashComputation : sourceContext.getHashes()) {
                 Symbol hashSymbol = child.getHashSymbols().get(hashComputation);
                 Expression hashExpression;
@@ -588,7 +588,7 @@ public class HashGenerationOptimizer
             PlanWithProperties child = plan(node.getSource(), parentPreference.pruneSymbols(node.getSource().getOutputSymbols()));
 
             // only pass through hash symbols requested by the parent
-            Map<HashComputation, Symbol> hashSymbols = new HashMap<>(child.getHashSymbols());
+            Map<HashComputation, Symbol> hashSymbols = new LinkedHashMap<>(child.getHashSymbols());
             hashSymbols.keySet().retainAll(parentPreference.getHashes());
 
             return new PlanWithProperties(
@@ -623,7 +623,7 @@ public class HashGenerationOptimizer
             PlanNode result = replaceChildren(node, ImmutableList.of(source.getNode()));
 
             // return only hash symbols that are passed through the new node
-            Map<HashComputation, Symbol> hashSymbols = new HashMap<>(source.getHashSymbols());
+            Map<HashComputation, Symbol> hashSymbols = new LinkedHashMap<>(source.getHashSymbols());
             hashSymbols.values().retainAll(result.getOutputSymbols());
 
             return new PlanWithProperties(result, hashSymbols);
@@ -656,7 +656,7 @@ public class HashGenerationOptimizer
         {
             ImmutableMap.Builder<Symbol, Expression> assignments = ImmutableMap.builder();
 
-            Map<HashComputation, Symbol> outputHashSymbols = new HashMap<>();
+            Map<HashComputation, Symbol> outputHashSymbols = new LinkedHashMap<>();
 
             // copy through all symbols from child, except for hash symbols not needed by the parent
             Map<Symbol, HashComputation> resultHashSymbols = planWithProperties.getHashSymbols().inverse();
@@ -891,7 +891,7 @@ public class HashGenerationOptimizer
 
     private static Map<Symbol, Symbol> computeIdentityTranslations(Map<Symbol, Expression> assignments)
     {
-        Map<Symbol, Symbol> outputToInput = new HashMap<>();
+        Map<Symbol, Symbol> outputToInput = new LinkedHashMap<>();
         for (Map.Entry<Symbol, Expression> assignment : assignments.entrySet()) {
             if (assignment.getValue() instanceof SymbolReference) {
                 outputToInput.put(assignment.getKey(), Symbol.from(assignment.getValue()));

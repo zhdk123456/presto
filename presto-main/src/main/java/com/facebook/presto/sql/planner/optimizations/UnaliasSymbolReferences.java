@@ -75,8 +75,8 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -116,7 +116,7 @@ public class UnaliasSymbolReferences
     private static class Rewriter
             extends SimplePlanRewriter<Void>
     {
-        private final Map<Symbol, Symbol> mapping = new HashMap<>();
+        private final Map<Symbol, Symbol> mapping = new LinkedHashMap<>();
 
         @Override
         public PlanNode visitAggregation(AggregationNode node, RewriteContext<Void> context)
@@ -264,7 +264,7 @@ public class UnaliasSymbolReferences
             for (int i = 0; i < node.getInputs().size(); i++) {
                 inputs.add(new ArrayList<>());
             }
-            Set<Symbol> addedOutputs = new HashSet<>();
+            Set<Symbol> addedOutputs = new LinkedHashSet<>();
             ImmutableList.Builder<Symbol> outputs = ImmutableList.builder();
             for (int symbolIndex = 0; symbolIndex < node.getOutputSymbols().size(); symbolIndex++) {
                 Symbol canonicalOutput = canonicalize(node.getOutputSymbols().get(symbolIndex));
@@ -361,7 +361,7 @@ public class UnaliasSymbolReferences
         {
             PlanNode source = context.rewrite(node.getSource());
 
-            Map<Expression, Symbol> computedExpressions = new HashMap<>();
+            Map<Expression, Symbol> computedExpressions = new LinkedHashMap<>();
 
             Map<Symbol, Expression> assignments = new LinkedHashMap<>();
             for (Map.Entry<Symbol, Expression> entry : node.getAssignments().entrySet()) {
@@ -591,7 +591,7 @@ public class UnaliasSymbolReferences
 
         private List<Symbol> canonicalizeAndDistinct(List<Symbol> outputs)
         {
-            Set<Symbol> added = new HashSet<>();
+            Set<Symbol> added = new LinkedHashSet<>();
             ImmutableList.Builder<Symbol> builder = ImmutableList.builder();
             for (Symbol symbol : outputs) {
                 Symbol canonical = canonicalize(symbol);
@@ -660,7 +660,7 @@ public class UnaliasSymbolReferences
 
         private PartitioningScheme canonicalizePartitionFunctionBinding(PartitioningScheme scheme, PlanNode source)
         {
-            Set<Symbol> addedOutputs = new HashSet<>();
+            Set<Symbol> addedOutputs = new LinkedHashSet<>();
             ImmutableList.Builder<Symbol> outputs = ImmutableList.builder();
             for (Symbol symbol : source.getOutputSymbols()) {
                 Symbol canonicalOutput = canonicalize(symbol);

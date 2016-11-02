@@ -70,8 +70,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
-import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -410,7 +410,7 @@ class PropertyDerivations
         public static Map<Symbol, Symbol> exchangeInputToOutput(ExchangeNode node, int sourceIndex)
         {
             List<Symbol> inputSymbols = node.getInputs().get(sourceIndex);
-            Map<Symbol, Symbol> inputToOutput = new HashMap<>();
+            Map<Symbol, Symbol> inputToOutput = new LinkedHashMap<>();
             for (int i = 0; i < node.getOutputSymbols().size(); i++) {
                 inputToOutput.put(inputSymbols.get(i), node.getOutputSymbols().get(i));
             }
@@ -482,7 +482,7 @@ class PropertyDerivations
                     node.getPredicate(),
                     types);
 
-            Map<Symbol, NullableValue> constants = new HashMap<>(properties.getConstants());
+            Map<Symbol, NullableValue> constants = new LinkedHashMap<>(properties.getConstants());
             constants.putAll(extractFixedValues(decomposedPredicate.getTupleDomain()).orElse(ImmutableMap.of()));
 
             return ActualProperties.builderFrom(properties)
@@ -500,7 +500,7 @@ class PropertyDerivations
             ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)));
 
             // Extract additional constants
-            Map<Symbol, NullableValue> constants = new HashMap<>();
+            Map<Symbol, NullableValue> constants = new LinkedHashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : node.getAssignments().entrySet()) {
                 Expression expression = assignment.getValue();
 
@@ -585,7 +585,7 @@ class PropertyDerivations
             ActualProperties.Builder properties = ActualProperties.builder();
 
             // Globally constant assignments
-            Map<ColumnHandle, NullableValue> globalConstants = new HashMap<>();
+            Map<ColumnHandle, NullableValue> globalConstants = new LinkedHashMap<>();
             extractFixedValues(node.getCurrentConstraint()).orElse(ImmutableMap.of())
                     .entrySet().stream()
                     .filter(entry -> !entry.getValue().isNull())
@@ -655,7 +655,7 @@ class PropertyDerivations
 
         private static Map<Symbol, Symbol> computeIdentityTranslations(Map<Symbol, Expression> assignments)
         {
-            Map<Symbol, Symbol> inputToOutput = new HashMap<>();
+            Map<Symbol, Symbol> inputToOutput = new LinkedHashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : assignments.entrySet()) {
                 if (assignment.getValue() instanceof SymbolReference) {
                     inputToOutput.put(Symbol.from(assignment.getValue()), assignment.getKey());
