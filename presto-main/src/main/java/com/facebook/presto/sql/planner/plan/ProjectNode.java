@@ -24,6 +24,7 @@ import javax.annotation.concurrent.Immutable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,6 +43,8 @@ public class ProjectNode
             @JsonProperty("assignments") Map<Symbol, Expression> assignments)
     {
         super(id);
+
+        assignments = new TreeMap<>(assignments);
 
         requireNonNull(source, "source is null");
         requireNonNull(assignments, "assignments is null");
