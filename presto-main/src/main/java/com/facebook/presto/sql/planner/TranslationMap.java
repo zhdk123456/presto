@@ -24,7 +24,7 @@ import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.FieldReference;
 import com.facebook.presto.sql.tree.QualifiedNameReference;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,8 +46,8 @@ class TranslationMap
     private final Symbol[] fieldSymbols;
 
     // current mappings of sub-expressions -> symbol
-    private final Map<Expression, Symbol> expressionToSymbols = new HashMap<>();
-    private final Map<Expression, Expression> expressionToExpressions = new HashMap<>();
+    private final Map<Expression, Symbol> expressionToSymbols = new LinkedHashMap<>();
+    private final Map<Expression, Expression> expressionToExpressions = new LinkedHashMap<>();
 
     public TranslationMap(RelationPlan rewriteBase, Analysis analysis)
     {

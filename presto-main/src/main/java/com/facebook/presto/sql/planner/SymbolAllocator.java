@@ -22,7 +22,7 @@ import com.facebook.presto.sql.tree.QualifiedNameReference;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.primitives.Ints;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 
 public class SymbolAllocator
 {
-    private final Map<Symbol, Type> symbols = new HashMap<>();
+    private final Map<Symbol, Type> symbols = new LinkedHashMap<>();
     private int nextId;
 
     public Symbol newSymbol(String nameHint, Type type)

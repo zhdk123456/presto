@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import javax.annotation.concurrent.Immutable;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +136,7 @@ public class GroupIdNode
     // returns the common grouping columns in terms of output symbols
     public Set<Symbol> getCommonGroupingColumns()
     {
-        Set<Symbol> intersection = new HashSet<>(groupingSets.get(0));
+        Set<Symbol> intersection = new LinkedHashSet<>(groupingSets.get(0));
         for (int i = 1; i < groupingSets.size(); i++) {
             intersection.retainAll(groupingSets.get(i));
         }

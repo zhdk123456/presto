@@ -68,8 +68,8 @@ import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -171,7 +171,7 @@ public class PruneUnreferencedOutputs
         @Override
         public PlanNode visitJoin(JoinNode node, RewriteContext<Set<Symbol>> context)
         {
-            Set<Symbol> expectedFilterInputs = new HashSet<>();
+            Set<Symbol> expectedFilterInputs = new LinkedHashSet<>();
             if (node.getFilter().isPresent()) {
                 expectedFilterInputs = ImmutableSet.<Symbol>builder()
                         .addAll(DependencyExtractor.extractUnique(node.getFilter().get()))
@@ -417,7 +417,7 @@ public class PruneUnreferencedOutputs
             expectedInputs.addAll(newArgumentMappings.values());
 
             ImmutableList.Builder<List<Symbol>> newGroupingSets = ImmutableList.builder();
-            Map<Symbol, Symbol> newGroupingMapping = new HashMap<>();
+            Map<Symbol, Symbol> newGroupingMapping = new LinkedHashMap<>();
 
             for (List<Symbol> groupingSet : node.getGroupingSets()) {
                 ImmutableList.Builder<Symbol> newGroupingSet = ImmutableList.builder();

@@ -64,8 +64,8 @@ import com.google.common.collect.Iterables;
 
 import javax.annotation.concurrent.Immutable;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -214,7 +214,7 @@ final class StreamPropertyDerivations
             Map<ColumnHandle, Symbol> assignments = ImmutableBiMap.copyOf(node.getAssignments()).inverse();
 
             // Globally constant assignments
-            Set<ColumnHandle> constants = new HashSet<>();
+            Set<ColumnHandle> constants = new LinkedHashSet<>();
             extractFixedValues(node.getCurrentConstraint()).orElse(ImmutableMap.of())
                     .entrySet().stream()
                     .filter(entry -> !entry.getValue().isNull())  // TODO consider allowing nulls
@@ -295,7 +295,7 @@ final class StreamPropertyDerivations
 
         private static Map<Symbol, Symbol> computeIdentityTranslations(Map<Symbol, Expression> assignments)
         {
-            Map<Symbol, Symbol> inputToOutput = new HashMap<>();
+            Map<Symbol, Symbol> inputToOutput = new LinkedHashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : assignments.entrySet()) {
                 if (assignment.getValue() instanceof SymbolReference) {
                     inputToOutput.put(Symbol.from(assignment.getValue()), assignment.getKey());
@@ -307,7 +307,7 @@ final class StreamPropertyDerivations
         @Override
         public StreamProperties visitGroupId(GroupIdNode node, List<StreamProperties> inputProperties)
         {
-            Map<Symbol, Symbol> inputToOutputMappings = new HashMap<>();
+            Map<Symbol, Symbol> inputToOutputMappings = new LinkedHashMap<>();
             for (Map.Entry<Symbol, Symbol> setMapping : node.getGroupingSetMappings().entrySet()) {
                 if (node.getCommonGroupingColumns().contains(setMapping.getKey())) {
                     // TODO: Add support for translating a property on a single column to multiple columns

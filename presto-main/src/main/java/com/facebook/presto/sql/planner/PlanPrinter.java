@@ -94,7 +94,7 @@ import io.airlift.units.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -183,7 +183,7 @@ public class PlanPrinter
                 .flatMap(stage -> getAllStages(Optional.of(stage)).stream())
                 .collect(toImmutableList());
         for (StageInfo stageInfo : allStages) {
-            Map<PlanNodeId, PlanNodeStats> aggregatedStats = new HashMap<>();
+            Map<PlanNodeId, PlanNodeStats> aggregatedStats = new LinkedHashMap<>();
             List<PlanNodeStats> planNodeStats = stageInfo.getTasks().stream()
                     .map(TaskInfo::getStats)
                     .flatMap(taskStats -> getPlanNodeStats(taskStats).stream())
@@ -205,13 +205,13 @@ public class PlanPrinter
         // it's possible that some or all of them are missing or out of date.
         // For example, a LIMIT clause can cause a query to finish before stats
         // are collected from the leaf stages.
-        Map<PlanNodeId, Long> outputPositions = new HashMap<>();
-        Map<PlanNodeId, Long> outputBytes = new HashMap<>();
-        Map<PlanNodeId, Long> wallMillis = new HashMap<>();
+        Map<PlanNodeId, Long> outputPositions = new LinkedHashMap<>();
+        Map<PlanNodeId, Long> outputBytes = new LinkedHashMap<>();
+        Map<PlanNodeId, Long> wallMillis = new LinkedHashMap<>();
 
         for (PipelineStats pipelineStats : taskStats.getPipelines()) {
-            Map<PlanNodeId, Long> pipelineOutputPositions = new HashMap<>();
-            Map<PlanNodeId, Long> pipelineOutputBytes = new HashMap<>();
+            Map<PlanNodeId, Long> pipelineOutputPositions = new LinkedHashMap<>();
+            Map<PlanNodeId, Long> pipelineOutputBytes = new LinkedHashMap<>();
 
             List<OperatorStats> operatorSummaries = pipelineStats.getOperatorSummaries();
             for (int i = 0; i < operatorSummaries.size(); i++) {

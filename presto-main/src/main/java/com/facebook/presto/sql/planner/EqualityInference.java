@@ -35,8 +35,8 @@ import com.google.common.collect.SetMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -163,14 +163,14 @@ public class EqualityInference
      */
     public EqualityPartition generateEqualitiesPartitionedBy(Predicate<Symbol> symbolScope)
     {
-        Set<Expression> scopeEqualities = new HashSet<>();
-        Set<Expression> scopeComplementEqualities = new HashSet<>();
-        Set<Expression> scopeStraddlingEqualities = new HashSet<>();
+        Set<Expression> scopeEqualities = new LinkedHashSet<>();
+        Set<Expression> scopeComplementEqualities = new LinkedHashSet<>();
+        Set<Expression> scopeStraddlingEqualities = new LinkedHashSet<>();
 
         for (Collection<Expression> equalitySet : equalitySets.asMap().values()) {
-            Set<Expression> scopeExpressions = new HashSet<>();
-            Set<Expression> scopeComplementExpressions = new HashSet<>();
-            Set<Expression> scopeStraddlingExpressions = new HashSet<>();
+            Set<Expression> scopeExpressions = new LinkedHashSet<>();
+            Set<Expression> scopeComplementExpressions = new LinkedHashSet<>();
+            Set<Expression> scopeStraddlingExpressions = new LinkedHashSet<>();
 
             // Try to push each non-derived expression into one side of the scope
             for (Expression expression : filter(equalitySet, not(derivedExpressions::contains))) {
@@ -331,7 +331,7 @@ public class EqualityInference
     public static class Builder
     {
         private final DisjointSet<Expression> equalities = new DisjointSet<>();
-        private final Set<Expression> derivedExpressions = new HashSet<>();
+        private final Set<Expression> derivedExpressions = new LinkedHashSet<>();
 
         public Builder extractInferenceCandidates(Expression expression)
         {
@@ -373,7 +373,7 @@ public class EqualityInference
             Collection<Set<Expression>> equivalentClasses = equalities.getEquivalentClasses();
 
             // Map every expression to the set of equivalent expressions
-            Map<Expression, Set<Expression>> map = new HashMap<>();
+            Map<Expression, Set<Expression>> map = new LinkedHashMap<>();
             for (Set<Expression> expressions : equivalentClasses) {
                 expressions.stream().forEach(expression -> map.put(expression, expressions));
             }
