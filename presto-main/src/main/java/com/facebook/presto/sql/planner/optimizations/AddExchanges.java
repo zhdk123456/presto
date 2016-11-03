@@ -87,11 +87,10 @@ import com.google.common.collect.SetMultimap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -270,7 +269,7 @@ public class AddExchanges
         @Override
         public PlanWithProperties visitAggregation(AggregationNode node, Context context)
         {
-            HashSet<Symbol> partitioningRequirement = new LinkedHashSet<>(node.getGroupingSets().get(0));
+            HashSet<Symbol> partitioningRequirement = new HashSet<>(node.getGroupingSets().get(0));
             for (int i = 1; i < node.getGroupingSets().size(); i++) {
                 partitioningRequirement.retainAll(node.getGroupingSets().get(i));
             }
@@ -1201,7 +1200,7 @@ public class AddExchanges
 
     private static Map<Symbol, Symbol> computeIdentityTranslations(Map<Symbol, Expression> assignments)
     {
-        Map<Symbol, Symbol> outputToInput = new LinkedHashMap<>();
+        Map<Symbol, Symbol> outputToInput = new HashMap<>();
         for (Map.Entry<Symbol, Expression> assignment : assignments.entrySet()) {
             if (assignment.getValue() instanceof SymbolReference) {
                 outputToInput.put(assignment.getKey(), Symbol.from(assignment.getValue()));

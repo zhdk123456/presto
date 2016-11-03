@@ -55,7 +55,6 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -246,7 +245,7 @@ public class AddLocalExchanges
                 return planAndEnforceChildren(node, singleStream(), defaultParallelism(session));
             }
 
-            HashSet<Symbol> partitioningRequirement = new LinkedHashSet<>(node.getGroupingSets().get(0));
+            HashSet<Symbol> partitioningRequirement = new HashSet<>(node.getGroupingSets().get(0));
             for (int i = 1; i < node.getGroupingSets().size(); i++) {
                 partitioningRequirement.retainAll(node.getGroupingSets().get(i));
             }

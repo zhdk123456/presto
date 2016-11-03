@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,10 +92,10 @@ public class PartialAggregationPushDown
 
             Map<Symbol, Symbol> masks = node.getMasks();
 
-            Map<Symbol, FunctionCall> finalCalls = new LinkedHashMap<>();
-            Map<Symbol, FunctionCall> intermediateCalls = new LinkedHashMap<>();
-            Map<Symbol, Signature> intermediateFunctions = new LinkedHashMap<>();
-            Map<Symbol, Symbol> intermediateMask = new LinkedHashMap<>();
+            Map<Symbol, FunctionCall> finalCalls = new HashMap<>();
+            Map<Symbol, FunctionCall> intermediateCalls = new HashMap<>();
+            Map<Symbol, Signature> intermediateFunctions = new HashMap<>();
+            Map<Symbol, Symbol> intermediateMask = new HashMap<>();
             for (Map.Entry<Symbol, FunctionCall> entry : node.getAggregations().entrySet()) {
                 Signature signature = node.getFunctions().get(entry.getKey());
 
@@ -211,7 +211,7 @@ public class PartialAggregationPushDown
 
         private List<Expression> replaceArguments(List<Expression> arguments, Map<Symbol, Symbol> exchangeMap)
         {
-            Map<SymbolReference, SymbolReference> symbolReferenceSymbolMap = new LinkedHashMap<>();
+            Map<SymbolReference, SymbolReference> symbolReferenceSymbolMap = new HashMap<>();
             for (Map.Entry<Symbol, Symbol> entry : exchangeMap.entrySet()) {
                 symbolReferenceSymbolMap.put(entry.getKey().toSymbolReference(), entry.getValue().toSymbolReference());
             }
@@ -231,11 +231,11 @@ public class PartialAggregationPushDown
             checkState(!node.getHashSymbol().isPresent(), "PartialAggregationPushDown optimizer must run before HashGenerationOptimizer");
 
             // Store the symbol mapping from old aggregation output to new aggregation output
-            Map<Symbol, Symbol> layoutMap = new LinkedHashMap<>();
+            Map<Symbol, Symbol> layoutMap = new HashMap<>();
 
-            Map<Symbol, FunctionCall> functionCallMap = new LinkedHashMap<>();
-            Map<Symbol, Signature> signatureMap = new LinkedHashMap<>();
-            Map<Symbol, Symbol> mask = new LinkedHashMap<>();
+            Map<Symbol, FunctionCall> functionCallMap = new HashMap<>();
+            Map<Symbol, Signature> signatureMap = new HashMap<>();
+            Map<Symbol, Symbol> mask = new HashMap<>();
             for (Map.Entry<Symbol, FunctionCall> entry : node.getAggregations().entrySet()) {
                 Signature signature = node.getFunctions().get(entry.getKey());
                 Symbol symbol = generateIntermediateSymbol(signature);

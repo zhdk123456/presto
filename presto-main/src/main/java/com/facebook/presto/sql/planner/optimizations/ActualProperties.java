@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import javax.annotation.concurrent.Immutable;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -147,7 +147,7 @@ class ActualProperties
 
     public ActualProperties translate(Function<Symbol, Optional<Symbol>> translator)
     {
-        Map<Symbol, NullableValue> translatedConstants = new LinkedHashMap<>();
+        Map<Symbol, NullableValue> translatedConstants = new HashMap<>();
         for (Map.Entry<Symbol, NullableValue> entry : constants.entrySet()) {
             Optional<Symbol> translatedKey = translator.apply(entry.getKey());
             if (translatedKey.isPresent()) {

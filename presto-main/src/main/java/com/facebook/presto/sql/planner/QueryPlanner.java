@@ -408,7 +408,7 @@ class QueryPlanner
 
         // 2.b. Rewrite grouping columns
         TranslationMap groupingTranslations = new TranslationMap(subPlan.getRelationPlan(), analysis);
-        Map<Symbol, Symbol> groupingSetMappings = new LinkedHashMap<>();
+        Map<Symbol, Symbol> groupingSetMappings = new HashMap<>();
         List<List<Symbol>> groupingSymbols = new ArrayList<>();
 
         for (List<Expression> groupingSet : groupingSets) {
@@ -441,7 +441,7 @@ class QueryPlanner
             subPlan = new PlanBuilder(groupingTranslations, groupId, analysis.getParameters());
         }
         else {
-            Map<Symbol, Expression> projections = new LinkedHashMap<>();
+            Map<Symbol, Expression> projections = new HashMap<>();
             for (Symbol output : argumentMappings.keySet()) {
                 projections.putIfAbsent(output, argumentMappings.get(output).toSymbolReference());
             }
@@ -481,9 +481,9 @@ class QueryPlanner
 
         // 2.e. Mark distinct rows for each aggregate that has DISTINCT
         // Map from aggregate function arguments to marker symbols, so that we can reuse the markers, if two aggregates have the same argument
-        Map<Set<Expression>, Symbol> argumentMarkers = new LinkedHashMap<>();
+        Map<Set<Expression>, Symbol> argumentMarkers = new HashMap<>();
         // Map from aggregate functions to marker symbols
-        Map<Symbol, Symbol> masks = new LinkedHashMap<>();
+        Map<Symbol, Symbol> masks = new HashMap<>();
         for (FunctionCall aggregate : Iterables.filter(analysis.getAggregates(node), FunctionCall::isDistinct)) {
             Set<Expression> args = ImmutableSet.copyOf(aggregate.getArguments());
             Symbol marker = argumentMarkers.get(args);
@@ -721,7 +721,7 @@ class QueryPlanner
         Iterator<SortItem> sortItems = orderBy.iterator();
 
         ImmutableList.Builder<Symbol> orderBySymbols = ImmutableList.builder();
-        Map<Symbol, SortOrder> orderings = new LinkedHashMap<>();
+        Map<Symbol, SortOrder> orderings = new HashMap<>();
         for (Expression fieldOrExpression : orderByExpressions) {
             Symbol symbol = subPlan.translate(fieldOrExpression);
 

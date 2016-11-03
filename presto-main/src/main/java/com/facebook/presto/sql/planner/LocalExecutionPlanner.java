@@ -833,7 +833,7 @@ public class LocalExecutionPlanner
         public PhysicalOperation visitGroupId(GroupIdNode node, LocalExecutionPlanContext context)
         {
             PhysicalOperation source = node.getSource().accept(this, context);
-            Map<Symbol, Integer> newLayout = new LinkedHashMap<>();
+            Map<Symbol, Integer> newLayout = new HashMap<>();
             ImmutableList.Builder<Type> outputTypes = ImmutableList.builder();
 
             int outputChannel = 0;
@@ -843,7 +843,7 @@ public class LocalExecutionPlanner
                 outputTypes.add(source.getTypes().get(source.getLayout().get(node.getGroupingSetMappings().get(output))));
             }
 
-            Map<Symbol, Integer> argumentMappings = new LinkedHashMap<>();
+            Map<Symbol, Integer> argumentMappings = new HashMap<>();
             for (Symbol output : node.getArgumentMappings().keySet()) {
                 int inputChannel = source.getLayout().get(node.getArgumentMappings().get(output));
 
@@ -1326,7 +1326,7 @@ public class LocalExecutionPlanner
             Optional<Integer> probeHashChannel = node.getProbeHashSymbol().map(channelGetter(probeSource));
 
             // The probe key channels will be handed to the index according to probeSymbol order
-            Map<Symbol, Integer> probeKeyLayout = new LinkedHashMap<>();
+            Map<Symbol, Integer> probeKeyLayout = new HashMap<>();
             for (int i = 0; i < probeSymbols.size(); i++) {
                 // Duplicate symbols can appear and we only need to take take one of the Inputs
                 probeKeyLayout.put(probeSymbols.get(i), i);

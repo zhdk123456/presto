@@ -41,7 +41,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -227,7 +227,7 @@ public class PlanFragmenter
         private final PartitioningScheme partitioningScheme;
 
         private Optional<PartitioningHandle> partitioningHandle = Optional.empty();
-        private final Set<PlanNodeId> partitionedSources = new LinkedHashSet<>();
+        private final Set<PlanNodeId> partitionedSources = new HashSet<>();
 
         public FragmentProperties(PartitioningScheme partitioningScheme)
         {

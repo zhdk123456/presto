@@ -35,8 +35,8 @@ import com.google.common.collect.Ordering;
 import io.airlift.slice.Slice;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -76,8 +76,8 @@ public class ExpressionEquivalence
 
     public boolean areExpressionsEquivalent(Session session, Expression leftExpression, Expression rightExpression, Map<Symbol, Type> types)
     {
-        Map<Symbol, Integer> symbolInput = new LinkedHashMap<>();
-        Map<Integer, Type> inputTypes = new LinkedHashMap<>();
+        Map<Symbol, Integer> symbolInput = new HashMap<>();
+        Map<Integer, Type> inputTypes = new HashMap<>();
         int inputId = 0;
         for (Entry<Symbol, Type> entry : types.entrySet()) {
             symbolInput.put(entry.getKey(), inputId);

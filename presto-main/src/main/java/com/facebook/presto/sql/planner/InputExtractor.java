@@ -30,7 +30,7 @@ import com.facebook.presto.sql.planner.plan.TableScanNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +81,7 @@ public class InputExtractor
         {
             TableHandle tableHandle = node.getTable();
 
-            Set<Column> columns = new LinkedHashSet<>();
+            Set<Column> columns = new HashSet<>();
             for (ColumnHandle columnHandle : node.getAssignments().values()) {
                 columns.add(createColumn(metadata.getColumnMetadata(session, tableHandle, columnHandle)));
             }
@@ -96,7 +96,7 @@ public class InputExtractor
         {
             TableHandle tableHandle = node.getTableHandle();
 
-            Set<Column> columns = new LinkedHashSet<>();
+            Set<Column> columns = new HashSet<>();
             for (ColumnHandle columnHandle : node.getAssignments().values()) {
                 columns.add(createColumn(metadata.getColumnMetadata(session, tableHandle, columnHandle)));
             }

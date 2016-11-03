@@ -63,7 +63,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -91,7 +91,7 @@ public final class ValidateDependenciesChecker
     private static class Visitor
             extends PlanVisitor<Set<Symbol>, Void>
     {
-        private final Map<PlanNodeId, PlanNode> nodesById = new LinkedHashMap<>();
+        private final Map<PlanNodeId, PlanNode> nodesById = new HashMap<>();
 
         @Override
         protected Void visitPlan(PlanNode node, Set<Symbol> boundSymbols)

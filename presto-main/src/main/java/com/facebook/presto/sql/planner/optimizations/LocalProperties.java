@@ -22,7 +22,7 @@ import com.google.common.collect.PeekingIterator;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -99,7 +99,7 @@ final class LocalProperties
         // After normalizing actuals, each symbol should only appear once
         PeekingIterator<LocalProperty<T>> actualIterator = peekingIterator(normalizeAndPrune(actuals).iterator());
 
-        Set<T> constants = new LinkedHashSet<>();
+        Set<T> constants = new HashSet<>();
         boolean consumeMoreActuals = true;
         List<Optional<LocalProperty<T>>> result = new ArrayList<>(desired.size());
         for (LocalProperty<T> desiredProperty : desired) {
@@ -131,7 +131,7 @@ final class LocalProperties
     public static <T> List<Optional<LocalProperty<T>>> normalize(List<? extends LocalProperty<T>> localProperties)
     {
         List<Optional<LocalProperty<T>>> normalizedProperties = new ArrayList<>(localProperties.size());
-        Set<T> constants = new LinkedHashSet<>();
+        Set<T> constants = new HashSet<>();
         for (LocalProperty<T> localProperty : localProperties) {
             normalizedProperties.add(localProperty.withConstants(constants));
             constants.addAll(localProperty.getColumns());
