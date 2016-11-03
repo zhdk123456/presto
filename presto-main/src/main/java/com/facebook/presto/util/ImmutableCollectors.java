@@ -46,8 +46,7 @@ public final class ImmutableCollectors
                     left.addAll(right.build());
                     return left;
                 },
-                ImmutableSet.Builder::build,
-                Collector.Characteristics.UNORDERED);
+                ImmutableSet.Builder::build); //FIXME add test to prove the error
     }
 
     public static <T> Collector<T, ?, ImmutableMultiset<T>> toImmutableMultiset()
@@ -59,8 +58,7 @@ public final class ImmutableCollectors
                     left.addAll(right.build());
                     return left;
                 },
-                ImmutableMultiset.Builder::build,
-                Collector.Characteristics.UNORDERED);
+                ImmutableMultiset.Builder::build); //FIXME add test to prove the error
     }
 
     public static <K, V> Collector<V, ?, ImmutableMap<K, V>> toImmutableMap(Function<V, K> keyMapper)
