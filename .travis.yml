@@ -58,7 +58,7 @@ script:
       presto-product-tests/bin/run_on_docker.sh \
               singlenode-ldap -g ldap_cli
     fi
- - |
+  - |
     if [[ -v PRODUCT_TESTS ]]; then
       presto-product-tests/bin/run_on_docker.sh \
                 multinode-tls -g smoke,cli,group-by,join,tls
