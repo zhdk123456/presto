@@ -128,7 +128,7 @@ public class TpchMetadata
             localProperties = ImmutableList.of(new SortingProperty<>(orderKeyColumn, SortOrder.ASC_NULLS_FIRST));
         }
         else if (tableHandle.getTableName().equals(TpchTable.LINE_ITEM.getTableName())) {
-            ColumnHandle orderKeyColumn = columns.get(OrderColumn.ORDER_KEY.getColumnName());
+            ColumnHandle orderKeyColumn = columns.get("l_orderkey");
             nodePartition = Optional.of(new ConnectorNodePartitioning(
                     new TpchPartitioningHandle(
                             TpchTable.ORDERS.getTableName(),
