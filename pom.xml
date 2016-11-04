@@ -118,6 +118,13 @@
         <module>presto-resource-group-managers</module>
     </modules>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -503,9 +510,9 @@
             </dependency>
 
             <dependency>
-                <groupId>io.airlift.tpch</groupId>
+                <groupId>com.github.ArturGajowy</groupId>
                 <artifactId>tpch</artifactId>
-                <version>0.8</version>
+                <version>c070e5942bedf0f5fd316b753e7e1f6835480083</version>
             </dependency>
 
             <dependency>

@@ -17,7 +17,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.airlift.tpch</groupId>
+            <groupId>com.github.ArturGajowy</groupId>
             <artifactId>tpch</artifactId>
         </dependency>
 
