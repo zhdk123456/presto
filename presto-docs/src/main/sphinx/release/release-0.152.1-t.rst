@@ -176,3 +176,12 @@ If the execution order is as written in the query, it results in partitioning th
 If we rearrange to execute wfunc1 -> wfunc3 -> wfunc2 then data is only partitioned twice.
 
 * RPM to include installation of the Memory connector.
+
+=====================
+Release 0.152.1-t.0.3
+=====================
+
+The following has been added to 0.152.1-t.0.3:
+
+* Enable Presto 0.152.1-t to be used with QueryGrid 2.0
+* Allow empty partitions for clustered hive tables
