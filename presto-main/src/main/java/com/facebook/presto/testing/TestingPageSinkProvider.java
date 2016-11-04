@@ -26,8 +26,6 @@ import io.airlift.slice.Slice;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-
 public class TestingPageSinkProvider
         implements ConnectorPageSinkProvider
 {
@@ -53,9 +51,9 @@ public class TestingPageSinkProvider
         }
 
         @Override
-        public CompletableFuture<Collection<Slice>> finish()
+        public Collection<Slice> finish()
         {
-            return completedFuture(ImmutableList.of());
+            return ImmutableList.of();
         }
 
         @Override
