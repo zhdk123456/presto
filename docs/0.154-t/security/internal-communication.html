@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>10.5. Secure Internal Communication &mdash; Teradata Distribution of Presto 0.154-t Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/teradata.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Teradata Distribution of Presto 0.154-t Documentation" href="../index.html"/>
+        <link rel="up" title="10. Security" href="../security.html"/>
+        <link rel="next" title="11. Administration" href="../admin.html"/>
+        <link rel="prev" title="10.4. Java Keystores and Truststores" href="tls.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Teradata Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.154-t
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">3. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sandbox-vms.html">4. Presto Installation on a Sandbox VM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-manual.html">5. Presto Server Installation on a Cluster (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-aws-emr-manual.html">6. Presto Server Installation on an AWS EMR (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-other.html">7. Alternative Installation Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">8. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/presto-admin/user-guide.html">9. Presto Admin</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../security.html">10. Security</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="server.html">10.1. Coordinator Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html">10.2. CLI Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ldap.html">10.3. LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tls.html">10.4. Java Keystores and Truststores</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">10.5. Secure Internal Communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#internal-ssl-tls-configuration">Internal SSL/TLS configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">11. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">12. Teradata Supported Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community_connector.html">13. Community Supported Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">15. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">18. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">19. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Teradata Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../security.html">10. Security</a> &raquo;</li>
+      
+    <li>10.5. Secure Internal Communication</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/security/internal-communication.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="secure-internal-communication">
+<h1>10.5. Secure Internal Communication</h1>
+<p>The Presto cluster can be configured to use secured communication. Communication
+between Presto nodes can be secured with SSL/TLS.</p>
+<div class="section" id="internal-ssl-tls-configuration">
+<h2>Internal SSL/TLS configuration</h2>
+<p>SSL/TLS is configured in the <cite>config.properties</cite> file.  The SSL/TLS on the
+worker and coordinator nodes are configured using the same set of properties.
+Every node in the cluster must be configured. Nodes that have not been
+configured, or are configured incorrectly, will not be able to communicate with
+other nodes in the cluster.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Internal SSL/TLS communication is not compatible with <a class="reference internal" href="cli.html"><span class="doc">Kerberos</span></a></p>
+</div>
+<p>To enable SSL/TLS for Presto internal communication, do the following:</p>
+<ol class="arabic simple">
+<li>Disable HTTP endpoint.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>http-server.http.enabled=false
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">You can enable HTTPS while leaving HTTP enabled. In most cases this is a
+security hole. If you are certain you want to use this configuration, you
+should consider using an firewall to limit access to the HTTP endpoint to
+only those hosts that should be allowed to use it.</p>
+</div>
+<ol class="arabic simple" start="2">
+<li>Specify each node&#8217;s fully-qualified hostname. This will be different for
+every host.  Hosts should be in the same domain to make it easy to create
+the correct SSL/TLS certificates. e.g.: <cite>coordinator.example.com</cite>,
+<cite>worker1.example.com</cite>, <cite>worker2.example.com</cite>.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>node.external-address=&lt;node-domain&gt;
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li>Generate a Java Keystore File. Every Presto node must be able to connect to
+any other node within the same cluster. It is possible to create unique
+certificates for every node using the fully-qualified hostname of each host,
+create a keystore that contains all the public keys for all of the hosts,
+and specify it for the client (<cite>http-client.https.keystore.path</cite>). In most
+cases it will be simpler to use a wildcard in the certificate as shown
+below.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>keytool -genkeypair -alias example.com -keyalg RSA -keystore keystore.jks
+Enter keystore password:
+Re-enter new password:
+What is your first and last name?
+  [Unknown]:  *.example.com
+What is the name of your organizational unit?
+  [Unknown]:
+What is the name of your organization?
+  [Unknown]:
+What is the name of your City or Locality?
+  [Unknown]:
+What is the name of your State or Province?
+  [Unknown]:
+What is the two-letter country code for this unit?
+  [Unknown]:
+Is CN=*.example.com, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
+  [no]:  yes
+
+Enter key password for &lt;presto&gt;
+        (RETURN if same as keystore password):
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li>Distribute the Java Keystore File across the Presto cluster.</li>
+<li>Enable the HTTPS endpoint.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>http-server.https.enabled=true
+http-server.https.port=&lt;https port&gt;
+http-server.https.keystore.path=&lt;keystore path&gt;
+http-server.https.keystore.key=&lt;keystore password&gt;
+</pre></div>
+</div>
+<ol class="arabic simple" start="6">
+<li>Configure the internal HTTP client to use the Java keystore file.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>http-client.https.keystore.path=&lt;keystore path&gt;
+http-client.https.keystore.key=&lt;keystore password&gt;
+</pre></div>
+</div>
+<ol class="arabic simple" start="7">
+<li>If the <a class="reference internal" href="ldap.html"><span class="doc">LDAP</span></a> authentication is enabled, specify valid LDAP
+credentials for the internal communication.</li>
+</ol>
+<div class="highlight-none"><div class="highlight"><pre><span></span>http-client.authentication.ldap.user=&lt;internal communication user&gt;
+http-client.authentication.ldap.password=&lt;internal communication password&gt;
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../admin.html" class="btn btn-neutral float-right" title="11. Administration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tls.html" class="btn btn-neutral" title="10.4. Java Keystores and Truststores" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.154-t',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
