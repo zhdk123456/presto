@@ -150,14 +150,13 @@ MySQL catalog names are mapped to Presto schema names.
 Release 0.152.1-t.0.1
 =====================
 
-Patches
--------
-
 The following has been added to 0.152.1-t.0.1:
 
-* https://github.com/prestodb/presto/commit/667ccb8d88324361753155f5b53e6428474c7032
-* https://github.com/prestodb/presto/commit/85d8ffd65ed13b5d87e1098c859babf3d172b276
-* https://github.com/prestodb/presto/commit/d3d398e467a5a887edd03c7bdca1cece24e378f6
+* Fix issue “Hive table is corrupt. It is declared as being bucketed, but the files do not match the bucketing declaration. The number of files in the directory (1) does not match the declared.” by fixing support for Hive bucketed tables. See option hive.multi-file-bucketing.enabled in the Presto Hive connector documentation.
+* Fix issue “low must be less than or equal to high” that can occur with ORC and Character data.
+* Fix incorrect stream property derivations from GroupIdNode
+* Remove broken %w specifier for MySQL date functions
+* Optimize DictionaryBlock.copyPositions()
 
 =====================
 Release 0.152.1-t.0.2
@@ -177,7 +176,3 @@ If the execution order is as written in the query, it results in partitioning th
 If we rearrange to execute wfunc1 -> wfunc3 -> wfunc2 then data is only partitioned twice.
 
 * RPM to include installation of the Memory connector.
-
-  
-
-  
