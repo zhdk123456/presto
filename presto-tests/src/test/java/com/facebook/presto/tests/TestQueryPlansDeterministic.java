@@ -22,6 +22,7 @@ import com.facebook.presto.testing.TestingAccessControlManager;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.testing.TestingSession.TESTING_CATALOG;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
@@ -61,6 +62,45 @@ public class TestQueryPlansDeterministic
         sessionPropertyManager.addConnectorSessionProperties(new ConnectorId(TESTING_CATALOG), TEST_CATALOG_PROPERTIES);
 
         return localQueryRunner;
+    }
+
+    @Test
+    public void testTpchQ9()
+            throws Exception
+    {
+        //FIXME test it with TPCDS Q9
+        //FIXME make it run all the tpch queries
+        assertQuery("SELECT\n" +
+                "  nation,\n" +
+                "  o_year,\n" +
+                "  sum(amount) AS sum_profit\n" +
+                "FROM (\n" +
+                "       SELECT\n" +
+                "         n_name                                                          AS nation,\n" +
+                "         extract(YEAR FROM o_orderdate)                                  AS o_year,\n" +
+                "         l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity AS amount\n" +
+                "       FROM\n" +
+                "         part,\n" +
+                "         supplier,\n" +
+                "         lineitem,\n" +
+                "         partsupp,\n" +
+                "         orders,\n" +
+                "         nation\n" +
+                "       WHERE\n" +
+                "         s_suppkey = l_suppkey\n" +
+                "         AND ps_suppkey = l_suppkey\n" +
+                "         AND ps_partkey = l_partkey\n" +
+                "         AND p_partkey = l_partkey\n" +
+                "         AND o_orderkey = l_orderkey\n" +
+                "         AND s_nationkey = n_nationkey\n" +
+                "         AND p_name LIKE '%green%'\n" +
+                "     ) AS profit\n" +
+                "GROUP BY\n" +
+                "  nation,\n" +
+                "  o_year\n" +
+                "ORDER BY\n" +
+                "  nation,\n" +
+                "  o_year DESC\n");
     }
 
     private void checkPlanIsDeterministic(String sql)
