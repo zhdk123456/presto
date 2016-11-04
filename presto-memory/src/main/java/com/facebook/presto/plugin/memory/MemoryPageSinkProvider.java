@@ -30,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import static com.facebook.presto.plugin.memory.Types.checkType;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class MemoryPageSinkProvider
         implements ConnectorPageSinkProvider
@@ -86,9 +85,9 @@ public class MemoryPageSinkProvider
         }
 
         @Override
-        public CompletableFuture<Collection<Slice>> finish()
+        public Collection<Slice> finish()
         {
-            return completedFuture(ImmutableList.of());
+            return ImmutableList.of();
         }
 
         @Override
