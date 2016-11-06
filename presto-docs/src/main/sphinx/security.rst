@@ -8,3 +8,4 @@ Security
     security/server
     security/cli
     security/internal-communication
+    security/tls
