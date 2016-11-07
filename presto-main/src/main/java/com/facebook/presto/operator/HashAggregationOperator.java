@@ -36,6 +36,7 @@ import io.airlift.units.DataSize.Unit;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.aggregation.builder.InMemoryHashAggregationBuilder.toTypes;
@@ -335,7 +336,13 @@ public class HashAggregationOperator
     public ListenableFuture<?> isBlocked()
     {
         if (aggregationBuilder != null) {
-            return toListenableFuture(aggregationBuilder.isBlocked());
+            CompletableFuture<?> aggregationBuilderBlocked = aggregationBuilder.isBlocked();
+            if (!aggregationBuilderBlocked.isDone() || aggregationBuilderBlocked.isCompletedExceptionally()) {
+                return toListenableFuture(aggregationBuilderBlocked);
+            }
+            else {
+                return NOT_BLOCKED;
+            }
         }
         return NOT_BLOCKED;
     }

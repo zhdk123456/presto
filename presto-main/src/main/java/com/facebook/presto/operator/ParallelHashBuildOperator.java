@@ -19,16 +19,17 @@ import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.concurrent.MoreFutures;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -203,7 +204,13 @@ public class ParallelHashBuildOperator
         if (!finishing) {
             return NOT_BLOCKED;
         }
-        return MoreFutures.toListenableFuture(lookupSourceSupplier.isDestroyed());
+        CompletableFuture<?> lookupSourceDestroyedFuture = lookupSourceSupplier.isDestroyed();
+        if (!lookupSourceDestroyedFuture.isDone() || lookupSourceDestroyedFuture.isCompletedExceptionally()) {
+            return toListenableFuture(lookupSourceDestroyedFuture);
+        }
+        else {
+            return NOT_BLOCKED;
+        }
     }
 
     @Override

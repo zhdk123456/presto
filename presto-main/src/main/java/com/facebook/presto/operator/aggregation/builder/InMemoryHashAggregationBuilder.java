@@ -45,6 +45,7 @@ import static java.util.Objects.requireNonNull;
 public class InMemoryHashAggregationBuilder
         implements HashAggregationBuilder
 {
+    public static final CompletableFuture<Object> COMPLETED_FUTURE = CompletableFuture.completedFuture(null);
     private final GroupByHash groupByHash;
     private final List<Aggregator> aggregators;
     private final OperatorContext operatorContext;
@@ -145,7 +146,7 @@ public class InMemoryHashAggregationBuilder
     @Override
     public CompletableFuture<?> isBlocked()
     {
-        return CompletableFuture.completedFuture(null);
+        return COMPLETED_FUTURE;
     }
 
     public long getHashCollisions()
