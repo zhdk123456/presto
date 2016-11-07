@@ -230,6 +230,10 @@ public class SqlTaskManager
                 log.warn(e, "Error requesting system memory revoking");
             }
         }, 0, 1, TimeUnit.SECONDS);
+
+        taskManagementExecutor.scheduleWithFixedDelay(() -> {
+            log.info("Memory pools: %s", localMemoryManager.getInfo());
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
