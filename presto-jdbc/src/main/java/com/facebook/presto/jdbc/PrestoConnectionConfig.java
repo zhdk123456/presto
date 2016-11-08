@@ -117,6 +117,11 @@ final class PrestoConnectionConfig
         ImmutableMap.Builder<String, BiConsumer<HttpClientConfig, String>> result = ImmutableMap.builder();
         for (String key : connectionProperties.stringPropertyNames()) {
             ConnectionProperty property = ConnectionProperties.forKey(key);
+
+            if (property == null) {
+                throw new SQLException(format("Unknown property key %s", key));
+            }
+
             String value = connectionProperties.getProperty(key);
 
             if (property.isRequired(connectionProperties) && value == null) {
