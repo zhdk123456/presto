@@ -263,10 +263,13 @@ public class InMemoryHashAggregationBuilder
 
     private Iterator<Integer> hashSortedGroupIds()
     {
+        return consecutiveGroupIds();
+        /*
         List<Integer> groupIds = Lists.newArrayList(consecutiveGroupIds());
         groupIds.sort((Integer leftGroupId, Integer rightGroupId) ->
                 Long.compare(groupByHash.getRawHash(leftGroupId), groupByHash.getRawHash(rightGroupId)));
         return groupIds.iterator();
+         */
     }
 
     private static class Aggregator
