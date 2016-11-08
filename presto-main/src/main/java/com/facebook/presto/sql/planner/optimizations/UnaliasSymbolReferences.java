@@ -558,6 +558,7 @@ public class UnaliasSymbolReferences
             if (node.getType().equals(INNER)) {
                 canonicalCriteria.stream()
                         .filter(equiJoinClause -> types.get(equiJoinClause.getLeft()).equals(types.get(equiJoinClause.getRight())))
+                        .filter(equiJoinClause -> node.getOutputSymbols().contains(equiJoinClause.getLeft()))
                         .forEach(equiJoinClause -> map(equiJoinClause.getRight(), equiJoinClause.getLeft()));
             }
 
