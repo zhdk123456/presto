@@ -240,39 +240,6 @@ public class TestLogicalPlanner
     }
 
     @Test
-    public void testGeneratesOneLeftHashForTwoJoinsWithShuffledSymbols()
-    {
-        assertPlan(
-                "SELECT * " +
-                        " FROM " +
-                        "  (SELECT " +
-                        "    l.suppkey," +
-                        "    l.partkey" +
-                        "   FROM" +
-                        "    lineitem l" +
-                        "   JOIN" +
-                        "    partsupp ps" +
-                        "   ON" +
-                        "    ps.suppkey = l.suppkey" +
-                        "    AND ps.partkey = l.partkey) l" +
-                        "  JOIN" +
-                        "   partsupp ps" +
-                        "  ON" +
-                        "   ps.partkey = l.partkey" +
-                        "   AND ps.suppkey = l.suppkey",
-                anyTree(node(JoinNode.class,
-                        project(
-                                node(JoinNode.class,
-                                        project(
-                                                anyTree()).withSymbol("hash", "H"),
-                                        anyTree())
-                        ).withSymbol("suppkey", "S")
-                                .withSymbol("partkey", "P")
-                                .withSymbol("hash", "H"),
-                        anyTree())));
-    }
-
-    @Test
     public void testNoExtraSymbolsInJoinRemoteExchange()
     {
         assertDistributedPlan("SELECT c.custkey FROM customer c, orders o WHERE c.custkey = o.custkey",
