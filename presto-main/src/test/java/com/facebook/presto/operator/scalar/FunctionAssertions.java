@@ -65,6 +65,7 @@ import com.facebook.presto.sql.tree.SymbolReference;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.testing.MaterializedResult;
 import com.facebook.presto.testing.TestingTransactionHandle;
+import com.facebook.presto.util.maps.IdentityMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -76,7 +77,6 @@ import org.joda.time.DateTimeZone;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -584,7 +584,7 @@ public final class FunctionAssertions
     {
         filter = ExpressionTreeRewriter.rewriteWith(new SymbolToInputRewriter(ImmutableMap.<Symbol, Integer>of()), filter);
 
-        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata, SQL_PARSER, INPUT_TYPES, ImmutableList.of(filter), emptyList());
+        IdentityMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata, SQL_PARSER, INPUT_TYPES, ImmutableList.of(filter), emptyList());
 
         try {
             Supplier<PageProcessor> processor = compiler.compilePageProcessor(toRowExpression(filter, expressionTypes), ImmutableList.of());
@@ -604,7 +604,7 @@ public final class FunctionAssertions
         filter = ExpressionTreeRewriter.rewriteWith(new SymbolToInputRewriter(INPUT_MAPPING), filter);
         projection = ExpressionTreeRewriter.rewriteWith(new SymbolToInputRewriter(INPUT_MAPPING), projection);
 
-        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata,
+        IdentityMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata,
                 SQL_PARSER, INPUT_TYPES, ImmutableList.of(filter, projection), emptyList());
 
         try {
@@ -626,7 +626,7 @@ public final class FunctionAssertions
         filter = ExpressionTreeRewriter.rewriteWith(new SymbolToInputRewriter(INPUT_MAPPING), filter);
         projection = ExpressionTreeRewriter.rewriteWith(new SymbolToInputRewriter(INPUT_MAPPING), projection);
 
-        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata,
+        IdentityMap<Expression, Type> expressionTypes = getExpressionTypesFromInput(TEST_SESSION, metadata,
                 SQL_PARSER, INPUT_TYPES, ImmutableList.of(filter, projection), emptyList());
 
         try {
@@ -657,7 +657,7 @@ public final class FunctionAssertions
         }
     }
 
-    private RowExpression toRowExpression(Expression projection, IdentityHashMap<Expression, Type> expressionTypes)
+    private RowExpression toRowExpression(Expression projection, IdentityMap<Expression, Type> expressionTypes)
     {
         return SqlToRowExpressionTranslator.translate(projection, SCALAR, expressionTypes, metadata.getFunctionRegistry(), metadata.getTypeManager(), session, false);
     }

@@ -33,6 +33,7 @@ import com.facebook.presto.sql.tree.SampledRelation;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.sql.tree.SubqueryExpression;
 import com.facebook.presto.sql.tree.Table;
+import com.facebook.presto.util.maps.IdentityMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
@@ -43,14 +44,14 @@ import com.google.common.collect.ListMultimap;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Sets.newIdentityHashSet;
+import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.requireNonNull;
 
 public class Analysis
@@ -59,36 +60,36 @@ public class Analysis
     private final List<Expression> parameters;
     private String updateType;
 
-    private final IdentityHashMap<Table, Query> namedQueries = new IdentityHashMap<>();
+    private final IdentityMap<Table, Query> namedQueries = new IdentityMap<>(LinkedHashMap::new);
 
-    private final IdentityHashMap<Node, Scope> scopes = new IdentityHashMap<>();
-    private final Set<Expression> columnReferences = newIdentityHashSet();
+    private final IdentityMap<Node, Scope> scopes = new IdentityMap<>(LinkedHashMap::new);
+    private final Set<Expression> columnReferences = newSetFromMap(new IdentityMap<>(LinkedHashMap::new));
 
-    private final IdentityHashMap<QuerySpecification, List<FunctionCall>> aggregates = new IdentityHashMap<>();
-    private final IdentityHashMap<QuerySpecification, List<List<Expression>>> groupByExpressions = new IdentityHashMap<>();
-    private final IdentityHashMap<Node, Expression> where = new IdentityHashMap<>();
-    private final IdentityHashMap<QuerySpecification, Expression> having = new IdentityHashMap<>();
-    private final IdentityHashMap<Node, List<Expression>> orderByExpressions = new IdentityHashMap<>();
-    private final IdentityHashMap<Node, List<Expression>> outputExpressions = new IdentityHashMap<>();
-    private final IdentityHashMap<QuerySpecification, List<FunctionCall>> windowFunctions = new IdentityHashMap<>();
+    private final IdentityMap<QuerySpecification, List<FunctionCall>> aggregates = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<QuerySpecification, List<List<Expression>>> groupByExpressions = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<Node, Expression> where = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<QuerySpecification, Expression> having = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<Node, List<Expression>> orderByExpressions = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<Node, List<Expression>> outputExpressions = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<QuerySpecification, List<FunctionCall>> windowFunctions = new IdentityMap<>(LinkedHashMap::new);
 
-    private final IdentityHashMap<Join, Expression> joins = new IdentityHashMap<>();
+    private final IdentityMap<Join, Expression> joins = new IdentityMap<>(LinkedHashMap::new);
     private final ListMultimap<Node, InPredicate> inPredicatesSubqueries = ArrayListMultimap.create();
     private final ListMultimap<Node, SubqueryExpression> scalarSubqueries = ArrayListMultimap.create();
     private final ListMultimap<Node, ExistsPredicate> existsSubqueries = ArrayListMultimap.create();
     private final ListMultimap<Node, QuantifiedComparisonExpression> quantifiedComparisonSubqueries = ArrayListMultimap.create();
 
-    private final IdentityHashMap<Table, TableHandle> tables = new IdentityHashMap<>();
+    private final IdentityMap<Table, TableHandle> tables = new IdentityMap<>(LinkedHashMap::new);
 
-    private final IdentityHashMap<Expression, Type> types = new IdentityHashMap<>();
-    private final IdentityHashMap<Expression, Type> coercions = new IdentityHashMap<>();
-    private final Set<Expression> typeOnlyCoercions = newIdentityHashSet();
-    private final IdentityHashMap<Relation, Type[]> relationCoercions = new IdentityHashMap<>();
-    private final IdentityHashMap<FunctionCall, Signature> functionSignature = new IdentityHashMap<>();
+    private final IdentityMap<Expression, Type> types = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<Expression, Type> coercions = new IdentityMap<>(LinkedHashMap::new);
+    private final Set<Expression> typeOnlyCoercions = newSetFromMap(new IdentityMap<>(LinkedHashMap::new));
+    private final IdentityMap<Relation, Type[]> relationCoercions = new IdentityMap<>(LinkedHashMap::new);
+    private final IdentityMap<FunctionCall, Signature> functionSignature = new IdentityMap<>(LinkedHashMap::new);
 
-    private final IdentityHashMap<Field, ColumnHandle> columns = new IdentityHashMap<>();
+    private final IdentityMap<Field, ColumnHandle> columns = new IdentityMap<>(LinkedHashMap::new);
 
-    private final IdentityHashMap<SampledRelation, Double> sampleRatios = new IdentityHashMap<>();
+    private final IdentityMap<SampledRelation, Double> sampleRatios = new IdentityMap<>(LinkedHashMap::new);
 
     // for create table
     private Optional<QualifiedObjectName> createTableDestination = Optional.empty();
@@ -155,9 +156,9 @@ public class Analysis
         return aggregates.get(query);
     }
 
-    public IdentityHashMap<Expression, Type> getTypes()
+    public IdentityMap<Expression, Type> getTypes()
     {
-        return new IdentityHashMap<>(types);
+        return new IdentityMap<>(LinkedHashMap::new, types);
     }
 
     public Type getType(Expression expression)
@@ -185,7 +186,7 @@ public class Analysis
         relationCoercions.put(relation, types);
     }
 
-    public IdentityHashMap<Expression, Type> getCoercions()
+    public IdentityMap<Expression, Type> getCoercions()
     {
         return coercions;
     }
@@ -343,11 +344,11 @@ public class Analysis
     private static class GetScopeVisitor
             extends DefaultTraversalVisitor<Void, Scope>
     {
-        private final IdentityHashMap<Node, Scope> scopes;
+        private final IdentityMap<Node, Scope> scopes;
         private final Node node;
         private Scope result;
 
-        public GetScopeVisitor(IdentityHashMap<Node, Scope> scopes, Node node)
+        public GetScopeVisitor(IdentityMap<Node, Scope> scopes, Node node)
         {
             this.scopes = requireNonNull(scopes, "scopes is null");
             this.node = requireNonNull(node, "node is null");
@@ -409,7 +410,7 @@ public class Analysis
         return functionSignature.get(function);
     }
 
-    public void addFunctionSignatures(IdentityHashMap<FunctionCall, Signature> infos)
+    public void addFunctionSignatures(IdentityMap<FunctionCall, Signature> infos)
     {
         functionSignature.putAll(infos);
     }
@@ -419,7 +420,7 @@ public class Analysis
         return ImmutableSet.copyOf(columnReferences);
     }
 
-    public void addTypes(IdentityHashMap<Expression, Type> types)
+    public void addTypes(IdentityMap<Expression, Type> types)
     {
         this.types.putAll(types);
     }
@@ -432,7 +433,7 @@ public class Analysis
         }
     }
 
-    public void addCoercions(IdentityHashMap<Expression, Type> coercions, Set<Expression> typeOnlyCoercions)
+    public void addCoercions(IdentityMap<Expression, Type> coercions, Set<Expression> typeOnlyCoercions)
     {
         this.coercions.putAll(coercions);
         this.typeOnlyCoercions.addAll(typeOnlyCoercions);
