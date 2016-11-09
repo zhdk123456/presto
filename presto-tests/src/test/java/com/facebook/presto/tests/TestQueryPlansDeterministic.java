@@ -82,4 +82,15 @@ public class TestQueryPlansDeterministic
                 "  nation,\n" +
                 "  o_year DESC\n");
     }
+
+    @Test
+    public void testJoinsDeterministic()
+            throws Exception
+    {
+        determinismChecker.checkPlanIsDeterministic("" +
+                "SELECT COUNT(*) FROM part ps, supplier l\n" +
+                "WHERE ps.comment = l.comment\n" +
+                "AND ps.brand = l.address"
+        );
+    }
 }
