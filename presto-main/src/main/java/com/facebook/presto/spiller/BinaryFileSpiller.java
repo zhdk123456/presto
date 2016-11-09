@@ -39,7 +39,6 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -57,7 +56,7 @@ public class BinaryFileSpiller
     private final Path targetDirectory;
     private final Closer closer = Closer.create();
     private final PagesSerde serde;
-    private final AtomicLong totalSpilledDataSize;
+    private final SpillerStats spillerStats;
     private final LocalSpillContext localSpillContext;
 
     private final ListeningExecutorService executor;
@@ -69,12 +68,12 @@ public class BinaryFileSpiller
             PagesSerde serde,
             ListeningExecutorService executor,
             Path spillPath,
-            AtomicLong totalSpilledDataSize,
+            SpillerStats spillerStats,
             LocalSpillContext localSpillContext)
     {
         this.serde = requireNonNull(serde, "serde is null");
         this.executor = requireNonNull(executor, "executor is null");
-        this.totalSpilledDataSize = requireNonNull(totalSpilledDataSize, "totalSpilledDataSize is null");
+        this.spillerStats = requireNonNull(spillerStats, "spillerStats is null");
         this.localSpillContext = localSpillContext;
         try {
             this.targetDirectory = Files.createTempDirectory(spillPath, "presto-spill");
@@ -102,7 +101,7 @@ public class BinaryFileSpiller
                 Page page = pageIterator.next();
                 long pageSize = page.getSizeInBytes();
                 localSpillContext.updateBytes(pageSize);
-                totalSpilledDataSize.addAndGet(pageSize);
+                spillerStats.addToTotalSpilledBytes(pageSize);
                 writePage(serde, output, page);
             }
         }
