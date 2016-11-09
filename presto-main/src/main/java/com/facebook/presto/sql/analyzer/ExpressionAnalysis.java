@@ -19,17 +19,17 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.InPredicate;
 import com.facebook.presto.sql.tree.QuantifiedComparisonExpression;
 import com.facebook.presto.sql.tree.SubqueryExpression;
+import com.facebook.presto.util.maps.IdentityMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.IdentityHashMap;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public class ExpressionAnalysis
 {
-    private final IdentityHashMap<Expression, Type> expressionTypes;
-    private final IdentityHashMap<Expression, Type> expressionCoercions;
+    private final IdentityMap<Expression, Type> expressionTypes;
+    private final IdentityMap<Expression, Type> expressionCoercions;
     private final Set<Expression> typeOnlyCoercions;
     private final Set<Expression> columnReferences;
     private final Set<InPredicate> subqueryInPredicates;
@@ -38,8 +38,8 @@ public class ExpressionAnalysis
     private final Set<QuantifiedComparisonExpression> quantifiedComparisons;
 
     public ExpressionAnalysis(
-            IdentityHashMap<Expression, Type> expressionTypes,
-            IdentityHashMap<Expression, Type> expressionCoercions,
+            IdentityMap<Expression, Type> expressionTypes,
+            IdentityMap<Expression, Type> expressionCoercions,
             Set<InPredicate> subqueryInPredicates,
             Set<SubqueryExpression> scalarSubqueries,
             Set<ExistsPredicate> existsSubqueries,
@@ -62,7 +62,7 @@ public class ExpressionAnalysis
         return expressionTypes.get(expression);
     }
 
-    public IdentityHashMap<Expression, Type> getExpressionTypes()
+    public IdentityMap<Expression, Type> getExpressionTypes()
     {
         return expressionTypes;
     }
