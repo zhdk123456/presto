@@ -49,7 +49,7 @@ public class BinarySpillerFactory
         this(createExecutorServiceOfSize(requireNonNull(featuresConfig, "featuresConfig is null").getSpillerThreads()),
                 blockEncodingSerde,
                 spillerStats,
-                requireNonNull(featuresConfig, "featuresConfig is null").getSpillerSpillPath());
+                requireNonNull(featuresConfig, "featuresConfig is null").getSpillerSpillPaths().get(0));
     }
 
     public BinarySpillerFactory(ListeningExecutorService executor, BlockEncodingSerde blockEncodingSerde, SpillerStats spillerStats, Path spillPath)
