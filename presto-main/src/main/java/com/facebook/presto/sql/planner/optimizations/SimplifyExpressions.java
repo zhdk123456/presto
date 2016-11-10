@@ -312,7 +312,7 @@ public class SimplifyExpressions
                 // in the group and none of them will be aggregated over. Hence, re-write the
                 // GroupingOperation to a constant literal of 0.
                 // See SQL:2011:4.16.2 and SQL:2011:6.9.10.
-                return new GenericLiteral("BIGINT", "0");
+                return new GenericLiteral("INTEGER", "0");
             }
             else {
                 return node;

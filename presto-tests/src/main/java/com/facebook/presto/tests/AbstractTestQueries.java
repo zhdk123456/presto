@@ -1763,6 +1763,16 @@ public abstract class AbstractTestQueries
                     "(NULL, 'l', 7, 3),\n" +
                     "('h', NULL, 11, 1),\n" +
                     "('k', NULL, 7, 1)");
+
+        assertQuery("" +
+            "SELECT a, b, sum(c), grouping(a, b)\n" +
+            "FROM (VALUES\n" +
+            "      ('h', 'j', 11),\n" +
+            "      ('k', 'l', 7)\n" +
+            "      ) AS t (a, b, c)\n" +
+            "GROUP BY a, b",
+                "VALUES ('k', 'l', 7, 0),\n" +
+                       "('h', 'j', 11, 0)");
     }
 
     @Test

@@ -13,22 +13,27 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.spi.type.BigintType;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.analyzer.Analysis;
 import com.facebook.presto.sql.analyzer.ResolvedField;
 import com.facebook.presto.sql.tree.ArrayConstructor;
 import com.facebook.presto.sql.tree.Cast;
+import com.facebook.presto.sql.tree.Cube;
 import com.facebook.presto.sql.tree.DereferenceExpression;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.FieldReference;
 import com.facebook.presto.sql.tree.FunctionCall;
+import com.facebook.presto.sql.tree.GroupingElement;
 import com.facebook.presto.sql.tree.GroupingOperation;
+import com.facebook.presto.sql.tree.GroupingSets;
 import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.QualifiedNameReference;
 import com.facebook.presto.sql.tree.QuerySpecification;
+import com.facebook.presto.sql.tree.Rollup;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.facebook.presto.type.ListLiteralType;
 import com.google.common.collect.ImmutableList;
@@ -40,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
@@ -304,8 +310,23 @@ class TranslationMap
         }
         groupingSetOrdinals = groupingSetOrdinalsBuilder.build();
 
+        checkState(node.getGroupBy().isPresent(), "GroupBy node must be present");
+        List<GroupingElement> groupingElements = node.getGroupBy().get().getGroupingElements().stream()
+                .filter(element -> element instanceof GroupingSets || element instanceof Rollup || element instanceof Cube)
+                .collect(toImmutableList());
+        Expression firstArgument;
+        // If the query contains a GROUP BY and no GROUPING SETS, ROLLUP or CUBE then we use a dummy
+        // literal as a placeholder for the first argument because the GROUPING will be further re-written
+        // to a literal in SimplifyExpressions.
+        if (groupingElements.isEmpty()) {
+            firstArgument = new LongLiteral("0");
+        }
+        else {
+            firstArgument = new SymbolReference("groupid");
+        }
+
         List<Expression> arguments = Arrays.asList(
-                new SymbolReference("groupid"),
+                firstArgument,
                 new Cast(new ArrayConstructor(groupingOrdinals), ListLiteralType.NAME),
                 new Cast(new ArrayConstructor(groupingSetOrdinals.stream().map(ArrayConstructor::new).collect(Collectors.toList())), ListLiteralType.NAME)
         );
