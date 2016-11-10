@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.facebook.presto.spi.type.CharType.createCharType;
 import static com.facebook.presto.spi.type.DecimalType.createDecimalType;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.tpcds.Types.checkType;
@@ -233,7 +234,8 @@ public class TpcdsMetadata
                 return DateType.DATE;
             case DECIMAL:
                 return createDecimalType(tpcdsType.getPrecision().get(), tpcdsType.getScale().get());
-            case CHAR: // TODO: change when CHAR(x) gets merged
+            case CHAR:
+                return createCharType(tpcdsType.getPrecision().get());
             case VARCHAR:
                 return createVarcharType(tpcdsType.getPrecision().get());
             case TIME:
