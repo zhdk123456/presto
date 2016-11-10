@@ -33,7 +33,7 @@ public class ListLiteralCast
 
     @ScalarOperator(OperatorType.CAST)
     @SqlType(ListLiteralType.NAME)
-    public static List castArrayToListLiteral(@SqlType("array(integer)") Block array)
+    public static List<Integer> castArrayToListLiteral(@SqlType("array(integer)") Block array)
     {
         ImmutableList.Builder<Integer> listBuilder = ImmutableList.builder();
         for (int i = 0; i < array.getPositionCount(); i++) {
@@ -45,17 +45,13 @@ public class ListLiteralCast
 
     @ScalarOperator(OperatorType.CAST)
     @SqlType(ListLiteralType.NAME)
-    public static List castArrayOfArraysToListLiteral(@SqlType("array(array(integer))") Block arrayOfArrays)
+    public static List<List<Integer>> castArrayOfArraysToListLiteral(@SqlType("array(array(integer))") Block arrayOfArrays)
     {
         ArrayType arrayType = new ArrayType(INTEGER);
         ImmutableList.Builder<List<Integer>> outerListBuilder = ImmutableList.builder();
         for (int i = 0; i < arrayOfArrays.getPositionCount(); i++) {
             Block subArray = arrayType.getObject(arrayOfArrays, i);
-            ImmutableList.Builder<Integer> innerListBuilder = ImmutableList.builder();
-            for (int j = 0; j < subArray.getPositionCount(); j++) {
-                innerListBuilder.add(subArray.getInt(j, 0));
-            }
-            outerListBuilder.add(innerListBuilder.build());
+            outerListBuilder.add(castArrayToListLiteral(subArray));
         }
 
         return outerListBuilder.build();
