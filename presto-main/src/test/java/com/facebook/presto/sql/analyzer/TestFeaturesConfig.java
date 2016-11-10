@@ -53,10 +53,11 @@ public class TestFeaturesConfig
                 .setRe2JDfaRetries(5)
                 .setSpillEnabled(false)
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("4MB"))
-                .setSpillerSpillPath(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
+                .setSpillerSpillPaths(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
                 .setOptimizeMixedDistinctAggregations(false)
                 .setReorderWindows(true)
+                .setSpillMinimumFreeSpaceThreshold(0.9)
                 .setParseDecimalLiteralsAsDouble(false));
     }
 
@@ -84,8 +85,9 @@ public class TestFeaturesConfig
                 .put("re2j.dfa-retries", "42")
                 .put("experimental.spill-enabled", "true")
                 .put("experimental.operator-memory-limit-before-spill", "100MB")
-                .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
+                .put("experimental.spiller-spill-path", "/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .put("experimental.spiller-threads", "42")
+                .put("experimental.spiller-minimum-free-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
@@ -109,8 +111,9 @@ public class TestFeaturesConfig
                 .put("re2j.dfa-retries", "42")
                 .put("experimental.spill-enabled", "true")
                 .put("experimental.operator-memory-limit-before-spill", "100MB")
-                .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
+                .put("experimental.spiller-spill-path", "/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .put("experimental.spiller-threads", "42")
+                .put("experimental.spiller-minimum-free-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
                 .build();
 
@@ -134,8 +137,9 @@ public class TestFeaturesConfig
                 .setRe2JDfaRetries(42)
                 .setSpillEnabled(true)
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"))
-                .setSpillerSpillPath("/tmp/custom/spill/path")
+                .setSpillerSpillPaths("/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .setSpillerThreads(42)
+                .setSpillMinimumFreeSpaceThreshold(0.8)
                 .setReorderWindows(false)
                 .setParseDecimalLiteralsAsDouble(true);
 
