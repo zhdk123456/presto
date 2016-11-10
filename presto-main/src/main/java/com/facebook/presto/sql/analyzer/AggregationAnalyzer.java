@@ -484,10 +484,10 @@ class AggregationAnalyzer
 
         public Boolean visitGroupingOperation(GroupingOperation node, Void context)
         {
-            long argumentsNotInGroupBy = node.getGroupingColumns().stream()
+            List<Expression> argumentsNotInGroupBy = node.getGroupingColumns().stream()
                     .filter((argument) -> !expressions.contains(argument))
-                    .count();
-            if (argumentsNotInGroupBy > 0) {
+                    .collect(toImmutableList());
+            if (!argumentsNotInGroupBy.isEmpty()) {
                 throw new SemanticException(
                         INVALID_PROCEDURE_ARGUMENTS,
                         node,
