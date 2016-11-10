@@ -63,11 +63,9 @@ import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_PROCEDURE_ARGUMENTS;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATE_OR_GROUP_BY;
@@ -486,10 +484,10 @@ class AggregationAnalyzer
 
         public Boolean visitGroupingOperation(GroupingOperation node, Void context)
         {
-            Collection<Expression> argumentsNotInGroupBy = node.getGroupingColumns().stream()
+            long argumentsNotInGroupBy = node.getGroupingColumns().stream()
                     .filter((argument) -> !expressions.contains(argument))
-                    .collect(Collectors.toList());
-            if (!argumentsNotInGroupBy.isEmpty()) {
+                    .count();
+            if (argumentsNotInGroupBy > 0) {
                 throw new SemanticException(
                         INVALID_PROCEDURE_ARGUMENTS,
                         node,

@@ -1771,8 +1771,19 @@ public abstract class AbstractTestQueries
             "      ('k', 'l', 7)\n" +
             "      ) AS t (a, b, c)\n" +
             "GROUP BY a, b",
-                "VALUES ('k', 'l', 7, 0),\n" +
-                       "('h', 'j', 11, 0)");
+            "VALUES ('k', 'l', 7, 0),\n" +
+                   "('h', 'j', 11, 0)");
+
+        assertQuery("" +
+            "SELECT a, b, sum(c), grouping(a, b)\n" +
+            "FROM (VALUES\n" +
+            "      ('h', 'j', 11),\n" +
+            "      ('k', 'l', 7)\n" +
+            "      ) AS t (a, b, c)\n" +
+            "GROUP BY GROUPING SETS ( (a), (b))\n" +
+            "HAVING grouping(a, b) > 1",
+            "VALUES (NULL, 'j', 11, 2),\n" +
+                   "(NULL, 'l', 7, 2)");
     }
 
     @Test

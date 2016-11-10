@@ -63,7 +63,9 @@ public final class GroupingOperationFunction
             @SqlType("ListLiteral") List groupingSetOrdinals)
     {
         BitSet groupingBinary = new BitSet(groupingOrdinals.size());
-        groupingBinary.set(0, groupingOrdinals.size());
+        int startIndex = 0;
+        groupingBinary.set(startIndex, groupingOrdinals.size(), true);
+
         List<Integer> groupingSet = (List<Integer>) groupingSetOrdinals.get((int) groupId);
         for (Integer groupingColumn : groupingSet) {
             if (groupingOrdinals.contains(groupingColumn)) {
@@ -71,12 +73,12 @@ public final class GroupingOperationFunction
             }
         }
 
-        int grouping = 0;
+        long grouping = 0;
         // Rightmost argument to grouping() is represented by the least significant bit
         // so we start the conversion from binary to decimal from the left.
         for (int i = groupingOrdinals.size() - 1, j = 0; i >= 0; i--, j++) {
             if (groupingBinary.get(i)) {
-                grouping += Math.pow(2, j);
+                grouping += 1 << j;
             }
         }
 

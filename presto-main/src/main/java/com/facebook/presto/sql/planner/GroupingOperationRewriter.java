@@ -25,7 +25,6 @@ import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.GroupingOperation;
 import com.facebook.presto.sql.tree.QuerySpecification;
 import com.facebook.presto.type.ListLiteralType;
-import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
 import java.util.IdentityHashMap;
@@ -66,11 +65,11 @@ public class GroupingOperationRewriter
     {
         FunctionCall rewrittenExpression = subPlan.rewriteGroupingOperationToFunctionCall(node, queryNode);
         if (isGroupingOperationTopLevel) {
-            ImmutableList.Builder<Expression> outputExpressionBuilder = ImmutableList.builder();
-            outputExpressionBuilder.addAll(analysis.getOutputExpressions(queryNode).stream()
-                    .map((outputExpression) -> (outputExpression instanceof GroupingOperation) ? rewrittenExpression : outputExpression)
-                    .collect(Collectors.toList()));
-            analysis.setOutputExpressions(node, outputExpressionBuilder.build());
+            analysis.setOutputExpressions(
+                    node,
+                    analysis.getOutputExpressions(queryNode).stream()
+                            .map(expression -> (expression instanceof GroupingOperation) ? rewrittenExpression : expression)
+                            .collect(Collectors.toList()));
         }
         IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
         IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap<>();
