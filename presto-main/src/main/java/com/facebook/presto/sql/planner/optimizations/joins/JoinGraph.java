@@ -171,11 +171,14 @@ public class JoinGraph
 
         ImmutableList.Builder<PlanNode> joinedNodes = ImmutableList.builder();
         ImmutableMultimap.Builder<PlanNode, Edge> joinedEdges = ImmutableMultimap.builder();
+        ImmutableList.Builder<Expression> joinedFilters = ImmutableList.builder();
 
         joinedNodes.addAll(this.nodes);
         joinedNodes.addAll(other.nodes);
         joinedEdges.putAll(this.edges);
         joinedEdges.putAll(other.edges);
+        joinedFilters.addAll(this.filters);
+        joinedFilters.addAll(other.filters);
 
         for (JoinNode.EquiJoinClause edge : joinClauses) {
             Symbol leftSymbol = edge.getLeft();
@@ -189,7 +192,7 @@ public class JoinGraph
             joinedEdges.put(right, new Edge(left, rightSymbol, leftSymbol));
         }
 
-        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId, other.filters, Optional.empty());
+        return new JoinGraph(joinedNodes.build(), joinedEdges.build(), rootId, joinedFilters.build(), Optional.empty());
     }
 
     private static class Builder

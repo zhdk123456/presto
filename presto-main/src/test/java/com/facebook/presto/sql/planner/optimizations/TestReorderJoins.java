@@ -105,6 +105,20 @@ public class TestReorderJoins
                                                 anyTree(filter("partkey_3 <> orderkey_2", tableScan("lineitem"))))),
                                 anyTree(tableScan("orders")))));
     }
+
+    @Test
+    public void testEliminateCrossJoinPreserveFilters()
+    {
+        assertPlan("SELECT o.orderkey FROM part p, orders o, lineitem l " +
+                        "WHERE p.partkey = l.partkey AND l.orderkey = o.orderkey AND l.returnflag = 'R' AND shippriority >= 10",
+                anyTree(join(INNER, ImmutableList.of(aliasPair("orderkey_2", "orderkey")),
+                        anyTree(
+                                join(INNER, ImmutableList.of(aliasPair("partkey", "partkey_3")),
+                                        anyTree(tableScan("part")),
+                                        anyTree(filter("returnflag = 'R'", tableScan("lineitem"))))),
+                        anyTree(filter("shippriority >= 10", tableScan("orders"))))));
+    }
+
     private void assertPlan(String sql, PlanMatchPattern pattern)
     {
         //Plan actualPlan = plan(sql);
