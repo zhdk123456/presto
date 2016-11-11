@@ -29,7 +29,7 @@ public class LdapServerConfig
     private String userBaseDistinguishedName;
     private String groupDistinguishedName;
     private String userObjectClass;
-    private Duration ldapCacheTtl = new Duration(1, TimeUnit.HOURS);
+    private Duration ldapCacheTtl = new Duration(1, TimeUnit.MINUTES);
 
     public enum ServerType{
         ACTIVE_DIRECTORY,

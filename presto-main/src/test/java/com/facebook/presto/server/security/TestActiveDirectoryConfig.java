@@ -37,7 +37,7 @@ public class TestActiveDirectoryConfig
                 .setUserBaseDistinguishedName(null)
                 .setGroupDistinguishedName(null)
                 .setUserObjectClass(null)
-                .setLdapCacheTtl(new Duration(1, TimeUnit.HOURS)));
+                .setLdapCacheTtl(new Duration(1, TimeUnit.MINUTES)));
     }
 
     @Test
