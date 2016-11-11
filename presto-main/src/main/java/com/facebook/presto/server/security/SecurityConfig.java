@@ -14,33 +14,61 @@
 package com.facebook.presto.server.security;
 
 import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigDescription;
-import io.airlift.configuration.DefunctConfig;
 
-@DefunctConfig({
-        "http.server.authentication.enabled"
-})
+import java.io.File;
+
 public class SecurityConfig
 {
-    private AuthenticationType authenticationType =  AuthenticationType.NONE;
+    private boolean authenticationEnabled;
+    private File kerberosConfig;
+    private String serviceName;
+    private File keytab;
 
-    public enum AuthenticationType
+    public File getKerberosConfig()
     {
-        NONE,
-        KERBEROS,
-        LDAP
+        return kerberosConfig;
     }
 
-    public AuthenticationType getAuthenticationType()
+    @Config("http.authentication.krb5.config")
+    public SecurityConfig setKerberosConfig(File kerberosConfig)
     {
-        return authenticationType;
+        this.kerberosConfig = kerberosConfig;
+        return this;
     }
 
-    @Config("http-server.authentication.type")
-    @ConfigDescription("Authentication type (supported types: NONE, KERBEROS, LDAP)")
-    public SecurityConfig setAuthenticationType(AuthenticationType authenticationType)
+    public boolean getAuthenticationEnabled()
     {
-        this.authenticationType = authenticationType;
+        return authenticationEnabled;
+    }
+
+    @Config("http.server.authentication.enabled")
+    public SecurityConfig setAuthenticationEnabled(boolean enabled)
+    {
+        this.authenticationEnabled = enabled;
+        return this;
+    }
+
+    public String getServiceName()
+    {
+        return serviceName;
+    }
+
+    @Config("http.server.authentication.krb5.service-name")
+    public SecurityConfig setServiceName(String serviceName)
+    {
+        this.serviceName = serviceName;
+        return this;
+    }
+
+    public File getKeytab()
+    {
+        return keytab;
+    }
+
+    @Config("http.server.authentication.krb5.keytab")
+    public SecurityConfig setKeytab(File keytab)
+    {
+        this.keytab = keytab;
         return this;
     }
 }

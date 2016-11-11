@@ -34,7 +34,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Objects.requireNonNull;
 
@@ -55,7 +54,6 @@ public class QueryRunner
             Optional<String> keystorePassword,
             Optional<String> truststorePath,
             Optional<String> truststorePassword,
-            Optional<String> user,
             Optional<String> password,
             Optional<String> kerberosPrincipal,
             Optional<String> kerberosRemoteServiceName,
@@ -77,7 +75,7 @@ public class QueryRunner
                         authenticationEnabled),
                 kerberosConfig,
                 Optional.<JettyIoPool>empty(),
-                getRequestFilters(session, user, password));
+                ImmutableList.<HttpRequestFilter>of());
     }
 
     public ClientSession getSession()
@@ -113,7 +111,6 @@ public class QueryRunner
             Optional<String> keystorePassword,
             Optional<String> truststorePath,
             Optional<String> truststorePassword,
-            Optional<String> user,
             Optional<String> password,
             Optional<String> kerberosPrincipal,
             Optional<String> kerberosRemoteServiceName,
@@ -129,7 +126,6 @@ public class QueryRunner
                 keystorePassword,
                 truststorePath,
                 truststorePassword,
-                user,
                 password,
                 kerberosPrincipal,
                 kerberosRemoteServiceName,
@@ -163,14 +159,5 @@ public class QueryRunner
         kerberosRemoteServiceName.ifPresent(httpClientConfig::setKerberosRemoteServiceName);
 
         return httpClientConfig;
-    }
-
-    public Iterable<HttpRequestFilter> getRequestFilters(ClientSession session, Optional<String> user, Optional<String> password)
-    {
-        if (user.isPresent() && password.isPresent()) {
-            checkArgument(session.getServer().getScheme().equalsIgnoreCase("https"), "Authentication using username/password requires HTTPS to be enabled");
-            return ImmutableList.of(new BasicAuthenticationFilter(user.get(), password.get()));
-        }
-        return ImmutableList.of();
     }
 }
