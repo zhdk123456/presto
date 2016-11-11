@@ -15,9 +15,6 @@ package com.facebook.presto.server.security;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.net.HttpHeaders;
 import io.airlift.log.Logger;
 
@@ -36,7 +33,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotNull;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -44,7 +40,6 @@ import java.util.Base64;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 import static com.facebook.presto.server.security.LdapServerConfig.ServerType.GENERIC;
 import static com.google.common.base.CharMatcher.WHITESPACE;
@@ -53,7 +48,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.naming.Context.INITIAL_CONTEXT_FACTORY;
 import static javax.naming.Context.PROVIDER_URL;
 import static javax.naming.Context.SECURITY_AUTHENTICATION;
@@ -70,14 +64,12 @@ public class LdapFilter
     private static final String LDAP_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
     private final LdapServerConfig serverConfig;
     private final GenericLdapBinder genericLdapBinder;
-    private final long ldapCacheTtl;
 
     @Inject
     public LdapFilter(LdapServerConfig serverConfig, GenericLdapBinder genericLdapBinder)
     {
         this.serverConfig = requireNonNull(serverConfig, "serverConfig is null");
         this.genericLdapBinder = requireNonNull(genericLdapBinder, "genericLdapBinder is null");
-        this.ldapCacheTtl = requireNonNull(serverConfig.getLdapCacheTtl(), "ldapCacheTtl is null").toMillis();
         try {
             authenticate(getBasicEnvironment());
         }
@@ -145,28 +137,7 @@ public class LdapFilter
             environment.put(SECURITY_AUTHENTICATION, "simple");
             environment.put(SECURITY_PRINCIPAL, principal);
             environment.put(SECURITY_CREDENTIALS, password);
-
-            CacheLoader<Hashtable<String, String>, DirContext> loader = new CacheLoader<Hashtable<String, String>, DirContext>() {
-                @Override
-                public DirContext load(Hashtable<String, String> environment) throws NamingException
-                {
-                    return authenticate(environment);
-                }
-            };
-
-            LoadingCache authenticationCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
-            try {
-                context = (DirContext) authenticationCache.get(environment);
-            }
-            catch (ExecutionException e) {
-                Throwable throwable = e.getCause();
-                if (throwable instanceof AuthenticationException) {
-                    throw new AuthenticationException(throwable.getMessage());
-                }
-                else {
-                    throw Throwables.propagate(e);
-                }
-            }
+            context = authenticate(environment);
 
             log.debug("Authentication successful for user %s.", user);
 
@@ -211,25 +182,15 @@ public class LdapFilter
                 String searchFilter = searchFilterPattern.replaceAll("\\$\\{USER\\}", user);
                 GroupAuthorizationFilter groupFilter = new GroupAuthorizationFilter(serverConfig.getUserBaseDistinguishedName(), searchFilter);
 
-                CacheLoader<GroupAuthorizationFilter, Boolean> loader = new CacheLoader<GroupAuthorizationFilter, Boolean>()
-                {
-                    @Override
-                    public Boolean load(@NotNull GroupAuthorizationFilter groupFilter) throws NamingException
-                    {
-                        return groupFilter.authorize(context);
-                    }
-                };
-                LoadingCache groupFilterCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
-
                 String groupNameIfPresent = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
-                if (Boolean.FALSE.equals(groupFilterCache.get(groupFilter))) {
+                if (!groupFilter.authorize(context)) {
                     String errorMessage = format("User %s not a member of the group %s", user, groupNameIfPresent);
                     log.debug("Authorization failed for user. " + errorMessage);
                     throw new RuntimeException("Unauthorized user: " + errorMessage);
                 }
                 log.debug("Authorization succeeded for user %s in group %s", user, groupNameIfPresent);
             }
-            catch (ExecutionException e) {
+            catch (NamingException e) {
                 throw Throwables.propagate(e);
             }
     }

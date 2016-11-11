@@ -14,12 +14,9 @@
 package com.facebook.presto.server.security;
 
 import io.airlift.configuration.testing.ConfigAssertions;
-import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
-
-import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.server.security.LdapServerConfig.ServerType.ACTIVE_DIRECTORY;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
@@ -36,8 +33,7 @@ public class TestActiveDirectoryConfig
                 .setLdapServerType(null)
                 .setUserBaseDistinguishedName(null)
                 .setGroupDistinguishedName(null)
-                .setUserObjectClass(null)
-                .setLdapCacheTtl(new Duration(1, TimeUnit.MINUTES)));
+                .setUserObjectClass(null));
     }
 
     @Test

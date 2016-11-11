@@ -15,14 +15,12 @@ package com.facebook.presto.server.security;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
-import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.server.security.LdapServerConfig.ServerType.OPENLDAP;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
@@ -40,8 +38,7 @@ public class TestLdapServerConfig
                 .setLdapServerType(null)
                 .setUserBaseDistinguishedName(null)
                 .setGroupDistinguishedName(null)
-                .setUserObjectClass(null)
-                .setLdapCacheTtl(new Duration(1, TimeUnit.MINUTES)));
+                .setUserObjectClass(null));
     }
 
     @Test
@@ -53,7 +50,6 @@ public class TestLdapServerConfig
                 .put("authentication.ldap.user-base-dn", "dc=test,dc=com")
                 .put("authentication.ldap.group-dn", "cn=group,dc=test,dc=com")
                 .put("authentication.ldap.user-object-class", "person")
-                .put("authentication.ldap.cache-ttl", "2m")
                 .build();
 
         LdapServerConfig expected = new LdapServerConfig()
@@ -61,8 +57,7 @@ public class TestLdapServerConfig
                 .setLdapServerType(OPENLDAP)
                 .setUserBaseDistinguishedName("dc=test,dc=com")
                 .setGroupDistinguishedName("cn=group,dc=test,dc=com")
-                .setUserObjectClass("person")
-                .setLdapCacheTtl(new Duration(2, TimeUnit.MINUTES));
+                .setUserObjectClass("person");
 
         assertFullMapping(properties, expected);
     }
