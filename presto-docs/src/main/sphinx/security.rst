@@ -7,6 +7,5 @@ Security
 
     security/server
     security/cli
-    security/ldap
     security/tls
     security/internal-communication
