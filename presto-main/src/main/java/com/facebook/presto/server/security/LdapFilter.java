@@ -68,7 +68,6 @@ public class LdapFilter
     private static final Logger log = Logger.get(LdapFilter.class);
     private static final String AUTHENTICATION_TYPE = "Basic";
     private static final String LDAP_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
-
     private final LdapServerConfig serverConfig;
     private final GenericLdapBinder genericLdapBinder;
     private final long ldapCacheTtl;
@@ -105,8 +104,8 @@ public class LdapFilter
 
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+
         if (header == null) {
             // request for user/password for LDAP authentication
             sendChallenge(response, SC_UNAUTHORIZED, null);
@@ -147,11 +146,9 @@ public class LdapFilter
             environment.put(SECURITY_PRINCIPAL, principal);
             environment.put(SECURITY_CREDENTIALS, password);
 
-            CacheLoader<Hashtable<String, String>, DirContext> loader = new CacheLoader<Hashtable<String, String>, DirContext>()
-            {
+            CacheLoader<Hashtable<String, String>, DirContext> loader = new CacheLoader<Hashtable<String, String>, DirContext>() {
                 @Override
-                public DirContext load(Hashtable<String, String> environment)
-                        throws NamingException
+                public DirContext load(Hashtable<String, String> environment) throws NamingException
                 {
                     return authenticate(environment);
                 }
@@ -192,6 +189,9 @@ public class LdapFilter
             log.debug("Authentication failed for user %s. Invalid credentials: %s", user, e.getMessage());
             throw new RuntimeException("Invalid credentials: " + e.getMessage());
         }
+        catch (NamingException e) {
+            throw Throwables.propagate(e);
+        }
         finally {
             try {
                 if (context != null) {
@@ -205,34 +205,33 @@ public class LdapFilter
 
     private void checkForGroupMembership(String searchFilterPattern, String user, DirContext context)
     {
-        checkState(serverConfig.getUserBaseDistinguishedName() != null, "Base distinguished name (DN) for user %s is null", user);
+            checkState(serverConfig.getUserBaseDistinguishedName() != null, "Base distinguished name (DN) for user %s is null", user);
 
-        try {
-            String searchFilter = searchFilterPattern.replaceAll("\\$\\{USER\\}", user);
-            GroupAuthorizationFilter groupFilter = new GroupAuthorizationFilter(serverConfig.getUserBaseDistinguishedName(), searchFilter);
+            try {
+                String searchFilter = searchFilterPattern.replaceAll("\\$\\{USER\\}", user);
+                GroupAuthorizationFilter groupFilter = new GroupAuthorizationFilter(serverConfig.getUserBaseDistinguishedName(), searchFilter);
 
-            CacheLoader<GroupAuthorizationFilter, Boolean> loader = new CacheLoader<GroupAuthorizationFilter, Boolean>()
-            {
-                @Override
-                public Boolean load(@NotNull GroupAuthorizationFilter groupFilter)
-                        throws NamingException
+                CacheLoader<GroupAuthorizationFilter, Boolean> loader = new CacheLoader<GroupAuthorizationFilter, Boolean>()
                 {
-                    return groupFilter.authorize(context);
-                }
-            };
-            LoadingCache groupFilterCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
+                    @Override
+                    public Boolean load(@NotNull GroupAuthorizationFilter groupFilter) throws NamingException
+                    {
+                        return groupFilter.authorize(context);
+                    }
+                };
+                LoadingCache groupFilterCache = CacheBuilder.newBuilder().expireAfterWrite(ldapCacheTtl, MILLISECONDS).build(loader);
 
-            String groupNameIfPresent = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
-            if (Boolean.FALSE.equals(groupFilterCache.get(groupFilter))) {
-                String errorMessage = format("User %s not a member of the group %s", user, groupNameIfPresent);
-                log.debug("Authorization failed for user. " + errorMessage);
-                throw new RuntimeException("Unauthorized user: " + errorMessage);
+                String groupNameIfPresent = firstNonNull(serverConfig.getLdapServerType().equals(GENERIC) ? null : serverConfig.getGroupDistinguishedName(), "");
+                if (Boolean.FALSE.equals(groupFilterCache.get(groupFilter))) {
+                    String errorMessage = format("User %s not a member of the group %s", user, groupNameIfPresent);
+                    log.debug("Authorization failed for user. " + errorMessage);
+                    throw new RuntimeException("Unauthorized user: " + errorMessage);
+                }
+                log.debug("Authorization succeeded for user %s in group %s", user, groupNameIfPresent);
             }
-            log.debug("Authorization succeeded for user %s in group %s", user, groupNameIfPresent);
-        }
-        catch (ExecutionException e) {
-            throw Throwables.propagate(e);
-        }
+            catch (ExecutionException e) {
+                throw Throwables.propagate(e);
+            }
     }
 
     private Hashtable<String, String> getBasicEnvironment()
@@ -344,13 +343,12 @@ public class LdapFilter
         public String toString()
         {
             return toStringHelper(this)
-                    .add("userBaseDistinguishedName", userBaseDistinguishedName)
-                    .add("searchFilter", searchFilter)
-                    .toString();
+            .add("userBaseDistinguishedName", userBaseDistinguishedName)
+            .add("searchFilter", searchFilter)
+            .toString();
         }
 
-        public boolean authorize(DirContext context)
-                throws NamingException
+        public boolean authorize(DirContext context) throws NamingException
         {
             SearchControls searchControls = new SearchControls();
             searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
