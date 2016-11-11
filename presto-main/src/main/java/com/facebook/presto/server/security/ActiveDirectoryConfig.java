@@ -19,7 +19,6 @@ import io.airlift.configuration.ConfigDescription;
 import javax.validation.constraints.NotNull;
 
 public class ActiveDirectoryConfig
-    extends LdapServerConfig
 {
     private String activeDirectoryDomain;
 

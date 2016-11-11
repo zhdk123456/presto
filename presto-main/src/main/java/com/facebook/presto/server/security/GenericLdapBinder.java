@@ -15,35 +15,25 @@ package com.facebook.presto.server.security;
 
 import com.google.inject.Inject;
 
-import java.util.Optional;
-
 import static java.util.Objects.requireNonNull;
 
 public class GenericLdapBinder
 {
     private final String userBindSearchPattern;
-    private final Optional<String> groupAuthorizationSearchPattern;
 
     @Inject
     public GenericLdapBinder(GenericLdapConfig genericLdapConfig)
     {
-        this(requireNonNull(genericLdapConfig, "genericLdapConfig is null").getUserBindSearchPattern(),
-                requireNonNull(genericLdapConfig, "genericLdapConfig is null").getGroupAuthorizationSearchPattern());
+        this(requireNonNull(genericLdapConfig, "genericLdapConfig is null").getUserBindSearchPattern());
     }
 
-    public GenericLdapBinder(String userBindSearchPattern, String groupAuthorizationSearchPattern)
+    public GenericLdapBinder(String userBindSearchPattern)
     {
         this.userBindSearchPattern = requireNonNull(userBindSearchPattern, "userBindSearchPattern is null");
-        this.groupAuthorizationSearchPattern = Optional.ofNullable(groupAuthorizationSearchPattern);
     }
 
     public String getUserBindSearchPattern()
     {
         return userBindSearchPattern;
-    }
-
-    public Optional<String> getGroupAuthorizationSearchPattern()
-    {
-        return groupAuthorizationSearchPattern;
     }
 }

@@ -25,8 +25,7 @@ public class TestGenericLdapConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(GenericLdapConfig.class)
-                .setUserBindSearchPattern(null)
-                .setGroupAuthorizationSearchPattern(null));
+                .setUserBindSearchPattern(null));
     }
 
     @Test
@@ -34,12 +33,10 @@ public class TestGenericLdapConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("authentication.ldap.generic.user-bind-pattern", "uid=${USER},ou=org,dc=test,dc=com")
-                .put("authentication.ldap.generic.group-auth-pattern", "&(objectClass=user)(memberOf=cn=group)(user=username)")
                 .build();
 
         GenericLdapConfig expected = new GenericLdapConfig()
-                .setUserBindSearchPattern("uid=${USER},ou=org,dc=test,dc=com")
-                .setGroupAuthorizationSearchPattern("&(objectClass=user)(memberOf=cn=group)(user=username)");
+                .setUserBindSearchPattern("uid=${USER},ou=org,dc=test,dc=com");
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 }

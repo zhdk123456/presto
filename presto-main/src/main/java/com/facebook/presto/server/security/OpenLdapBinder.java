@@ -23,11 +23,6 @@ public class OpenLdapBinder
     @Inject
     public OpenLdapBinder(OpenLdapConfig config)
     {
-        super(format("uid=%s,%s", "${USER}", config.getUserBaseDistinguishedName()),
-                config.getGroupDistinguishedName() == null || config.getUserObjectClass() == null ? null :
-                format("(&(objectClass=%s)(uid=%s)(memberof=%s))",
-                        config.getUserObjectClass(),
-                        "${USER}",
-                        config.getGroupDistinguishedName()));
+        super(format("uid=%s,%s", "${USER}", config.getUserBaseDistinguishedName()));
     }
 }

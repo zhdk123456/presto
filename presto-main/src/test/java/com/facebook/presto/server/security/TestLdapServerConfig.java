@@ -35,10 +35,7 @@ public class TestLdapServerConfig
     {
         assertRecordedDefaults(ConfigAssertions.recordDefaults(LdapServerConfig.class)
                 .setLdapUrl(null)
-                .setLdapServerType(null)
-                .setUserBaseDistinguishedName(null)
-                .setGroupDistinguishedName(null)
-                .setUserObjectClass(null));
+                .setLdapServerType(null));
     }
 
     @Test
@@ -47,17 +44,11 @@ public class TestLdapServerConfig
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("authentication.ldap.url", "ldaps://localhost:636")
                 .put("authentication.ldap.server-type", "OPENLDAP")
-                .put("authentication.ldap.user-base-dn", "dc=test,dc=com")
-                .put("authentication.ldap.group-dn", "cn=group,dc=test,dc=com")
-                .put("authentication.ldap.user-object-class", "person")
                 .build();
 
         LdapServerConfig expected = new LdapServerConfig()
                 .setLdapUrl("ldaps://localhost:636")
-                .setLdapServerType(OPENLDAP)
-                .setUserBaseDistinguishedName("dc=test,dc=com")
-                .setGroupDistinguishedName("cn=group,dc=test,dc=com")
-                .setUserObjectClass("person");
+                .setLdapServerType(OPENLDAP);
 
         assertFullMapping(properties, expected);
     }

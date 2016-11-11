@@ -13,12 +13,14 @@
  */
 package com.facebook.presto.server.security;
 
+import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
 import javax.validation.constraints.NotNull;
 
-import static com.facebook.presto.server.security.LdapServerConfig.ServerType.ACTIVE_DIRECTORY;
+import java.util.Map;
+
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 
@@ -28,21 +30,26 @@ public class TestActiveDirectoryConfig
     public void testDefaults()
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ActiveDirectoryConfig.class)
-                .setActiveDirectoryDomain(null)
-                .setLdapUrl(null)
-                .setLdapServerType(null)
-                .setUserBaseDistinguishedName(null)
-                .setGroupDistinguishedName(null)
-                .setUserObjectClass(null));
+                .setActiveDirectoryDomain(null));
+    }
+
+    @Test
+    public void testExplicitPropertyMappings()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("authentication.ldap.ad-domain", "test.com")
+                .build();
+
+        ActiveDirectoryConfig expected = new ActiveDirectoryConfig()
+                .setActiveDirectoryDomain("test.com");
+        ConfigAssertions.assertFullMapping(properties, expected);
     }
 
     @Test
     public void testValidation()
     {
         assertValidates(new ActiveDirectoryConfig()
-                .setActiveDirectoryDomain("dc=test,dc=com")
-                .setLdapUrl("ldaps://localhost")
-                .setLdapServerType(ACTIVE_DIRECTORY));
+                .setActiveDirectoryDomain("dc=test,dc=com"));
         assertFailsValidation(new ActiveDirectoryConfig(), "activeDirectoryDomain", "may not be null", NotNull.class);
     }
 }

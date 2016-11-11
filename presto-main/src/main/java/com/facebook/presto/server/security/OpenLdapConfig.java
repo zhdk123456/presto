@@ -21,8 +21,6 @@ import javax.validation.constraints.NotNull;
 public class OpenLdapConfig
 {
     private String userBaseDistinguishedName;
-    private String groupDistinguishedName;
-    private String userObjectClass;
 
     @NotNull
     public String getUserBaseDistinguishedName()
@@ -35,32 +33,6 @@ public class OpenLdapConfig
     public OpenLdapConfig setUserBaseDistinguishedName(String userBaseDistinguishedName)
     {
         this.userBaseDistinguishedName = userBaseDistinguishedName;
-        return this;
-    }
-
-    public String getGroupDistinguishedName()
-    {
-        return groupDistinguishedName;
-    }
-
-    @Config("authentication.ldap.group-dn")
-    @ConfigDescription("Entire distinguished name of the group")
-    public OpenLdapConfig setGroupDistinguishedName(String groupDistinguishedName)
-    {
-        this.groupDistinguishedName = groupDistinguishedName;
-        return this;
-    }
-
-    public String getUserObjectClass()
-    {
-        return userObjectClass;
-    }
-
-    @Config("authentication.ldap.user-object-class")
-    @ConfigDescription("LDAP object class the user implements")
-    public OpenLdapConfig setUserObjectClass(String userObjectClass)
-    {
-        this.userObjectClass = userObjectClass;
         return this;
     }
 }
