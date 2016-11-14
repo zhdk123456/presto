@@ -38,12 +38,19 @@ final class JoinMatcher
     private final JoinNode.Type joinType;
     private final List<ExpectedValueProvider<JoinNode.EquiJoinClause>> equiCriteria;
     private final Optional<Expression> filter;
+    private final Optional<JoinNode.DistributionType> distributionType;
 
     JoinMatcher(JoinNode.Type joinType, List<ExpectedValueProvider<JoinNode.EquiJoinClause>> equiCriteria, Optional<Expression> filter)
+    {
+        this(joinType, equiCriteria, filter, Optional.empty());
+    }
+
+    JoinMatcher(JoinNode.Type joinType, List<ExpectedValueProvider<JoinNode.EquiJoinClause>> equiCriteria, Optional<Expression> filter, Optional<JoinNode.DistributionType> distributionType)
     {
         this.joinType = requireNonNull(joinType, "joinType is null");
         this.equiCriteria = requireNonNull(equiCriteria, "equiCriteria is null");
         this.filter = requireNonNull(filter, "filter can not be null");
+        this.distributionType = distributionType;
     }
 
     @Override
@@ -54,14 +61,14 @@ final class JoinMatcher
         }
 
         JoinNode joinNode = (JoinNode) node;
-        return joinNode.getType() == joinType;
+        return joinNode.getType() == joinType
+                && (!distributionType.isPresent() || joinNode.getDistributionType().equals(distributionType));
     }
 
     @Override
     public MatchResult detailMatches(PlanNode node, PlanNodeCost cost, Session session, Metadata metadata, SymbolAliases symbolAliases)
     {
         checkState(shapeMatches(node), "Plan testing framework error: shapeMatches returned false in detailMatches in %s", this.getClass().getName());
-
         JoinNode joinNode = (JoinNode) node;
 
         if (joinNode.getCriteria().size() != equiCriteria.size()) {
