@@ -155,7 +155,7 @@ public final class SqlQueryExecution
             requireNonNull(query, "query is null");
             requireNonNull(session, "session is null");
             requireNonNull(self, "self is null");
-            this.stateMachine = QueryStateMachine.begin(queryId, query, session, self, false, transactionManager, accessControl, queryExecutor);
+            this.stateMachine = QueryStateMachine.begin(queryId, query, session, self, false, transactionManager, accessControl, queryExecutor, metadata);
 
             // when the query finishes cache the final query info, and clear the reference to the output stage
             stateMachine.addStateChangeListener(state -> {
@@ -167,12 +167,6 @@ public final class SqlQueryExecution
                 SqlQueryScheduler scheduler = queryScheduler.get();
                 if (scheduler != null) {
                     scheduler.abort();
-                }
-            });
-
-            stateMachine.addStateChangeListener(state -> {
-                if (state.isDone()) {
-                    metadata.cleanupQuery(getSession());
                 }
             });
 
