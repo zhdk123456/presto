@@ -179,7 +179,7 @@ public interface Metadata
     void beginQuery(Session session, Set<ConnectorId> connectors);
 
     /**
-     * Cleanup after a SELECT/UPDATE/INSERT/DELETE query. This is the very last notification after the query finishes, regardless if it succeeds or fails.
+     * Cleanup after a query. This is the very last notification after the query finishes, regardless if it succeeds or fails.
      * An exception thrown in this method will not affect the result of the query, because the query is already finished when this method is triggered.
      */
     void cleanupQuery(Session session);
