@@ -17,6 +17,7 @@ import com.facebook.presto.Session;
 import com.facebook.presto.client.FailureInfo;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
+import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.operator.BlockedReason;
 import com.facebook.presto.spi.ErrorCode;
 import com.facebook.presto.spi.PrestoException;
@@ -79,6 +80,7 @@ public class QueryStateMachine
     private final URI self;
     private final boolean autoCommit;
     private final TransactionManager transactionManager;
+    private final Metadata metadata;
 
     private final AtomicReference<VersionedMemoryPoolId> memoryPool = new AtomicReference<>(new VersionedMemoryPoolId(GENERAL_POOL, 0));
 
@@ -117,7 +119,7 @@ public class QueryStateMachine
     private final AtomicReference<Set<Input>> inputs = new AtomicReference<>(ImmutableSet.of());
     private final AtomicReference<Optional<Output>> output = new AtomicReference<>(Optional.empty());
 
-    private QueryStateMachine(QueryId queryId, String query, Session session, URI self, boolean autoCommit, TransactionManager transactionManager, Executor executor)
+    private QueryStateMachine(QueryId queryId, String query, Session session, URI self, boolean autoCommit, TransactionManager transactionManager, Executor executor, Metadata metadata)
     {
         this.queryId = requireNonNull(queryId, "queryId is null");
         this.query = requireNonNull(query, "query is null");
@@ -125,14 +127,14 @@ public class QueryStateMachine
         this.self = requireNonNull(self, "self is null");
         this.autoCommit = autoCommit;
         this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
-
+        this.metadata = requireNonNull(metadata, "metadata is null");
         this.queryState = new StateMachine<>("query " + query, executor, QUEUED, TERMINAL_QUERY_STATES);
     }
 
     /**
      * Created QueryStateMachines must be transitioned to terminal states to clean up resources.
      */
-    public static QueryStateMachine begin(QueryId queryId, String query, Session session, URI self, boolean transactionControl, TransactionManager transactionManager, Executor executor)
+    public static QueryStateMachine begin(QueryId queryId, String query, Session session, URI self, boolean transactionControl, TransactionManager transactionManager, Executor executor, Metadata metadata)
     {
         session.getTransactionId().ifPresent(transactionControl ? transactionManager::trySetActive : transactionManager::checkAndSetActive);
 
@@ -147,7 +149,7 @@ public class QueryStateMachine
             querySession = session;
         }
 
-        QueryStateMachine queryStateMachine = new QueryStateMachine(queryId, query, querySession, self, autoCommit, transactionManager, executor);
+        QueryStateMachine queryStateMachine = new QueryStateMachine(queryId, query, querySession, self, autoCommit, transactionManager, executor, metadata);
         queryStateMachine.addStateChangeListener(newState -> log.debug("Query %s is %s", queryId, newState));
         queryStateMachine.addStateChangeListener(newState -> {
             if (newState.isDone()) {
@@ -161,9 +163,9 @@ public class QueryStateMachine
     /**
      * Create a QueryStateMachine that is already in a failed state.
      */
-    public static QueryStateMachine failed(QueryId queryId, String query, Session session, URI self, TransactionManager transactionManager, Executor executor, Throwable throwable)
+    public static QueryStateMachine failed(QueryId queryId, String query, Session session, URI self, TransactionManager transactionManager, Executor executor, Metadata metadata, Throwable throwable)
     {
-        QueryStateMachine queryStateMachine = new QueryStateMachine(queryId, query, session, self, false, transactionManager, executor);
+        QueryStateMachine queryStateMachine = new QueryStateMachine(queryId, query, session, self, false, transactionManager, executor, metadata);
         queryStateMachine.transitionToFailed(throwable);
         return queryStateMachine;
     }
@@ -520,6 +522,13 @@ public class QueryStateMachine
 
     private boolean transitionToFinished()
     {
+        try {
+            metadata.cleanupQuery(session);
+        }
+        catch (Throwable t) {
+            log.error("Error during cleanupQuery: %s", t);
+        }
+
         recordDoneStats();
 
         return queryState.setIf(FINISHED, currentState -> !currentState.isDone());
@@ -527,6 +536,13 @@ public class QueryStateMachine
 
     public boolean transitionToFailed(Throwable throwable)
     {
+        try {
+            metadata.cleanupQuery(session);
+        }
+        catch (Throwable t) {
+            log.error("Error during cleanupQuery: %s", t);
+        }
+
         requireNonNull(throwable, "throwable is null");
 
         recordDoneStats();
