@@ -20,6 +20,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
@@ -30,12 +31,19 @@ final class SemiJoinMatcher
     private final String sourceSymbolAlias;
     private final String filteringSymbolAlias;
     private final String outputAlias;
+    private final Optional<SemiJoinNode.DistributionType> distributionType;
 
     SemiJoinMatcher(String sourceSymbolAlias, String filteringSymbolAlias, String outputAlias)
+    {
+        this(sourceSymbolAlias, filteringSymbolAlias, outputAlias, Optional.empty());
+    }
+
+    SemiJoinMatcher(String sourceSymbolAlias, String filteringSymbolAlias, String outputAlias, Optional<SemiJoinNode.DistributionType> distributionType)
     {
         this.sourceSymbolAlias = requireNonNull(sourceSymbolAlias, "sourceSymbolAlias is null");
         this.filteringSymbolAlias = requireNonNull(filteringSymbolAlias, "filteringSymbolAlias is null");
         this.outputAlias = requireNonNull(outputAlias, "outputAlias is null");
+        this.distributionType = distributionType;
     }
 
     @Override
@@ -43,6 +51,9 @@ final class SemiJoinMatcher
     {
         if (node instanceof SemiJoinNode) {
             SemiJoinNode semiJoinNode = (SemiJoinNode) node;
+            if (distributionType.isPresent() && !semiJoinNode.getDistributionType().equals(distributionType)) {
+                return false;
+            }
             expressionAliases.put(sourceSymbolAlias, semiJoinNode.getSourceJoinSymbol().toSymbolReference());
             expressionAliases.put(filteringSymbolAlias, semiJoinNode.getFilteringSourceJoinSymbol().toSymbolReference());
             expressionAliases.put(outputAlias, semiJoinNode.getSemiJoinOutput().toSymbolReference());
