@@ -41,6 +41,7 @@ public final class SystemSessionProperties
     public static final String OPTIMIZE_HASH_GENERATION = "optimize_hash_generation";
     public static final String DISTRIBUTED_JOIN = "distributed_join";
     public static final String DISTRIBUTED_INDEX_JOIN = "distributed_index_join";
+    public static final String JOIN_DISTRIBUTION_TYPE = "join_distribution_type";
     public static final String HASH_PARTITION_COUNT = "hash_partition_count";
     public static final String PREFER_STREAMING_OPERATORS = "prefer_streaming_operators";
     public static final String TASK_WRITER_COUNT = "task_writer_count";
@@ -102,6 +103,11 @@ public final class SystemSessionProperties
                         DISTRIBUTED_INDEX_JOIN,
                         "Distribute index joins on join keys instead of executing inline",
                         featuresConfig.isDistributedIndexJoinsEnabled(),
+                        false),
+                stringSessionProperty(
+                        JOIN_DISTRIBUTION_TYPE,
+                        "What join method to use. Options are repartitioned, replicated, and automatic",
+                        featuresConfig.getJoinDistributionType(),
                         false),
                 integerSessionProperty(
                         HASH_PARTITION_COUNT,
@@ -426,5 +432,10 @@ public final class SystemSessionProperties
     public static boolean isParseDecimalLiteralsAsDouble(Session session)
     {
         return session.getSystemProperty(PARSE_DECIMAL_LITERALS_AS_DOUBLE, Boolean.class);
+    }
+
+    public static String getJoinDistributionType(Session session)
+    {
+        return session.getSystemProperty(JOIN_DISTRIBUTION_TYPE, String.class);
     }
 }

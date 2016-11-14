@@ -46,6 +46,15 @@ public class FeaturesConfig
         public static final List<String> AVAILABLE_OPTIONS = ImmutableList.of(DISABLED, COLUMNAR, COLUMNAR_DICTIONARY);
     }
 
+    public static class JoinDistributionType
+    {
+        public static final String AUTOMATIC = "automatic";
+        public static final String REPLICATED = "replicated";
+        public static final String REPARTITIONED = "repartitioned";
+
+        public static final List<String> AVAILABLE_OPTIONS = ImmutableList.of(AUTOMATIC, REPLICATED, REPARTITIONED);
+    }
+
     private boolean distributedIndexJoinsEnabled;
     private boolean distributedJoinsEnabled = true;
     private boolean colocatedJoinsEnabled;
@@ -59,6 +68,7 @@ public class FeaturesConfig
     private boolean legacyArrayAgg;
     private boolean optimizeMixedDistinctAggregations;
     private boolean joinReorderingEnabled = false;
+    private String joinDistributionType = JoinDistributionType.AUTOMATIC;
 
     private String processingOptimization = ProcessingOptimization.DISABLED;
     private boolean dictionaryAggregation;
@@ -369,5 +379,20 @@ public class FeaturesConfig
     {
         this.parseDecimalLiteralsAsDouble = parseDecimalLiteralsAsDouble;
         return this;
+    }
+
+    @Config("join-distribution-type")
+    public FeaturesConfig setJoinDistributionType(String joinDistributionType)
+    {
+        if (!JoinDistributionType.AVAILABLE_OPTIONS.contains(joinDistributionType)) {
+            throw new IllegalStateException(String.format("Value %s is not valid for join-distribution-type.", joinDistributionType));
+        }
+        this.joinDistributionType = joinDistributionType;
+        return this;
+    }
+
+    public String getJoinDistributionType()
+    {
+        return joinDistributionType;
     }
 }
