@@ -222,6 +222,17 @@ public final class PlanMatchPattern
         return node(SemiJoinNode.class, source, filtering).with(new SemiJoinMatcher(sourceSymbolAlias, filteringSymbolAlias, outputAlias));
     }
 
+    public static PlanMatchPattern semiJoin(
+            String sourceSymbolAlias,
+            String filteringSymbolAlias,
+            String outputAlias,
+            SemiJoinNode.DistributionType distributionType,
+            PlanMatchPattern source,
+            PlanMatchPattern filtering)
+    {
+        return node(SemiJoinNode.class, source, filtering).with(new SemiJoinMatcher(sourceSymbolAlias, filteringSymbolAlias, outputAlias, Optional.of(distributionType)));
+    }
+
     public static PlanMatchPattern join(JoinNode.Type joinType, List<ExpectedValueProvider<JoinNode.EquiJoinClause>> expectedEquiCriteria, PlanMatchPattern left, PlanMatchPattern right)
     {
         return join(joinType, expectedEquiCriteria, Optional.empty(), left, right);
@@ -254,6 +265,16 @@ public final class PlanMatchPattern
     public static ExpectedValueProvider<JoinNode.EquiJoinClause> equiJoinClause(String left, String right)
     {
         return new EquiJoinClauseProvider(new SymbolAlias(left), new SymbolAlias(right));
+    }
+
+    public static PlanMatchPattern join(
+            JoinNode.Type joinType,
+            List<ExpectedValueProvider<JoinNode.EquiJoinClause>> expectedEquiCriteria,
+            JoinNode.DistributionType distributionType,
+            PlanMatchPattern left,
+            PlanMatchPattern right)
+    {
+        return node(JoinNode.class, left, right).with(new JoinMatcher(joinType, expectedEquiCriteria, Optional.empty(), Optional.of(distributionType)));
     }
 
     public static SymbolAlias symbol(String alias)

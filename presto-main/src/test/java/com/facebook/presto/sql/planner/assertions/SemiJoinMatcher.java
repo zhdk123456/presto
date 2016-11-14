@@ -19,6 +19,8 @@ import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 
+import java.util.Optional;
+
 import static com.facebook.presto.sql.planner.assertions.MatchResult.NO_MATCH;
 import static com.facebook.presto.sql.planner.assertions.MatchResult.match;
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -31,18 +33,26 @@ final class SemiJoinMatcher
     private final String sourceSymbolAlias;
     private final String filteringSymbolAlias;
     private final String outputAlias;
+    private final Optional<SemiJoinNode.DistributionType> distributionType;
 
     SemiJoinMatcher(String sourceSymbolAlias, String filteringSymbolAlias, String outputAlias)
+    {
+        this(sourceSymbolAlias, filteringSymbolAlias, outputAlias, Optional.empty());
+    }
+
+    SemiJoinMatcher(String sourceSymbolAlias, String filteringSymbolAlias, String outputAlias, Optional<SemiJoinNode.DistributionType> distributionType)
     {
         this.sourceSymbolAlias = requireNonNull(sourceSymbolAlias, "sourceSymbolAlias is null");
         this.filteringSymbolAlias = requireNonNull(filteringSymbolAlias, "filteringSymbolAlias is null");
         this.outputAlias = requireNonNull(outputAlias, "outputAlias is null");
+        this.distributionType = distributionType;
     }
 
     @Override
     public boolean shapeMatches(PlanNode node)
     {
-        return node instanceof SemiJoinNode;
+        return node instanceof SemiJoinNode
+                && (!distributionType.isPresent() || ((SemiJoinNode) node).getDistributionType().equals(distributionType));
     }
 
     @Override
