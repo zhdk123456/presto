@@ -158,7 +158,7 @@ public class PlanPrinter
         this.metadata = metadata;
         this.stats = Optional.empty();
 
-        Map<PlanNode, PlanNodeCost> costs = costCalculator.calculateCostForPlan(session, plan);
+        Map<PlanNode, PlanNodeCost> costs = costCalculator.calculateCostForPlan(session, types, plan);
         Visitor visitor = new Visitor(types, costs, session);
         plan.accept(visitor, indent);
     }
@@ -173,7 +173,7 @@ public class PlanPrinter
         this.metadata = metadata;
         this.stats = Optional.of(stats);
 
-        Map<PlanNode, PlanNodeCost> costs = costCalculator.calculateCostForPlan(session, plan);
+        Map<PlanNode, PlanNodeCost> costs = costCalculator.calculateCostForPlan(session, types, plan);
         Visitor visitor = new Visitor(types, costs, session);
         plan.accept(visitor, indent);
     }
