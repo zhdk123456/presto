@@ -310,6 +310,8 @@ public class QueryStateMachine
         boolean fullyBlocked = rootStage.isPresent();
         Set<BlockedReason> blockedReasons = new HashSet<>();
 
+        long spilledBytes = 0;
+
         ImmutableList.Builder<OperatorStats> operatorStatsSummary = ImmutableList.builder();
         boolean completeInfo = true;
         for (StageInfo stageInfo : getAllStages(rootStage)) {
@@ -346,6 +348,7 @@ public class QueryStateMachine
             }
             completeInfo = completeInfo && stageInfo.isCompleteInfo();
             operatorStatsSummary.addAll(stageInfo.getStageStats().getOperatorSummaries());
+            spilledBytes += stageStats.getSpilledDataSize().toBytes();
         }
 
         if (rootStage.isPresent()) {
@@ -392,7 +395,8 @@ public class QueryStateMachine
                 processedInputPositions,
                 succinctBytes(outputDataSize),
                 outputPositions,
-                operatorStatsSummary.build());
+                operatorStatsSummary.build(),
+                succinctBytes(spilledBytes));
 
         return new QueryInfo(queryId,
                 session.toSessionRepresentation(),

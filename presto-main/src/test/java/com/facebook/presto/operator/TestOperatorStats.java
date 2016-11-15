@@ -65,7 +65,8 @@ public class TestOperatorStats
             new DataSize(21, BYTE),
             new DataSize(22, BYTE),
             Optional.empty(),
-            NON_MERGEABLE_INFO);
+            NON_MERGEABLE_INFO,
+            new DataSize(23, BYTE));
 
     public static final OperatorStats MERGEABLE = new OperatorStats(
             41,
@@ -100,7 +101,8 @@ public class TestOperatorStats
             new DataSize(21, BYTE),
             new DataSize(22, BYTE),
             Optional.empty(),
-            MERGEABLE_INFO);
+            MERGEABLE_INFO,
+            new DataSize(23, BYTE));
 
     @Test
     public void testJson()
@@ -146,6 +148,8 @@ public class TestOperatorStats
         assertEquals(actual.getSystemMemoryReservation(), new DataSize(22, BYTE));
         assertEquals(actual.getInfo().getClass(), ExchangeClientStatus.class);
         assertEquals(((ExchangeClientStatus) actual.getInfo()).getAverageBytesPerRequest(), NON_MERGEABLE_INFO.getAverageBytesPerRequest());
+
+        assertEquals(actual.getSpilledDataSize(), new DataSize(23, BYTE));
     }
 
     @Test
@@ -182,6 +186,7 @@ public class TestOperatorStats
         assertEquals(actual.getRevocableMemoryReservation(), new DataSize(3 * 21, BYTE));
         assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 22, BYTE));
         assertEquals(actual.getInfo(), null);
+        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 23, BYTE));
     }
 
     @Test
@@ -219,5 +224,7 @@ public class TestOperatorStats
         assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 22, BYTE));
         assertEquals(actual.getInfo().getClass(), PartitionedOutputInfo.class);
         assertEquals(((PartitionedOutputInfo) actual.getInfo()).getPagesAdded(), 3 * MERGEABLE_INFO.getPagesAdded());
+
+        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 23, BYTE));
     }
 }
