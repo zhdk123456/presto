@@ -172,6 +172,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.facebook.presto.SystemSessionProperties.isParseDecimalLiteralsAsDouble;
 import static com.facebook.presto.execution.SqlQueryManager.unwrapExecuteStatement;
@@ -672,6 +673,14 @@ public class LocalQueryRunner
     public Plan createPlan(Session session, @Language("SQL") String sql, FeaturesConfig featuresConfig, List<PlanOptimizer> optimizers)
     {
         return createPlan(session, sql, featuresConfig, optimizers, LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED);
+    }
+
+    public Plan createPlan(Session session, @Language("SQL") String sql, FeaturesConfig featuresConfig, Predicate<PlanOptimizer> optimizersFilter)
+    {
+        List<PlanOptimizer> planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, false).get().stream()
+                .filter(optimizersFilter)
+                .collect(toImmutableList());
+        return createPlan(session, sql, featuresConfig, planOptimizers, LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED);
     }
 
     public Plan createPlan(Session session, @Language("SQL") String sql, FeaturesConfig featuresConfig, List<PlanOptimizer> optimizers, LogicalPlanner.Stage stage)
