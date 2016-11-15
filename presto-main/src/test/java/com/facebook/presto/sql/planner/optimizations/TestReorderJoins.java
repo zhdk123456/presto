@@ -16,6 +16,7 @@ package com.facebook.presto.sql.planner.optimizations;
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
+import com.facebook.presto.sql.planner.LogicalPlanner;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.assertions.PlanAssert;
 import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
@@ -137,7 +138,7 @@ public class TestReorderJoins
         FeaturesConfig featuresConfig = new FeaturesConfig();
         try {
             // we run the test skipping statistics based reordering which is incmpatible with this test
-            return queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizer -> !(optimizer instanceof JoinReorderingOptimizer));
+            return queryRunner.createPlan(transactionSession, sql, LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED);
         }
         catch (RuntimeException ex) {
             fail("Invalid SQL: " + sql, ex);
