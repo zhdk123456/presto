@@ -63,7 +63,7 @@
 
         <dependency>
             <groupId>com.facebook.presto.hadoop</groupId>
-            <artifactId>hadoop-apache1</artifactId>
+            <artifactId>hadoop-apache2</artifactId>
             <scope>runtime</scope>
             <exclusions>
                 <exclusion>
@@ -88,6 +88,41 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging-api</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-annotations</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-auth</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.htrace</groupId>
+                    <artifactId>htrace-core</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>log4j-over-slf4j</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
 
                 <exclusion>
