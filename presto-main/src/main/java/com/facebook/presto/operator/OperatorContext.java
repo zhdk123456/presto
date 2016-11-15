@@ -400,7 +400,10 @@ public class OperatorContext
                 succinctBytes(memoryReservation.get()),
                 succinctBytes(systemMemoryContext.getReservedBytes()),
                 memoryFuture.get().isDone() ? Optional.empty() : Optional.of(WAITING_FOR_MEMORY),
-                info);
+
+                info,
+
+                succinctBytes(spillContext.getSpilledBytes()));
     }
 
     private long currentThreadUserTime()
@@ -507,6 +510,7 @@ public class OperatorContext
         private final DriverContext driverContext;
 
         private long reservedBytes;
+        private long spilledBytes;
 
         public OperatorSpillContext(DriverContext driverContext)
         {
@@ -518,6 +522,7 @@ public class OperatorContext
         {
             if (bytes > 0) {
                 driverContext.reserveSpill(bytes);
+                spilledBytes += bytes;
             }
             else {
                 checkArgument(reservedBytes + bytes >= 0, "tried to free %s spilled bytes from %s bytes reserved", -bytes, reservedBytes);
@@ -531,7 +536,13 @@ public class OperatorContext
         {
             return toStringHelper(this)
                     .add("usedBytes", reservedBytes)
+                    .add("spilledBytes", spilledBytes)
                     .toString();
+        }
+
+        public long getSpilledBytes()
+        {
+            return spilledBytes;
         }
     }
 }
