@@ -75,6 +75,8 @@ public class PipelineStats
     private final List<OperatorStats> operatorSummaries;
     private final List<DriverStats> drivers;
 
+    private final DataSize spilledDataSize;
+
     @JsonCreator
     public PipelineStats(
             @JsonProperty("firstStartTime") DateTime firstStartTime,
@@ -115,7 +117,8 @@ public class PipelineStats
             @JsonProperty("outputPositions") long outputPositions,
 
             @JsonProperty("operatorSummaries") List<OperatorStats> operatorSummaries,
-            @JsonProperty("drivers") List<DriverStats> drivers)
+            @JsonProperty("drivers") List<DriverStats> drivers,
+            @JsonProperty("spilledDataSize") DataSize spilledDataSize)
     {
         this.firstStartTime = firstStartTime;
         this.lastStartTime = lastStartTime;
@@ -165,6 +168,8 @@ public class PipelineStats
 
         this.operatorSummaries = ImmutableList.copyOf(requireNonNull(operatorSummaries, "operatorSummaries is null"));
         this.drivers = ImmutableList.copyOf(requireNonNull(drivers, "drivers is null"));
+
+        this.spilledDataSize = spilledDataSize;
     }
 
     @Nullable
@@ -350,6 +355,12 @@ public class PipelineStats
         return drivers;
     }
 
+    @JsonProperty
+    public DataSize getSpilledDataSize()
+    {
+        return spilledDataSize;
+    }
+
     public PipelineStats summarize()
     {
         return new PipelineStats(
@@ -384,6 +395,7 @@ public class PipelineStats
                 operatorSummaries.stream()
                         .map(OperatorStats::summarize)
                         .collect(Collectors.toList()),
-                ImmutableList.of());
+                ImmutableList.of(),
+                spilledDataSize);
     }
 }

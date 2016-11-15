@@ -72,6 +72,8 @@ public class StageStats
     private final long outputPositions;
     private final List<OperatorStats> operatorSummaries;
 
+    private final DataSize spilledDataSize;
+
     @VisibleForTesting
     public StageStats()
     {
@@ -102,6 +104,7 @@ public class StageStats
         this.outputDataSize = null;
         this.outputPositions = 0;
         this.operatorSummaries = null;
+        this.spilledDataSize = null;
     }
 
     @JsonCreator
@@ -140,7 +143,9 @@ public class StageStats
 
             @JsonProperty("outputDataSize") DataSize outputDataSize,
             @JsonProperty("outputPositions") long outputPositions,
-            @JsonProperty("operatorSummaries") List<OperatorStats> operatorSummaries)
+            @JsonProperty("operatorSummaries") List<OperatorStats> operatorSummaries,
+            @JsonProperty("spilledDataSize") DataSize spilledDataSize)
+
     {
         this.schedulingComplete = schedulingComplete;
         this.getSplitDistribution = requireNonNull(getSplitDistribution, "getSplitDistribution is null");
@@ -186,6 +191,8 @@ public class StageStats
         checkArgument(outputPositions >= 0, "outputPositions is negative");
         this.outputPositions = outputPositions;
         this.operatorSummaries = ImmutableList.copyOf(requireNonNull(operatorSummaries, "operatorSummaries is null"));
+
+        this.spilledDataSize = spilledDataSize;
     }
 
     @JsonProperty
@@ -348,5 +355,11 @@ public class StageStats
     public List<OperatorStats> getOperatorSummaries()
     {
         return operatorSummaries;
+    }
+
+    @JsonProperty
+    public DataSize getSpilledDataSize()
+    {
+        return spilledDataSize;
     }
 }
