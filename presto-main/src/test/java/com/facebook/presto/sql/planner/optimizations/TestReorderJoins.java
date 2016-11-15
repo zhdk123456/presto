@@ -15,8 +15,7 @@ package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
-import com.facebook.presto.cost.CoefficientBasedCostCalculator;
-import com.facebook.presto.cost.CostCalculator;
+import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.assertions.PlanAssert;
 import com.facebook.presto.sql.planner.assertions.PlanMatchPattern;
@@ -39,7 +38,6 @@ import static org.testng.Assert.fail;
 public class TestReorderJoins
 {
     private final LocalQueryRunner queryRunner;
-    private final CostCalculator costCalculator;
 
     public TestReorderJoins()
     {
@@ -52,8 +50,6 @@ public class TestReorderJoins
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(1),
                 ImmutableMap.<String, String>of());
-
-        costCalculator = new CoefficientBasedCostCalculator(queryRunner.getMetadata());
     }
 
     @Test
@@ -129,15 +125,17 @@ public class TestReorderJoins
         //Plan actualPlan = plan(sql);
         queryRunner.inTransaction(transactionSession -> {
             Plan actualPlan = plan(transactionSession, sql);
-            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
+            PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), queryRunner.getCostCalculator(), actualPlan, pattern);
             return null;
         });
     }
 
     private Plan plan(Session transactionSession, String sql)
     {
+        FeaturesConfig featuresConfig = new FeaturesConfig();
         try {
-            return queryRunner.createPlan(transactionSession, sql);
+            // we run the test skipping statistics based reordering which is incmpatible with this test
+            return queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizer -> !(optimizer instanceof JoinReorderingOptimizer));
         }
         catch (RuntimeException ex) {
             fail("Invalid SQL: " + sql, ex);
