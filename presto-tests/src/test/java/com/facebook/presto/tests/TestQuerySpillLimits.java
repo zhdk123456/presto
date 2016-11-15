@@ -14,32 +14,34 @@
 package com.facebook.presto.tests;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.SystemSessionProperties;
+import com.facebook.presto.spiller.NodeSpillConfig;
+import com.facebook.presto.sql.analyzer.FeaturesConfig;
+import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.testing.QueryRunner;
-import com.facebook.presto.tpch.TpchPlugin;
+import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.units.DataSize;
 import org.testng.annotations.Test;
 
-import java.util.Map;
-
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
+import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
 public class TestQuerySpillLimits
 {
     private static final Session SESSION = testSessionBuilder()
             .setCatalog("tpch")
-            .setSchema("tiny")
+            .setSchema(TINY_SCHEMA_NAME)
+            .setSystemProperty(SystemSessionProperties.SPILL_ENABLED, "true")
+            .setSystemProperty(SystemSessionProperties.OPERATOR_MEMORY_LIMIT_BEFORE_SPILL, "1B") //spill constantly
             .build();
 
     @Test(timeOut = 240_000, expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*Query exceeded local spill limit of 10B")
     public void testMaxSpillPerNodeLimit()
             throws Exception
     {
-        Map<String, String> properties = ImmutableMap.<String, String>builder()
-                .put("experimental.spill-enabled", "true")
-                .put("experimental.operator-memory-limit-before-spill", "1B")
-                .put("experimental.max-spill-per-node", "10B")
-                .build();
-        try (QueryRunner queryRunner = createDistributedQueryRunner(SESSION, properties)) {
+        try (QueryRunner queryRunner = createLocalQueryRunner(
+                new NodeSpillConfig().setMaxSpillPerNode(DataSize.succinctBytes(10)))) {
             queryRunner.execute(SESSION, "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
         }
     }
@@ -48,29 +50,27 @@ public class TestQuerySpillLimits
     public void testQueryMaxSpillPerNodeLimit()
             throws Exception
     {
-        Map<String, String> properties = ImmutableMap.<String, String>builder()
-                .put("experimental.spill-enabled", "true")
-                .put("experimental.operator-memory-limit-before-spill", "1B")
-                .put("experimental.query-max-spill-per-node", "10B")
-                .build();
-        try (QueryRunner queryRunner = createDistributedQueryRunner(SESSION, properties)) {
+        try (QueryRunner queryRunner = createLocalQueryRunner(
+                new NodeSpillConfig().setQueryMaxSpillPerNode(DataSize.succinctBytes(10)))) {
             queryRunner.execute(SESSION, "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
         }
     }
 
-    private static DistributedQueryRunner createDistributedQueryRunner(Session session, Map<String, String> properties)
+    private static LocalQueryRunner createLocalQueryRunner(NodeSpillConfig nodeSpillConfig)
             throws Exception
     {
-        DistributedQueryRunner queryRunner = new DistributedQueryRunner(session, 1, properties);
+        LocalQueryRunner queryRunner = new LocalQueryRunner(
+                SESSION,
+                new FeaturesConfig().setSpillEnabled(true),
+                nodeSpillConfig,
+                false,
+                true);
 
-        try {
-            queryRunner.installPlugin(new TpchPlugin());
-            queryRunner.createCatalog("tpch", "tpch");
-            return queryRunner;
-        }
-        catch (Exception e) {
-            queryRunner.close();
-            throw e;
-        }
+        queryRunner.createCatalog(
+                SESSION.getCatalog().get(),
+                new TpchConnectorFactory(1),
+                ImmutableMap.<String, String>of());
+
+        return queryRunner;
     }
 }
