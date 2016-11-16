@@ -25,7 +25,6 @@ import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.plan.FilterNode;
-import com.facebook.presto.sql.planner.plan.GroupIdNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
@@ -53,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
 import static com.facebook.presto.sql.ExpressionUtils.combinePredicates;
 import static com.facebook.presto.sql.ExpressionUtils.extractPredicates;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.getExpressionTypes;
@@ -97,7 +97,6 @@ public class SimplifyExpressions
         private final Session session;
         private final Map<Symbol, Type> types;
         private final PlanNodeIdAllocator idAllocator;
-        private boolean isGroupIdNodePresent;
 
         public Rewriter(Metadata metadata, SqlParser sqlParser, Session session, Map<Symbol, Type> types, PlanNodeIdAllocator idAllocator)
         {
@@ -106,14 +105,14 @@ public class SimplifyExpressions
             this.session = session;
             this.types = types;
             this.idAllocator = idAllocator;
-            this.isGroupIdNodePresent = false;
         }
 
         @Override
         public PlanNode visitProject(ProjectNode node, RewriteContext<Void> context)
         {
             PlanNode source = context.rewrite(node.getSource());
-            Map<Symbol, Expression> assignments = ImmutableMap.copyOf(Maps.transformValues(node.getAssignments(), this::simplifyExpression));
+            Map<Symbol, Expression> assignments = ImmutableMap.copyOf(
+                    Maps.transformValues(node.getAssignments(), expression -> simplifyExpression(expression, source)));
             return new ProjectNode(node.getId(), source, assignments);
         }
 
@@ -121,7 +120,7 @@ public class SimplifyExpressions
         public PlanNode visitFilter(FilterNode node, RewriteContext<Void> context)
         {
             PlanNode source = context.rewrite(node.getSource());
-            Expression simplified = simplifyExpression(node.getPredicate());
+            Expression simplified = simplifyExpression(node.getPredicate(), source);
             if (simplified.equals(TRUE_LITERAL)) {
                 return source;
             }
@@ -138,7 +137,7 @@ public class SimplifyExpressions
         {
             Expression originalConstraint = null;
             if (node.getOriginalConstraint() != null) {
-                originalConstraint = simplifyExpression(node.getOriginalConstraint());
+                originalConstraint = simplifyExpression(node.getOriginalConstraint(), node.getSources().get(0));
             }
             return new TableScanNode(
                     node.getId(),
@@ -150,21 +149,14 @@ public class SimplifyExpressions
                     originalConstraint);
         }
 
-        @Override
-        public PlanNode visitGroupId(GroupIdNode node, RewriteContext<Void> context)
-        {
-            isGroupIdNodePresent = true;
-            return node;
-        }
-
-        private Expression simplifyExpression(Expression expression)
+        private Expression simplifyExpression(Expression expression, PlanNode source)
         {
             if (expression instanceof SymbolReference) {
                 return expression;
             }
             expression = ExpressionTreeRewriter.rewriteWith(new PushDownNegationsExpressionRewriter(), expression);
             expression = ExpressionTreeRewriter.rewriteWith(new ExtractCommonPredicatesExpressionRewriter(), expression, NodeContext.ROOT_NODE);
-            expression = ExpressionTreeRewriter.rewriteWith(new GroupingOperationToConstant(), expression, new GroupingOperationContext(isGroupIdNodePresent));
+            expression = ExpressionTreeRewriter.rewriteWith(new GroupingOperationToConstant(source), expression);
             IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypes(session, metadata, sqlParser, types, expression, emptyList() /* parameters already replaced */);
             ExpressionInterpreter interpreter = ExpressionInterpreter.expressionOptimizer(expression, metadata, session, expressionTypes);
             return LiteralInterpreter.toExpression(interpreter.optimize(NoOpSymbolResolver.INSTANCE), expressionTypes.get(expression));
@@ -285,28 +277,21 @@ public class SimplifyExpressions
         }
     }
 
-    private static class GroupingOperationContext
-    {
-        private final boolean isGroupIdNodePresent;
-
-        GroupingOperationContext(boolean isGroupIdNodePresent)
-        {
-            this.isGroupIdNodePresent = isGroupIdNodePresent;
-        }
-
-        public boolean getIsGroupIdNodePresent()
-        {
-            return isGroupIdNodePresent;
-        }
-    }
-
     private static class GroupingOperationToConstant
-            extends ExpressionRewriter<GroupingOperationContext>
+            extends ExpressionRewriter<Void>
     {
-        @Override
-        public Expression rewriteFunctionCall(FunctionCall node, GroupingOperationContext context, ExpressionTreeRewriter<GroupingOperationContext> treeRewriter)
+        private final PlanNode source;
+
+        GroupingOperationToConstant(PlanNode source)
         {
-            if (!context.getIsGroupIdNodePresent() && node.getName().toString().equals("grouping")) {
+            this.source = source;
+        }
+
+        @Override
+        public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+        {
+            // A grouping() is preceded by a GroupId node when the source node is projecting a groupid symbol
+            if (!source.getOutputSymbols().contains(new Symbol("groupid")) && node.getName().toString().equals(GROUPING)) {
                 // No GroupIdNode and a GROUPING() operation imply a single grouping, which
                 // means that any columns specified as arguments to GROUPING() will be included
                 // in the group and none of them will be aggregated over. Hence, re-write the

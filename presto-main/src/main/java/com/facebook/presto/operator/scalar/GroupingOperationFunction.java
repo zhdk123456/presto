@@ -24,6 +24,8 @@ import static com.facebook.presto.spi.type.StandardTypes.BIGINT;
 
 public final class GroupingOperationFunction
 {
+    public static final String GROUPING = "grouping";
+
     private GroupingOperationFunction() {}
 
     /**
@@ -78,7 +80,7 @@ public final class GroupingOperationFunction
         // so we start the conversion from binary to decimal from the left.
         for (int i = groupingOrdinals.size() - 1, j = 0; i >= 0; i--, j++) {
             if (groupingBinary.get(i)) {
-                grouping += 1 << j;
+                grouping |= 1 << j;
             }
         }
 

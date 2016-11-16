@@ -1070,6 +1070,16 @@ public class TestSqlParser
     }
 
     @Test
+    public void testGroupingOperationTooManyArguments()
+    {
+        String query = "SELECT GROUPING(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
+                "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
+                "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
+                "a, a) FROM foo";
+        assertInvalidStatement(query, "more than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type");
+    }
+
+    @Test
     public void testCreateSchema()
     {
         assertStatement("CREATE SCHEMA test",
@@ -1716,6 +1726,24 @@ public class TestSqlParser
     {
         assertParsed(query, expected, SQL_PARSER.createStatement(query));
         assertFormattedSql(SQL_PARSER, expected);
+    }
+
+    private static void assertInvalidStatement(String query, String expectedMessage)
+    {
+        try {
+            SQL_PARSER.createStatement(query);
+            fail(format("Expected statement to fail: %s", query));
+        }
+        catch (RuntimeException ex) {
+            assertExceptionMessage(query, ex, expectedMessage);
+        }
+    }
+
+    private static void assertExceptionMessage(String sql, Exception exception, String expectedMessage)
+    {
+        if (!exception.getMessage().equals(expectedMessage)) {
+            fail(format("Expected exception message '%s' to match '%s' for query: %s", exception.getMessage(), expectedMessage, sql));
+        }
     }
 
     private static void assertExpression(String expression, Expression expected)

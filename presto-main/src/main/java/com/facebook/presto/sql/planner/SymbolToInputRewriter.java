@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -52,7 +53,7 @@ public class SymbolToInputRewriter
     @Override
     public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
-        if (node.getName().toString().equals("grouping")) {
+        if (node.getName().toString().equals(GROUPING)) {
             Symbol groupId = new Symbol("groupid");
             checkState(symbolToChannelMapping.containsKey(groupId), "grouping operation requires an available groupid channel");
             List<Expression> arguments = Arrays.asList(new FieldReference(symbolToChannelMapping.get(groupId)), node.getArguments().get(1), node.getArguments().get(2));

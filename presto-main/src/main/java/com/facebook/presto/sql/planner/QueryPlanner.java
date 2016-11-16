@@ -21,7 +21,6 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.spi.predicate.TupleDomain;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.sql.analyzer.Analysis;
 import com.facebook.presto.sql.analyzer.Field;
 import com.facebook.presto.sql.analyzer.RelationType;
@@ -47,7 +46,6 @@ import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.FieldReference;
 import com.facebook.presto.sql.tree.FrameBound;
 import com.facebook.presto.sql.tree.FunctionCall;
-import com.facebook.presto.sql.tree.GroupingOperation;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.QuerySpecification;
@@ -57,17 +55,14 @@ import com.facebook.presto.sql.tree.SortItem.Ordering;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.facebook.presto.sql.tree.Window;
 import com.facebook.presto.sql.tree.WindowFrame;
-import com.facebook.presto.type.ListLiteralType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,9 +73,7 @@ import java.util.stream.Collectors;
 
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
-import static com.facebook.presto.spi.type.IntegerType.INTEGER;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
-import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.resolveFunction;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -270,7 +263,7 @@ class QueryPlanner
         // rewrite expressions which contain already handled subqueries
         predicate = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), predicate);
         if (node instanceof QuerySpecification) {
-            predicate = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(subPlan, (QuerySpecification) node, analysis, metadata, predicate instanceof GroupingOperation), predicate);
+            predicate = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), predicate);
         }
         Expression rewrittenBeforeSubqueries = subPlan.rewrite(predicate);
         subPlan = subqueryPlanner.handleSubqueries(subPlan, rewrittenBeforeSubqueries, node);
@@ -288,7 +281,7 @@ class QueryPlanner
         for (Expression expression : expressions) {
             Expression rewritten = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), expression);
             if (node instanceof QuerySpecification) {
-                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(subPlan, (QuerySpecification) node, analysis, metadata, rewritten instanceof GroupingOperation), rewritten);
+                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), rewritten);
             }
             Symbol symbol = symbolAllocator.newSymbol(rewritten, analysis.getTypeWithCoercions(expression));
             projections.put(symbol, subPlan.rewrite(rewritten));
@@ -301,34 +294,6 @@ class QueryPlanner
                 subPlan.getRoot(),
                 projections.build()),
                 analysis.getParameters());
-    }
-
-    private Expression rewriteGroupingOperation(PlanBuilder subPlan, Node node, Expression expression)
-    {
-        FunctionCall rewrittenExpression = subPlan.rewriteGroupingOperationToFunctionCall((GroupingOperation) expression, (QuerySpecification) node);
-        ImmutableList.Builder<Expression> outputExpressionBuilder = ImmutableList.builder();
-        outputExpressionBuilder.addAll(analysis.getOutputExpressions(node).stream()
-                .map((outputExpression) -> (outputExpression instanceof GroupingOperation) ? rewrittenExpression : outputExpression)
-                .collect(Collectors.toList()));
-        analysis.setOutputExpressions(node, outputExpressionBuilder.build());
-
-        IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
-        IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap<>();
-        List<TypeSignature> functionTypes = Arrays.asList(
-                BIGINT.getTypeSignature(),
-                ListLiteralType.LIST_LITERAL.getTypeSignature(),
-                ListLiteralType.LIST_LITERAL.getTypeSignature()
-        );
-        Signature functionSignature = resolveFunction(rewrittenExpression, functionTypes, metadata.getFunctionRegistry());
-
-        expressionTypes.put(rewrittenExpression, INTEGER);
-        functionSignatures.put(rewrittenExpression, functionSignature);
-
-        analysis.addTypes(expressionTypes);
-        analysis.addFunctionSignatures(functionSignatures);
-
-        expression = rewrittenExpression;
-        return expression;
     }
 
     private Map<Symbol, Expression> coerce(Iterable<? extends Expression> expressions, PlanBuilder subPlan, TranslationMap translations)
@@ -595,23 +560,8 @@ class QueryPlanner
         // Rewrite any GROUPING() expressions in the window function
         ImmutableList.Builder<FunctionCall> rewrittenWindowFunctionsBuilder = ImmutableList.builder();
         for (FunctionCall windowFunction : windowFunctions) {
-            Window window = windowFunction.getWindow().get();
-
-            window = rewriteGroupingOperationsInWindowNode(window, subPlan, node);
-            FunctionCall updatedWindowFunction = new FunctionCall(windowFunction.getName(), Optional.of(window), windowFunction.isDistinct(), windowFunction.getArguments());
-
-            // Update the type and signature maps in Analysis because we created a new FunctionCall object
-            Type functionType = analysis.getType(windowFunction);
-            IdentityHashMap<Expression, Type> updatedType = new IdentityHashMap<>();
-            updatedType.put(updatedWindowFunction, functionType);
-            analysis.addTypes(updatedType);
-
-            Signature signature = analysis.getFunctionSignature(windowFunction);
-            IdentityHashMap<FunctionCall, Signature> updatedSignature = new IdentityHashMap<>();
-            updatedSignature.put(updatedWindowFunction, signature);
-            analysis.addFunctionSignatures(updatedSignature);
-
-            rewrittenWindowFunctionsBuilder.add(updatedWindowFunction);
+            FunctionCall rewrittenFunctionCall = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(node, analysis, metadata), windowFunction);
+            rewrittenWindowFunctionsBuilder.add(rewrittenFunctionCall);
         }
         windowFunctions = rewrittenWindowFunctionsBuilder.build();
 
@@ -733,36 +683,6 @@ class QueryPlanner
         }
 
         return subPlan;
-    }
-
-    private Window rewriteGroupingOperationsInWindowNode(Window window, PlanBuilder subPlan, QuerySpecification node)
-    {
-        ImmutableList.Builder<Expression> rewrittenPartitionByBuilder = ImmutableList.builder();
-        for (Expression expression : window.getPartitionBy()) {
-            Expression rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(subPlan, node, analysis, metadata, expression instanceof GroupingOperation), expression);
-
-            Type expressionType = analysis.getType(expression);
-            IdentityHashMap<Expression, Type> newTypes = new IdentityHashMap<>();
-            newTypes.put(rewritten, expressionType);
-            analysis.addTypes(newTypes);
-
-            rewrittenPartitionByBuilder.add(rewritten);
-        }
-
-        ImmutableList.Builder<SortItem> rewrittenSortItemsBuilder = ImmutableList.builder();
-        for (SortItem sortItem : window.getOrderBy()) {
-            Expression sortKey = sortItem.getSortKey();
-            Expression rewrittenSortKey = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(subPlan, node, analysis, metadata, sortKey instanceof GroupingOperation), sortKey);
-            SortItem rewrittenSortItem = new SortItem(rewrittenSortKey, sortItem.getOrdering(), sortItem.getNullOrdering());
-            rewrittenSortItemsBuilder.add(rewrittenSortItem);
-
-            Type sortKeyType = analysis.getType(sortKey);
-            IdentityHashMap<Expression, Type> newTypes = new IdentityHashMap<>();
-            newTypes.put(rewrittenSortKey, sortKeyType);
-            analysis.addTypes(newTypes);
-        }
-
-        return new Window(rewrittenPartitionByBuilder.build(), rewrittenSortItemsBuilder.build(), window.getFrame());
     }
 
     private PlanBuilder handleSubqueries(PlanBuilder subPlan, Node node, Iterable<Expression> inputs)

@@ -66,7 +66,7 @@ General Aggregate Functions
     match exactly the columns referenced in the corresponding ``GROUPING SETS``, ``ROLLUP`` or ``CUBE``.
 
     To compute the resulting bit set for a particular row, bits are assigned to the argument columns with
-    the rightmost column being the most significant bit. For a given grouping, a bit is set to 0 if the
+    the rightmost column being the least significant bit. For a given grouping, a bit is set to 0 if the
     corresponding column is included in the grouping and to 1 otherwise. For example, consider the query
     below::
 

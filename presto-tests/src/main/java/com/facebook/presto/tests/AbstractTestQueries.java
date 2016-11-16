@@ -1752,37 +1752,37 @@ public abstract class AbstractTestQueries
             throws Exception
     {
         assertQuery("" +
-            "SELECT a, b, sum(c), grouping(a, b) + grouping(a)\n" +
-            "FROM (VALUES\n" +
-            "      ('h', 'j', 11),\n" +
-            "      ('k', 'l', 7)\n" +
-            "      ) AS t (a, b, c)\n" +
-            "GROUP BY GROUPING SETS ( (a), (b))\n" +
+            "SELECT a, b, sum(c), grouping(a, b) + grouping(a) " +
+            "FROM (VALUES" +
+            "      ('h', 'j', 11), " +
+            "      ('k', 'l', 7) " +
+            "      ) AS t (a, b, c) " +
+            "GROUP BY GROUPING SETS ( (a), (b)) " +
             "ORDER BY grouping(b) ASC",
-            "VALUES (NULL, 'j', 11, 3),\n" +
-                    "(NULL, 'l', 7, 3),\n" +
-                    "('h', NULL, 11, 1),\n" +
+            "VALUES (NULL, 'j', 11, 3), " +
+                    "(NULL, 'l', 7, 3), " +
+                    "('h', NULL, 11, 1), " +
                     "('k', NULL, 7, 1)");
 
         assertQuery("" +
-            "SELECT a, b, sum(c), grouping(a, b)\n" +
-            "FROM (VALUES\n" +
-            "      ('h', 'j', 11),\n" +
-            "      ('k', 'l', 7)\n" +
-            "      ) AS t (a, b, c)\n" +
-            "GROUP BY a, b",
-            "VALUES ('k', 'l', 7, 0),\n" +
+            "SELECT a, b, sum(c), grouping(a, b) " +
+            "FROM (VALUES " +
+            "      ('h', 'j', 11), " +
+            "      ('k', 'l', 7) " +
+            "      ) AS t (a, b, c) " +
+            "GROUP BY a, b ",
+            "VALUES ('k', 'l', 7, 0), " +
                    "('h', 'j', 11, 0)");
 
         assertQuery("" +
-            "SELECT a, b, sum(c), grouping(a, b)\n" +
-            "FROM (VALUES\n" +
-            "      ('h', 'j', 11),\n" +
-            "      ('k', 'l', 7)\n" +
-            "      ) AS t (a, b, c)\n" +
-            "GROUP BY GROUPING SETS ( (a), (b))\n" +
-            "HAVING grouping(a, b) > 1",
-            "VALUES (NULL, 'j', 11, 2),\n" +
+            "SELECT a, b, sum(c), grouping(a, b) " +
+            "FROM (VALUES " +
+            "      ('h', 'j', 11), " +
+            "      ('k', 'l', 7) " +
+            "      ) AS t (a, b, c) " +
+            "GROUP BY GROUPING SETS ( (a), (b)) " +
+            "HAVING grouping(a, b) > 1 ",
+            "VALUES (NULL, 'j', 11, 2), " +
                    "(NULL, 'l', 7, 2)");
     }
 
@@ -1791,29 +1791,70 @@ public abstract class AbstractTestQueries
             throws Exception
     {
         assertQuery("" +
-            "SELECT genre, sub_genre, sum(listeners), grouping(genre) + grouping(sub_genre),\n" +
-                "rank() OVER (PARTITION BY grouping(genre) + grouping(sub_genre) ORDER BY genre ASC) as r\n" +
-            "FROM (VALUES\n" +
-                "('Rock', 'Hard Rock', 322),\n" +
-                "('Rock', 'Classic Rock', 788),\n" +
-                "('Rock', 'Heavy Metal', 182),\n" +
-                "('Electronic', 'Techno', 437),\n" +
-                "('Electronic', 'House', 987),\n" +
-                "('Classical', 'Avant-garde', 231),\n" +
-                "('Classical', 'Baroque', 559)\n" +
-            ") as t (genre, sub_genre, listeners)" +
-            "GROUP BY rollup(genre, sub_genre) ORDER BY r, genre, sub_genre NULLS FIRST",
-            "VALUES ('Classical', NULL, 790, 1, 1),\n" +
-                   "('Classical', 'Avant-garde', 231, 0, 1),\n" +
-                   "('Classical', 'Baroque', 559, 0, 1),\n" +
-                   "(NULL, NULL, 3506, 2, 1),\n" +
-                   "('Electronic', NULL, 1424, 1, 2),\n" +
-                   "('Electronic', 'House', 987, 0, 3),\n" +
-                   "('Electronic', 'Techno', 437, 0, 3),\n" +
-                   "('Rock', NULL, 1292, 1, 3),\n" +
-                   "('Rock', 'Classic Rock', 788, 0, 5),\n" +
-                   "('Rock', 'Hard Rock', 322, 0, 5),\n" +
-                   "('Rock', 'Heavy Metal', 182, 0, 5)\n"
+            "SELECT orderkey, custkey, sum(totalprice), grouping(orderkey)+grouping(custkey) as g, " +
+            "       rank() OVER (PARTITION BY grouping(orderkey)+grouping(custkey), " +
+            "       CASE WHEN grouping(orderkey) = 0 THEN custkey END ORDER BY orderkey ASC) as r " +
+            "FROM orders " +
+            "GROUP BY ROLLUP (orderkey, custkey) " +
+            "ORDER BY orderkey, custkey " +
+            "LIMIT 10",
+            "VALUES (1, 370, 172799.49, 0, 1), " +
+            "       (1, NULL, 172799.49, 1, 1), " +
+            "       (2, 781, 38426.09, 0, 1), " +
+            "       (2, NULL, 38426.09, 1, 2), " +
+            "       (3, 1234, 205654.30, 0, 1), " +
+            "       (3, NULL, 205654.30, 1, 3), " +
+            "       (4, 1369, 56000.91, 0, 1), " +
+            "       (4, NULL, 56000.91, 1, 4), " +
+            "       (5, 445, 105367.67, 0, 1), " +
+            "       (5, NULL, 105367.67, 1, 5)"
+        );
+    }
+
+    @Test
+    public void testGroupingInSubquery()
+            throws Exception
+    {
+        // In addition to testing grouping() in subqueries, the following two tests also
+        // ensure correct behavior in the case of alternating GROUPING SETS and GROUP BY
+        // clauses in the same plan. This is significant because grouping() with GROUP BY
+        // works only with a special re-write that should not happen in the presence of
+        // GROUPING SETS.
+
+        // Inner query has a single GROUP BY and outer query has GROUPING SETS
+        assertQuery("" +
+            "SELECT orderkey, custkey, sum(agg_price) as outer_sum, grouping(orderkey, custkey), t.g " +
+            "FROM " +
+            "    (SELECT orderkey, custkey, sum(totalprice) as agg_price, grouping(custkey, orderkey) as g " +
+            "        FROM orders " +
+            "        GROUP BY orderkey, custkey " +
+            "        ORDER BY agg_price ASC " +
+            "        LIMIT 5) as t " +
+            "GROUP BY GROUPING SETS ((orderkey, custkey), t.g) " +
+            "ORDER BY outer_sum",
+            "VALUES (35271, 334, 874.89, 0, NULL), " +
+            "       (28647, 1351, 924.33, 0, NULL), " +
+            "       (58145, 862, 929.03, 0, NULL), " +
+            "       (8354, 634, 974.04, 0, NULL), " +
+            "       (37415, 301, 986.63, 0, NULL), " +
+            "       (NULL, NULL, 4688.92, 3, 0)"
+        );
+
+        // Inner query has GROUPING SETS and outer query has GROUPING SETS
+        assertQuery("" +
+            "SELECT orderkey, custkey, t.g, sum(agg_price) as outer_sum, grouping(orderkey, custkey) " +
+            "FROM " +
+            "    (SELECT orderkey, custkey, sum(totalprice) as agg_price, grouping(custkey, orderkey) as g " +
+            "     FROM orders " +
+            "     GROUP BY GROUPING SETS ((custkey), (orderkey)) " +
+            "     ORDER BY agg_price ASC " +
+            "     LIMIT 5) as t " +
+            "GROUP BY orderkey, custkey, t.g",
+            "VALUES (28647, NULL, 2, 924.33, 0), " +
+            "       (8354, NULL, 2, 974.04, 0), " +
+            "       (37415, NULL, 2, 986.63, 0), " +
+            "       (58145, NULL, 2, 929.03, 0), " +
+            "       (35271, NULL, 2, 874.89, 0)"
         );
     }
 

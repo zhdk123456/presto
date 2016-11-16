@@ -491,7 +491,7 @@ class AggregationAnalyzer
                 throw new SemanticException(
                         INVALID_PROCEDURE_ARGUMENTS,
                         node,
-                        "The following GROUPING() argument(s) '%s' is (are) not in the query's GROUP BY columns '%s'",
+                        "Arguments in GROUPING() must be in the query's GROUP BY columns. Remove columns '%s' from GROUPING() or add them to the GROUP BY.",
                         argumentsNotInGroupBy,
                         expressions);
             }
