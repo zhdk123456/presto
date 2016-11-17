@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.tests.jdbc;
 
-import com.facebook.presto.tests.ImmutableTpchTablesRequirements.ImmutableNationTable;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.teradata.tempto.BeforeTestWithContext;
@@ -23,6 +22,7 @@ import com.teradata.tempto.RequirementsProvider;
 import com.teradata.tempto.Requires;
 import com.teradata.tempto.configuration.Configuration;
 import com.teradata.tempto.fulfillment.ldap.LdapObjectRequirement;
+import com.teradata.tempto.fulfillment.table.hive.tpch.ImmutableTpchTablesRequirements;
 import com.teradata.tempto.query.QueryResult;
 import org.testng.annotations.Test;
 
@@ -108,7 +108,7 @@ public class LdapTests
                 ));
     }
 
-    @Requires(ImmutableNationTable.class)
+    @Requires(ImmutableTpchTablesRequirements.ImmutableNationTable.class)
     @Test(groups = {LDAP, SIMBA_JDBC, PROFILE_SPECIFIC_TESTS}, timeOut = TIMEOUT)
     public void shouldRunQueryWithLdap()
             throws InterruptedException, SQLException
