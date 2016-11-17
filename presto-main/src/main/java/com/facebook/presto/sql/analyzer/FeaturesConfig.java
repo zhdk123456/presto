@@ -56,7 +56,6 @@ public class FeaturesConfig
     }
 
     private boolean distributedIndexJoinsEnabled;
-    private boolean distributedJoinsEnabled = true;
     private boolean colocatedJoinsEnabled;
     private boolean reorderJoins;
     private boolean redistributeWrites = true;
@@ -109,11 +108,6 @@ public class FeaturesConfig
         return this;
     }
 
-    public boolean isDistributedJoinsEnabled()
-    {
-        return distributedJoinsEnabled;
-    }
-
     @Config("deprecated.legacy-array-agg")
     public FeaturesConfig setLegacyArrayAgg(boolean legacyArrayAgg)
     {
@@ -136,13 +130,6 @@ public class FeaturesConfig
     public boolean isLegacyOrderBy()
     {
         return legacyOrderBy;
-    }
-
-    @Config("distributed-joins-enabled")
-    public FeaturesConfig setDistributedJoinsEnabled(boolean distributedJoinsEnabled)
-    {
-        this.distributedJoinsEnabled = distributedJoinsEnabled;
-        return this;
     }
 
     public boolean isColocatedJoinsEnabled()
