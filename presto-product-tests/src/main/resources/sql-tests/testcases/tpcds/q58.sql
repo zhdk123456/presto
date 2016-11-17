@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- incorrect results (lost precision in 3rd column)
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 WITH ss_items AS
   (SELECT i_item_id item_id,
           sum(ss_ext_sales_price) ss_item_rev
@@ -53,11 +52,11 @@ ws_items AS
 
 SELECT ss_items.item_id,
        ss_item_rev,
-       ss_item_rev/(ss_item_rev+cs_item_rev+ws_item_rev)/3 * 100 ss_dev,
+       cast((ss_item_rev/(cast(ss_item_rev as decimal(12,7))+cs_item_rev+ws_item_rev)/3 * 100) as decimal(7,2)) ss_dev,
        cs_item_rev,
-       cs_item_rev/(ss_item_rev+cs_item_rev+ws_item_rev)/3 * 100 cs_dev,
+       cast((cs_item_rev/(cast(ss_item_rev as decimal(12,7))+cs_item_rev+ws_item_rev)/3 * 100) as decimal(7,2)) cs_dev,
        ws_item_rev,
-       ws_item_rev/(ss_item_rev+cs_item_rev+ws_item_rev)/3 * 100 ws_dev,
+       cast((ws_item_rev/(cast(ss_item_rev as decimal(12,7))+cs_item_rev+ws_item_rev)/3 * 100) as decimal(7,2)) ws_dev,
        (ss_item_rev+cs_item_rev+ws_item_rev)/3 average
 FROM ss_items,
      cs_items,

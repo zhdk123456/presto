@@ -1,12 +1,10 @@
 -- database: presto_tpcds; groups: tpcds,big_query,quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 --- returns incorrect results
---- below projection should return 0 while it returns the same value as count(*)
---- count(CASE WHEN p_promo_sk IS NULL THEN 1 ELSE 0 END) no_promo,
 SELECT i_item_desc,
        w_warehouse_name,
        d1.d_week_seq,
-       count(CASE WHEN p_promo_sk IS NULL THEN 1 ELSE 0 END) no_promo,
-       count(CASE WHEN p_promo_sk IS NOT NULL THEN 1 ELSE 0 END) promo,
+       sum(CASE WHEN p_promo_sk IS NULL THEN 1 ELSE 0 END) no_promo,
+       sum(CASE WHEN p_promo_sk IS NOT NULL THEN 1 ELSE 0 END) promo,
        count(*) total_cnt
 FROM catalog_sales
 JOIN inventory ON (cs_item_sk = inv_item_sk)
