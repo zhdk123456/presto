@@ -237,6 +237,7 @@ public class PlanPrinter
         Map<PlanNodeId, Long> planNodeOutputPositions = new HashMap<>();
         Map<PlanNodeId, Long> planNodeOutputBytes = new HashMap<>();
         Map<PlanNodeId, Long> planNodeWallMillis = new HashMap<>();
+        Map<PlanNodeId, Long> planNodeSpilledBytes = new HashMap<>();
 
         Map<PlanNodeId, Map<String, OperatorInputStats>> operatorInputStats = new HashMap<>();
         Map<PlanNodeId, Map<String, OperatorHashCollisionsStats>> operatorHashCollisionsStats = new HashMap<>();
@@ -297,14 +298,16 @@ public class PlanPrinter
             for (OperatorStats operatorStats : reverse(pipelineStats.getOperatorSummaries())) {
                 PlanNodeId planNodeId = operatorStats.getPlanNodeId();
 
-                // An "internal" pipeline like a hash build, links to another pipeline which is the actual output for this plan node
-                if (operatorStats.getPlanNodeId().equals(outputPlanNode) && !pipelineStats.isOutputPipeline()) {
-                    continue;
-                }
                 if (processedNodes.contains(planNodeId)) {
                     continue;
                 }
 
+                planNodeSpilledBytes.merge(planNodeId, operatorStats.getSpilledDataSize().toBytes(), Long::sum);
+
+                // An "internal" pipeline like a hash build, links to another pipeline which is the actual output for this plan node
+                if (operatorStats.getPlanNodeId().equals(outputPlanNode) && !pipelineStats.isOutputPipeline()) {
+                    continue;
+                }
                 planNodeOutputPositions.merge(planNodeId, operatorStats.getOutputPositions(), Long::sum);
                 planNodeOutputBytes.merge(planNodeId, operatorStats.getOutputDataSize().toBytes(), Long::sum);
                 processedNodes.add(planNodeId);
@@ -325,6 +328,7 @@ public class PlanPrinter
                     // and therefore only have wall time, but no output stats
                     planNodeOutputPositions.getOrDefault(planNodeId, 0L),
                     succinctDataSize(planNodeOutputBytes.getOrDefault(planNodeId, 0L), BYTE),
+                    succinctBytes(planNodeSpilledBytes.get(entry.getKey())),
                     operatorInputStats.get(planNodeId),
                     // Only some operators emit hash collisions statistics
                     operatorHashCollisionsStats.getOrDefault(planNodeId, emptyMap())));
@@ -351,12 +355,16 @@ public class PlanPrinter
 
         if (stageStats.isPresent()) {
             builder.append(indentString(1))
-                    .append(format("Cost: CPU %s, Input: %s (%s), Output: %s (%s)\n",
+                    .append(format("Cost: CPU %s, Input: %s (%s), Output: %s (%s)",
                             stageStats.get().getTotalCpuTime(),
                             formatPositions(stageStats.get().getProcessedInputPositions()),
                             stageStats.get().getProcessedInputDataSize(),
                             formatPositions(stageStats.get().getOutputPositions()),
                             stageStats.get().getOutputDataSize()));
+            if (isNonZero(stageStats.get().getSpilledDataSize())) {
+                builder.append(", Spilled " + stageStats.get().getSpilledDataSize());
+            }
+            builder.append("\n");
         }
 
         PartitioningScheme partitioningScheme = fragment.getPartitioningScheme();
@@ -399,6 +407,11 @@ public class PlanPrinter
         }
 
         return builder.toString();
+    }
+
+    private static boolean isNonZero(DataSize dataSize)
+    {
+        return dataSize != null && dataSize.getValue() != 0;
     }
 
     public static String graphvizLogicalPlan(PlanNode plan, Map<Symbol, Type> types)
@@ -481,6 +494,9 @@ public class PlanPrinter
         if (printFiltered) {
             double filtered = 100.0d * (nodeStats.getPlanNodeInputPositions() - nodeStats.getPlanNodeOutputPositions()) / nodeStats.getPlanNodeInputPositions();
             output.append(", Filtered: " + formatDouble(filtered) + "%");
+        }
+        if (isNonZero(nodeStats.getPlanNodeSpilledDataSize())) {
+            output.append(", Spilled: " + nodeStats.getPlanNodeSpilledDataSize());
         }
         output.append('\n');
 
@@ -1382,6 +1398,8 @@ public class PlanPrinter
         private final long planNodeInputPositions;
         private final DataSize planNodeInputDataSize;
         private final long planNodeOutputPositions;
+        private final DataSize planNodeSpilledDataSize;
+
         private final DataSize planNodeOutputDataSize;
 
         private final Map<String, OperatorInputStats> operatorInputStats;
@@ -1394,6 +1412,7 @@ public class PlanPrinter
                 DataSize planNodeInputDataSize,
                 long planNodeOutputPositions,
                 DataSize planNodeOutputDataSize,
+                DataSize planNodeSpilledDataSize,
                 Map<String, OperatorInputStats> operatorInputStats,
                 Map<String, OperatorHashCollisionsStats> operatorHashCollisionsStats)
         {
@@ -1404,6 +1423,7 @@ public class PlanPrinter
             this.planNodeInputDataSize = planNodeInputDataSize;
             this.planNodeOutputPositions = planNodeOutputPositions;
             this.planNodeOutputDataSize = planNodeOutputDataSize;
+            this.planNodeSpilledDataSize = planNodeSpilledDataSize;
 
             this.operatorInputStats = requireNonNull(operatorInputStats, "operatorInputStats is null");
             this.operatorHashCollisionsStats = requireNonNull(operatorHashCollisionsStats, "operatorHashCollisionsStats is null");
@@ -1490,6 +1510,11 @@ public class PlanPrinter
                             entry -> entry.getValue().getWeightedExpectedHashCollisions() / operatorInputStats.get(entry.getKey()).getInputPositions()));
         }
 
+        public DataSize getPlanNodeSpilledDataSize()
+        {
+            return planNodeSpilledDataSize;
+        }
+
         public static PlanNodeStats merge(PlanNodeStats planNodeStats1, PlanNodeStats planNodeStats2)
         {
             checkArgument(planNodeStats1.getPlanNodeId().equals(planNodeStats2.getPlanNodeId()), "planNodeIds do not match. %s != %s", planNodeStats1.getPlanNodeId(), planNodeStats2.getPlanNodeId());
@@ -1498,6 +1523,7 @@ public class PlanPrinter
             DataSize planNodeInputDataSize = succinctBytes(planNodeStats1.planNodeInputDataSize.toBytes() + planNodeStats2.planNodeInputDataSize.toBytes());
             long planNodeOutputPositions = planNodeStats1.planNodeOutputPositions + planNodeStats2.planNodeOutputPositions;
             DataSize planNodeOutputDataSize = succinctBytes(planNodeStats1.planNodeOutputDataSize.toBytes() + planNodeStats2.planNodeOutputDataSize.toBytes());
+            DataSize planNodeSpilledDataSize = succinctBytes(planNodeStats1.getPlanNodeSpilledDataSize().toBytes() + planNodeStats2.getPlanNodeSpilledDataSize().toBytes());
 
             Map<String, OperatorInputStats> operatorInputStats = mergeOperatorInputStatsMaps(planNodeStats1.operatorInputStats, planNodeStats2.operatorInputStats);
             Map<String, OperatorHashCollisionsStats> operatorHashCollisionsStats = mergeOperatorHashCollisionsStatsMaps(planNodeStats1.operatorHashCollisionsStats, planNodeStats2.operatorHashCollisionsStats);
@@ -1507,6 +1533,7 @@ public class PlanPrinter
                     new Duration(planNodeStats1.getPlanNodeWallTime().toMillis() + planNodeStats2.getPlanNodeWallTime().toMillis(), MILLISECONDS),
                     planNodeInputPositions, planNodeInputDataSize,
                     planNodeOutputPositions, planNodeOutputDataSize,
+                    planNodeSpilledDataSize,
                     operatorInputStats,
                     operatorHashCollisionsStats);
         }
