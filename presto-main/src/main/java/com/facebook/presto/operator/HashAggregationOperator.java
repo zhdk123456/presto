@@ -104,7 +104,7 @@ public class HashAggregationOperator
                     new SpillerFactory()
                     {
                         @Override
-                        public Spiller create(List<Type> types, LocalSpillContext localSpillContext)
+                        public Spiller create(List<Type> types, java.util.function.Supplier<LocalSpillContext> localSpillContextSupplier)
                         {
                             throw new UnsupportedOperationException();
                         }
