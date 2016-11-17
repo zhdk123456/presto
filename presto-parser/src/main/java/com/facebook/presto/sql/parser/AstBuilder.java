@@ -668,12 +668,7 @@ class AstBuilder
     @Override
     public Node visitShowStats(SqlBaseParser.ShowStatsContext context)
     {
-        return new ShowStats(
-                getLocation(context),
-                getQualifiedName(context.qualifiedName()),
-                visitIfPresent(context.booleanExpression(), Expression.class),
-                visit(context.sortItem(), SortItem.class),
-                getTextIfPresent(context.limit));
+        return new ShowStats(getLocation(context), getQualifiedName(context.qualifiedName()));
     }
 
     @Override
