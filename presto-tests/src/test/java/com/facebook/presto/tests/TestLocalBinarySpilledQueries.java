@@ -44,7 +44,6 @@ public class TestLocalBinarySpilledQueries
                 .build();
 
         FeaturesConfig featuresConfig = new FeaturesConfig();
-        featuresConfig.setOptimizeMixedDistinctAggregations(true);
         featuresConfig.setSpillMinimumFreeSpaceThreshold(1.0);
         LocalQueryRunner localQueryRunner = new LocalQueryRunner(defaultSession, featuresConfig);
 
