@@ -59,7 +59,6 @@ import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.Relation;
 import com.facebook.presto.sql.tree.SelectItem;
 import com.facebook.presto.sql.tree.ShowCatalogs;
-import com.facebook.presto.sql.tree.ShowColumnStats;
 import com.facebook.presto.sql.tree.ShowColumns;
 import com.facebook.presto.sql.tree.ShowCreate;
 import com.facebook.presto.sql.tree.ShowFunctions;
@@ -67,6 +66,7 @@ import com.facebook.presto.sql.tree.ShowGrants;
 import com.facebook.presto.sql.tree.ShowPartitions;
 import com.facebook.presto.sql.tree.ShowSchemas;
 import com.facebook.presto.sql.tree.ShowSession;
+import com.facebook.presto.sql.tree.ShowStats;
 import com.facebook.presto.sql.tree.ShowTables;
 import com.facebook.presto.sql.tree.SimpleGroupBy;
 import com.facebook.presto.sql.tree.SingleColumn;
@@ -528,7 +528,7 @@ final class ShowQueriesRewrite
         }
 
         @Override
-        protected Node visitShowColumnStats(ShowColumnStats node, Void context)
+        protected Node visitShowStats(ShowStats node, Void context)
         {
             QualifiedName table = node.getTable();
             TableStatistics tableStatistics = getTableStatistics(node, table);
@@ -544,7 +544,7 @@ final class ShowQueriesRewrite
             return simpleQuery(selectList(selectItems), aliased(new Values(resultRows), "table_stats_for_" + table, resultColumnNames));
         }
 
-        private Map<ColumnHandle, String> getStatisticsColumnNames(TableStatistics statistics, ShowColumnStats node, QualifiedName tableName)
+        private Map<ColumnHandle, String> getStatisticsColumnNames(TableStatistics statistics, ShowStats node, QualifiedName tableName)
         {
             ImmutableMap.Builder<ColumnHandle, String> resultBuilder = ImmutableMap.builder();
             TableHandle tableHandle = getTableHandle(node, tableName);
@@ -556,7 +556,7 @@ final class ShowQueriesRewrite
             return resultBuilder.build();
         }
 
-        private TableStatistics getTableStatistics(ShowColumnStats node, QualifiedName table)
+        private TableStatistics getTableStatistics(ShowStats node, QualifiedName table)
         {
             TableHandle tableHandle = getTableHandle(node, table);
             List<TableLayoutResult> tableLayouts = metadata.getLayouts(session, tableHandle, Constraint.alwaysTrue(), Optional.empty());
@@ -564,7 +564,7 @@ final class ShowQueriesRewrite
             return metadata.getTableStatistics(session, tableHandle, tableLayoutHandle);
         }
 
-        private TableHandle getTableHandle(ShowColumnStats node, QualifiedName table)
+        private TableHandle getTableHandle(ShowStats node, QualifiedName table)
         {
             QualifiedObjectName qualifiedTableName = createQualifiedObjectName(session, node, table);
             return metadata.getTableHandle(session, qualifiedTableName)
