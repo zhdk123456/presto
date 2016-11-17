@@ -119,7 +119,7 @@ public class TestProgressMonitor
         HttpClient client = new TestingHttpClient(new TestingHttpClientProcessor(RESPONSES));
         QueryExecutor testQueryExecutor = QueryExecutor.create(client);
         String uri = format("prestotest://%s", SERVER_ADDRESS);
-        return new PrestoConnection(new PrestoDriverUri(uri), "test", testQueryExecutor);
+        return new PrestoConnection(new PrestoDriverUri(uri), "test", testQueryExecutor, () -> { });
     }
 
     private static class TestingHttpClientProcessor
