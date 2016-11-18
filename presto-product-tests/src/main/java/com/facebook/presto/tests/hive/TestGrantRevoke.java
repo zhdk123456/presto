@@ -46,10 +46,10 @@ public class TestGrantRevoke
      * Pre-requisites for the tests in this class:
      *
      * (1) hive.properties file should have this property set: hive.security=sql-standard
-     * (2) tempto-configuration.yaml file should have definitions for two connections to Presto server:
-     * "alice@presto" that has "jdbc_user: alice" and
-     * "bob@presto" that has "jdbc_user: bob"
-     * (all other values of the connection are same as that of the default "presto" connection).
+     * (2) tempto-configuration.yaml file should have definitions for the following connections to Presto server:
+     *          - "alice@presto" that has "jdbc_user: alice"
+     *          - "bob@presto" that has "jdbc_user: bob"
+     *     (all other values of the connection are same as that of the default "presto" connection).
     */
 
     @BeforeTestWithContext
@@ -178,6 +178,4 @@ public class TestGrantRevoke
         assertThat(() -> queryExecutor.executeQuery(format("DELETE FROM %s WHERE day=3", tableName))).
                 failsWithMessage(format("Access Denied: Cannot delete from table default.%s", tableName));
     }
-
-    //TODO: test PUBLIC: This will require adding users such as alice and bob to the hive metastore
 }
