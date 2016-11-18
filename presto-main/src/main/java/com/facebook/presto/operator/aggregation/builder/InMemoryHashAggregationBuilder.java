@@ -17,6 +17,7 @@ import com.facebook.presto.array.IntBigArray;
 import com.facebook.presto.memory.LocalMemoryContext;
 import com.facebook.presto.operator.GroupByHash;
 import com.facebook.presto.operator.GroupByIdBlock;
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
 import com.facebook.presto.operator.aggregation.GroupedAccumulator;
@@ -143,10 +144,26 @@ public class InMemoryHashAggregationBuilder
             operatorContext.setMemoryReservation(memorySize);
         }
     }
+
     @Override
     public boolean isFull()
     {
         return full;
+    }
+
+    public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
+    {
+        hashCollisionsCounter.recordHashCollision(groupByHash.getHashCollisions(), groupByHash.getExpectedHashCollisions());
+    }
+
+    public long getHashCollisions()
+    {
+        return groupByHash.getHashCollisions();
+    }
+
+    public double getExpectedHashCollisions()
+    {
+        return groupByHash.getExpectedHashCollisions();
     }
 
     @Override
@@ -289,7 +306,8 @@ public class InMemoryHashAggregationBuilder
 
     private static List<Integer> asList(IntBigArray groupIds, int size)
     {
-        return new AbstractList<Integer>() {
+        return new AbstractList<Integer>()
+        {
             @Override
             public Integer get(int index)
             {
