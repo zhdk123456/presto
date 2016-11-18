@@ -27,7 +27,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -135,6 +134,7 @@ public class HashBuilderOperator
     private final PagesIndex index;
 
     private boolean finishing;
+    private final HashCollisionsCounter hashCollisionsCounter;
 
     public HashBuilderOperator(
             OperatorContext operatorContext,
@@ -154,6 +154,9 @@ public class HashBuilderOperator
 
         this.hashChannels = hashChannels;
         this.preComputedHashChannel = preComputedHashChannel;
+
+        this.hashCollisionsCounter = new HashCollisionsCounter(operatorContext);
+        operatorContext.setInfoSupplier(hashCollisionsCounter);
     }
 
     @Override
@@ -176,10 +179,9 @@ public class HashBuilderOperator
         }
         finishing = true;
 
-        Supplier<LookupSource> partition = index.createLookupSourceSupplier(operatorContext.getSession(), hashChannels, preComputedHashChannel, filterFunctionFactory);
+        LookupSourceSupplier partition = index.createLookupSourceSupplier(operatorContext.getSession(), hashChannels, preComputedHashChannel, filterFunctionFactory);
         lookupSourceFactory.setPartitionLookupSourceSupplier(partitionIndex, partition);
-
-        operatorContext.setMemoryReservation(partition.get().getInMemorySizeInBytes());
+        hashCollisionsCounter.recordHashCollision(partition.getHashCollisions(), partition.getExpectedHashCollisions());
     }
 
     @Override
