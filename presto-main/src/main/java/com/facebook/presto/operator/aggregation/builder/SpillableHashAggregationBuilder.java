@@ -15,6 +15,7 @@ package com.facebook.presto.operator.aggregation.builder;
 
 import com.facebook.presto.memory.AbstractAggregatedMemoryContext;
 import com.facebook.presto.memory.LocalMemoryContext;
+import com.facebook.presto.operator.HashCollisionsCounter;
 import com.facebook.presto.operator.MergeHashSort;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
@@ -58,6 +59,9 @@ public class SpillableHashAggregationBuilder
     private final LocalMemoryContext memoryContext;
     // todo get rid of that and only use revocable memory
     private long emptyHashAggregationBuilderSize = 0;
+
+    private long hashCollisions;
+    private double expectedHashCollisions;
 
     public SpillableHashAggregationBuilder(
             List<AccumulatorFactory> accumulatorFactories,
@@ -111,6 +115,13 @@ public class SpillableHashAggregationBuilder
         // Read only version of GroupByHash from hashAggregationBuilder could be compacted by dropping
         // most of it's field, freeing up some memory that could be used for sorting.
         return hashAggregationBuilder.getSizeInMemory() + hashAggregationBuilder.getGroupIdsSortingSize();
+    }
+
+    public void recordHashCollisions(HashCollisionsCounter hashCollisionsCounter)
+    {
+        hashCollisionsCounter.recordHashCollision(hashCollisions, expectedHashCollisions);
+        hashCollisions = 0;
+        expectedHashCollisions = 0;
     }
 
     @Override
@@ -260,6 +271,11 @@ public class SpillableHashAggregationBuilder
 
     private void rebuildHashAggregationBuilder()
     {
+        if (hashAggregationBuilder != null) {
+            hashCollisions += hashAggregationBuilder.getHashCollisions();
+            expectedHashCollisions += hashAggregationBuilder.getExpectedHashCollisions();
+        }
+
         this.hashAggregationBuilder = new InMemoryHashAggregationBuilder(
                 accumulatorFactories,
                 step,

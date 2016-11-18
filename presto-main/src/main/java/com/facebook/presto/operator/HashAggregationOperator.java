@@ -100,7 +100,8 @@ public class HashAggregationOperator
                     false,
                     new DataSize(0, MEGABYTE),
                     new DataSize(0, MEGABYTE),
-                    new SpillerFactory() {
+                    new SpillerFactory()
+                    {
                         @Override
                         public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier, AggregatedMemoryContext memoryContext)
                         {
@@ -253,6 +254,7 @@ public class HashAggregationOperator
     private final SpillerFactory spillerFactory;
 
     private final List<Type> types;
+    private final HashCollisionsCounter hashCollisionsCounter;
 
     private HashAggregationBuilder aggregationBuilder;
     private Iterator<Page> outputIterator;
@@ -295,6 +297,8 @@ public class HashAggregationOperator
         this.memoryLimitForMerge = requireNonNull(memoryLimitForMerge, "memoryLimitForMerge is null");
         this.memoryLimitForMergeWithMemory = requireNonNull(memoryLimitForMergeWithMemory, "memoryLimitForMergeWithMemory is null");
         this.spillerFactory = requireNonNull(spillerFactory, "spillerFactory is null");
+        this.hashCollisionsCounter = new HashCollisionsCounter(operatorContext);
+        operatorContext.setInfoSupplier(hashCollisionsCounter);
     }
 
     @Override
@@ -449,6 +453,7 @@ public class HashAggregationOperator
     {
         outputIterator = null;
         if (aggregationBuilder != null) {
+            aggregationBuilder.recordHashCollisions(hashCollisionsCounter);
             aggregationBuilder.close();
             aggregationBuilder = null;
         }
