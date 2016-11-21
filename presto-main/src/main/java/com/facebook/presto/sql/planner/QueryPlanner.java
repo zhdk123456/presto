@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.BooleanType.BOOLEAN;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
+import static com.facebook.presto.sql.planner.plan.GroupIdNode.GROUPID_SYMBOL_HINT;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -442,7 +443,8 @@ class QueryPlanner
         // 2.c. Generate GroupIdNode (multiple grouping sets) or ProjectNode (single grouping set)
         Optional<Symbol> groupIdSymbol = Optional.empty();
         if (groupingSets.size() > 1) {
-            groupIdSymbol = Optional.of(symbolAllocator.newSymbol("groupId", BIGINT));
+            groupIdSymbol = Optional.of(symbolAllocator.newSymbol(GROUPID_SYMBOL_HINT, BIGINT));
+            analysis.addGroupIdSymbol(node, groupIdSymbol.get());
             GroupIdNode groupId = new GroupIdNode(idAllocator.getNextId(), subPlan.getRoot(), groupingSymbols, groupingSetMappings, argumentMappings, groupIdSymbol.get());
             subPlan = new PlanBuilder(groupingTranslations, groupId, analysis.getParameters());
         }

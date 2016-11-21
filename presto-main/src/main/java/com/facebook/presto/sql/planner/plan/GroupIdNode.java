@@ -48,6 +48,7 @@ public class GroupIdNode
     private final Map<Symbol, Symbol> argumentMappings;
 
     private final Symbol groupIdSymbol;
+    public static final String GROUPID_SYMBOL_HINT = "groupid";
 
     @JsonCreator
     public GroupIdNode(@JsonProperty("id") PlanNodeId id,
