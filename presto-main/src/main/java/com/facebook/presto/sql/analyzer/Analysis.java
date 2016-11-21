@@ -18,6 +18,7 @@ import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.metadata.TableHandle;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.tree.DefaultTraversalVisitor;
 import com.facebook.presto.sql.tree.ExistsPredicate;
 import com.facebook.presto.sql.tree.Expression;
@@ -91,6 +92,8 @@ public class Analysis
     private final IdentityMap<Field, ColumnHandle> columns = new IdentityMap<>(LinkedHashMap::new);
 
     private final IdentityMap<SampledRelation, Double> sampleRatios = new IdentityMap<>(LinkedHashMap::new);
+
+    private final IdentityMap<QuerySpecification, Symbol> groupIdSymbols = new IdentityMap<>(LinkedHashMap::new);
 
     // for create table
     private Optional<QualifiedObjectName> createTableDestination = Optional.empty();
@@ -522,6 +525,16 @@ public class Analysis
     public boolean isDescribe()
     {
         return isDescribe;
+    }
+
+    public void addGroupIdSymbol(QuerySpecification node, Symbol groupIdSymbol)
+    {
+        this.groupIdSymbols.put(node, groupIdSymbol);
+    }
+
+    public Optional<Symbol> getGroupIdSymbol(QuerySpecification querySpecification)
+    {
+        return Optional.ofNullable(this.groupIdSymbols.get(querySpecification));
     }
 
     @Immutable
