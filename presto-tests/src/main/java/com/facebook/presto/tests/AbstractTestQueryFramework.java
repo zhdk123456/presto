@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.Listeners;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +48,7 @@ import static java.util.Collections.emptyList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
+@Listeners({TestLoggingListener.class})
 public abstract class AbstractTestQueryFramework
 {
     protected final H2QueryRunner h2QueryRunner;
