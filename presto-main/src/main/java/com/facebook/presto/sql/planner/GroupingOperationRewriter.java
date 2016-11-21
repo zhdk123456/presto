@@ -33,7 +33,6 @@ import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.QuerySpecification;
 import com.facebook.presto.sql.tree.Rollup;
 import com.facebook.presto.sql.tree.SortItem;
-import com.facebook.presto.sql.tree.SymbolReference;
 import com.facebook.presto.type.ListLiteralType;
 import com.google.common.collect.ImmutableList;
 
@@ -184,7 +183,8 @@ public class GroupingOperationRewriter
             firstArgument = new LongLiteral("0");
         }
         else {
-            firstArgument = new SymbolReference("groupid");
+            checkState(analysis.getGroupIdSymbol(node).isPresent(), "groupId symbol for QuerySpecification node is missing");
+            firstArgument = analysis.getGroupIdSymbol(node).get().toSymbolReference();
         }
 
         List<Expression> arguments = Arrays.asList(

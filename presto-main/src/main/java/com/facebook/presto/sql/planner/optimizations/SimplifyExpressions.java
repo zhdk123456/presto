@@ -56,6 +56,7 @@ import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROU
 import static com.facebook.presto.sql.ExpressionUtils.combinePredicates;
 import static com.facebook.presto.sql.ExpressionUtils.extractPredicates;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.getExpressionTypes;
+import static com.facebook.presto.sql.planner.plan.GroupIdNode.GROUPID_SYMBOL_HINT;
 import static com.facebook.presto.sql.tree.BooleanLiteral.FALSE_LITERAL;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
 import static com.facebook.presto.sql.tree.ComparisonExpressionType.IS_DISTINCT_FROM;
@@ -291,7 +292,7 @@ public class SimplifyExpressions
         public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
         {
             // A grouping() is preceded by a GroupId node when the source node is projecting a groupid symbol
-            if (!source.getOutputSymbols().contains(new Symbol("groupid")) && node.getName().toString().equals(GROUPING)) {
+            if (!source.getOutputSymbols().stream().anyMatch(symbol -> symbol.getName().contains(GROUPID_SYMBOL_HINT)) && node.getName().toString().equals(GROUPING)) {
                 // No GroupIdNode and a GROUPING() operation imply a single grouping, which
                 // means that any columns specified as arguments to GROUPING() will be included
                 // in the group and none of them will be aggregated over. Hence, re-write the
