@@ -82,63 +82,54 @@ public class TestLocalQueriesDeterministic
 
     @Override
     protected void assertQuery(@Language("SQL") String sql)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(sql);
     }
 
     @Override
     protected void assertQuery(Session session, @Language("SQL") String sql)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(sql);
     }
 
     @Override
     public void assertQueryOrdered(@Language("SQL") String sql)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(sql);
     }
 
     @Override
     protected void assertQuery(@Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
 
     @Override
     protected void assertQuery(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
 
     @Override
     protected void assertQueryOrdered(@Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
 
     @Override
     protected void assertQueryOrdered(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
 
     @Override
     protected void assertUpdate(@Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
 
     @Override
     protected void assertUpdate(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
-            throws Exception
     {
         determinismChecker.checkPlanIsDeterministic(actual);
     }
@@ -181,25 +172,21 @@ public class TestLocalQueriesDeterministic
 
     @Override
     protected void assertAccessAllowed(@Language("SQL") String sql, TestingAccessControlManager.TestingPrivilege... deniedPrivileges)
-            throws Exception
     {
     }
 
     @Override
     protected void assertAccessAllowed(Session session, @Language("SQL") String sql, TestingAccessControlManager.TestingPrivilege... deniedPrivileges)
-            throws Exception
     {
     }
 
     @Override
     protected void assertAccessDenied(@Language("SQL") String sql, @Language("RegExp") String exceptionsMessageRegExp, TestingAccessControlManager.TestingPrivilege... deniedPrivileges)
-            throws Exception
     {
     }
 
     @Override
     protected void assertAccessDenied(Session session, @Language("SQL") String sql, @Language("RegExp") String exceptionsMessageRegExp, TestingAccessControlManager.TestingPrivilege... deniedPrivileges)
-            throws Exception
     {
     }
 
@@ -259,31 +246,26 @@ public class TestLocalQueriesDeterministic
 
     @Override
     public void testExecute()
-            throws Exception
     {
     }
 
     @Override
     public void testExecuteUsing()
-            throws Exception
     {
     }
 
     @Override
     public void testExecuteUsingWithSubquery()
-            throws Exception
     {
     }
 
     @Override
     public void testExecuteUsingWithSubqueryInJoin()
-            throws Exception
     {
     }
 
     @Override
     public void testExecuteWithParametersInGroupBy()
-            throws Exception
     {
     }
 
