@@ -118,6 +118,7 @@ import com.google.inject.TypeLiteral;
 import io.airlift.concurrent.BoundedExecutor;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.slice.Slice;
 import io.airlift.stats.PauseMeter;
@@ -180,6 +181,12 @@ public class ServerMainModule
                 throw new UnsupportedOperationException();
             }));
         }
+
+        InternalCommunicationConfig internalCommunicationConfig = buildConfigObject(InternalCommunicationConfig.class);
+        configBinder(binder).bindConfigGlobalDefaults(HttpClientConfig.class, config -> {
+            config.setKeyStorePath(internalCommunicationConfig.getKeyStorePath());
+            config.setKeyStorePassword(internalCommunicationConfig.getKeyStorePassword());
+        });
 
         configBinder(binder).bindConfig(FeaturesConfig.class);
 
