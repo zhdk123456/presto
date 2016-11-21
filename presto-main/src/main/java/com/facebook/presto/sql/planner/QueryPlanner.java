@@ -448,6 +448,7 @@ class QueryPlanner
         Optional<Symbol> groupIdSymbol = Optional.empty();
         if (groupingSets.size() > 1) {
             groupIdSymbol = Optional.of(symbolAllocator.newSymbol("groupId", BIGINT));
+            analysis.addGroupIdSymbol(node, groupIdSymbol.get());
             GroupIdNode groupId = new GroupIdNode(idAllocator.getNextId(), subPlan.getRoot(), groupingSymbols, groupingSetMappings, argumentMappings, groupIdSymbol.get());
             subPlan = new PlanBuilder(groupingTranslations, groupId, analysis.getParameters());
         }
