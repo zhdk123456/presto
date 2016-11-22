@@ -68,12 +68,12 @@ cross_sales AS
      AND hd1.hd_income_band_sk = ib1.ib_income_band_sk
      AND hd2.hd_income_band_sk = ib2.ib_income_band_sk
      AND cd1.cd_marital_status <> cd2.cd_marital_status
-     AND i_color IN ('purple                ',
-                     'burlywood             ',
-                     'indian                ',
-                     'spring                ',
-                     'floral                ',
-                     'medium                ')
+     AND i_color IN ('purple              ',
+                     'burlywood           ',
+                     'indian              ',
+                     'spring              ',
+                     'floral              ',
+                     'medium              ')
      AND i_current_price BETWEEN 64 AND 64 + 10
      AND i_current_price BETWEEN 64 + 1 AND 64 + 15
    GROUP BY i_product_name,
