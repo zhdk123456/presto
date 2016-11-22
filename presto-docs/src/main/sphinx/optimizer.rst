@@ -8,3 +8,4 @@ Query Optimizer
     optimizer/statistics
     optimizer/cost-in-explain
     optimizer/join-distribution-type
+    optimizer/reorder-joins
