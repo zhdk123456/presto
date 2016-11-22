@@ -23,7 +23,6 @@ import com.facebook.presto.execution.scheduler.NodeScheduler;
 import com.facebook.presto.execution.scheduler.SqlQueryScheduler;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.metadata.QualifiedObjectName;
 import com.facebook.presto.metadata.TableHandle;
 import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.spi.PrestoException;
@@ -51,7 +50,6 @@ import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.concurrent.SetThreadName;
 import io.airlift.units.Duration;
 
@@ -59,16 +57,15 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.facebook.presto.OutputBuffers.BROADCAST_PARTITION_ID;
 import static com.facebook.presto.OutputBuffers.createInitialEmptyOutputBuffers;
-import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -104,7 +101,7 @@ public final class SqlQueryExecution
     private final ExecutionPolicy executionPolicy;
     private final List<Expression> parameters;
 
-    private Set<String> connectors;
+    private Collection<TableHandle> tableHandles;
 
     public SqlQueryExecution(QueryId queryId,
             String query,
@@ -254,8 +251,9 @@ public final class SqlQueryExecution
                 SqlQueryScheduler scheduler = queryScheduler.get();
 
                 if (!stateMachine.isDone()) {
-                    checkState(connectors != null, "Analysis must happen before query starts");
-                    metadata.beginQuery(getSession(), connectors);
+                    checkState(tableHandles != null, "Analysis must happen before query starts");
+                    metadata.beginQuery(getSession(), tableHandles);
+
                     scheduler.start();
                 }
             }
@@ -293,7 +291,7 @@ public final class SqlQueryExecution
         Analyzer analyzer = new Analyzer(stateMachine.getSession(), metadata, sqlParser, accessControl, Optional.of(queryExplainer), experimentalSyntaxEnabled, parameters);
         Analysis analysis = analyzer.analyze(statement);
 
-        connectors = extractConnectors(analysis);
+        tableHandles = extractTableHandles(analysis);
 
         stateMachine.setUpdateType(analysis.getUpdateType());
 
@@ -320,28 +318,16 @@ public final class SqlQueryExecution
         return new PlanRoot(subplan, !explainAnalyze);
     }
 
-    private Set<String> extractConnectors(Analysis analysis)
+    private static List<TableHandle> extractTableHandles(Analysis analysis)
     {
-        ImmutableSet.Builder<String> connectors = ImmutableSet.builder();
-
-        Optional<QualifiedObjectName> createTableDestination = analysis.getCreateTableDestination();
-        if (createTableDestination.isPresent()) {
-            String catalogName = createTableDestination.get().getCatalogName();
-            String connectorId = Optional.ofNullable(metadata.getCatalogNames().get(catalogName))
-                    .orElseThrow(() -> new PrestoException(NOT_FOUND, "Catalog does not exist: " + catalogName));
-            connectors.add(connectorId);
-        }
-
-        for (TableHandle tableHandle : analysis.getTableHandles()) {
-            connectors.add(tableHandle.getConnectorId());
-        }
+        ImmutableList.Builder<TableHandle> builder = ImmutableList.builder();
+        builder.addAll(analysis.getTableHandles());
 
         if (analysis.getInsert().isPresent()) {
-            TableHandle target = analysis.getInsert().get().getTarget();
-            connectors.add(target.getConnectorId());
+            builder.add(analysis.getInsert().get().getTarget());
         }
 
-        return connectors.build();
+        return builder.build();
     }
 
     private void planDistribution(PlanRoot plan)
