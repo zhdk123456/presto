@@ -183,5 +183,12 @@ Release 0.152.1-t.0.3
 
 The following has been added to 0.152.1-t.0.3:
 
-* Enable Presto 0.152.1-t to be used with QueryGrid 2.0
 * Allow empty partitions for clustered hive tables
+
+=====================
+Release 0.152.1-t.0.4
+=====================
+
+The following has been added to 0.152.1-t.0.4:
+
+* Enable Presto 0.152.1-t to be used with QueryGrid 2.0
