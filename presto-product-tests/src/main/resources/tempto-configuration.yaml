@@ -35,7 +35,7 @@ databases:
   presto_tpcds:
     host: localhost
     jdbc_driver_class: com.facebook.presto.jdbc.PrestoDriver
-    jdbc_url: jdbc:presto://${databases.presto.server_address}/hive/tpcds
+    jdbc_url: jdbc:presto://${databases.presto.host}:8080/hive/tpcds
     jdbc_user: hdfs
     jdbc_password: na
     jdbc_pooling: false
