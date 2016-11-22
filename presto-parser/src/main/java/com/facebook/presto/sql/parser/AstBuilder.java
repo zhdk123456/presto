@@ -823,14 +823,7 @@ class AstBuilder
     @Override
     public Node visitShowGrants(SqlBaseParser.ShowGrantsContext context)
     {
-        Optional<ShowGrants.IdentityType> identityType = Optional.empty();
-        Optional<String> identity = Optional.empty();
         Optional<QualifiedName> tableName = Optional.empty();
-
-        if (context.USER() != null) {
-            identityType = Optional.of(ShowGrants.IdentityType.USER);
-            identity = Optional.of(context.identifier().getText());
-        }
 
         if (context.ALL() == null) {
             tableName = Optional.of(getQualifiedName(context.qualifiedName()));
@@ -838,8 +831,6 @@ class AstBuilder
 
         return new ShowGrants(
                 getLocation(context),
-                identityType,
-                identity,
                 context.TABLE() != null,
                 tableName,
                 context.ALL() != null);

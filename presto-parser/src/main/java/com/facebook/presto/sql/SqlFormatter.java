@@ -1067,16 +1067,6 @@ public final class SqlFormatter
         public Void visitShowGrants(ShowGrants node, Integer indent)
         {
             builder.append("SHOW GRANTS ");
-            if (node.getIdentityType().isPresent()) {
-                if (node.getIdentityType().get() == ShowGrants.IdentityType.USER) {
-                    builder.append("USER ")
-                            .append(node.getIdentity().get())
-                            .append(" ");
-                }
-                else {
-                    throw new UnsupportedOperationException("unhandled identity : " + node.getIdentityType());
-                }
-            }
 
             builder.append("ON ");
             if (node.getAll()) {

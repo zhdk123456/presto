@@ -22,48 +22,28 @@ import static java.util.Objects.requireNonNull;
 public class ShowGrants
     extends Statement
 {
-    public enum IdentityType
-    {
-        USER, ROLE;
-    }
-
-    private final Optional<IdentityType> identityType;
-    private final Optional<String> identity;
     private final boolean table;
     private final Optional<QualifiedName> tableName;
     private final boolean all;
 
-    public ShowGrants(Optional<IdentityType> identityType, Optional<String> identity, boolean table, Optional<QualifiedName> tableName, boolean all)
+    public ShowGrants(boolean table, Optional<QualifiedName> tableName, boolean all)
     {
-        this(Optional.empty(), identityType, identity, table, tableName, all);
+        this(Optional.empty(), table, tableName, all);
     }
 
-    public ShowGrants(NodeLocation location, Optional<IdentityType> identityType, Optional<String> identity, boolean table, Optional<QualifiedName> tableName, boolean all)
+    public ShowGrants(NodeLocation location, boolean table, Optional<QualifiedName> tableName, boolean all)
     {
-        this(Optional.of(location), identityType, identity, table, tableName, all);
+        this(Optional.of(location), table, tableName, all);
     }
 
-    public ShowGrants(Optional<NodeLocation> location, Optional<IdentityType> identityType, Optional<String> identity, boolean table, Optional<QualifiedName> tableName, boolean all)
+    public ShowGrants(Optional<NodeLocation> location, boolean table, Optional<QualifiedName> tableName, boolean all)
     {
         super(location);
-        requireNonNull(identity, "identity is null");
         requireNonNull(tableName, "tableName is null");
 
-        this.identityType = identityType;
         this.table = table;
         this.tableName = tableName;
-        this.identity = identity;
         this.all = all;
-    }
-
-    public Optional<IdentityType> getIdentityType()
-    {
-        return identityType;
-    }
-
-    public Optional<String> getIdentity()
-    {
-        return identity;
     }
 
     public boolean getAll()
@@ -90,7 +70,7 @@ public class ShowGrants
     @Override
     public int hashCode()
     {
-        return Objects.hash(identityType, identity, table, tableName, all);
+        return Objects.hash(table, tableName, all);
     }
 
     @Override
@@ -103,9 +83,7 @@ public class ShowGrants
             return false;
         }
         ShowGrants o = (ShowGrants) obj;
-        return Objects.equals(identityType, o.identityType) &&
-                Objects.equals(identity, o.identity) &&
-                Objects.equals(table, o.table) &&
+        return Objects.equals(table, o.table) &&
                 Objects.equals(tableName, o.tableName) &&
                 Objects.equals(all, o.all);
     }
@@ -114,8 +92,6 @@ public class ShowGrants
     public String toString()
     {
         return toStringHelper(this)
-                .add("identityType", identityType)
-                .add("identity", identity)
                 .add("table", table)
                 .add("tableName", tableName)
                 .add("all", all)
