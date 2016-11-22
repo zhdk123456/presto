@@ -41,7 +41,7 @@ public class DropView
         this.exists = exists;
     }
 
-    public QualifiedName getQualifiedName()
+    public QualifiedName getName()
     {
         return name;
     }

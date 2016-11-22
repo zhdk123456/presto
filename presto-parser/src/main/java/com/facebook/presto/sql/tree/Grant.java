@@ -61,7 +61,7 @@ public class Grant
         return table;
     }
 
-    public QualifiedName getQualifiedName()
+    public QualifiedName getTableName()
     {
         return tableName;
     }

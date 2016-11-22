@@ -71,14 +71,14 @@ public class CreateViewTask
     @Override
     public String explain(CreateView statement, List<Expression> parameters)
     {
-        return "CREATE VIEW " + statement.getQualifiedName();
+        return "CREATE VIEW " + statement.getName();
     }
 
     @Override
     public CompletableFuture<?> execute(CreateView statement, TransactionManager transactionManager, Metadata metadata, AccessControl accessControl, QueryStateMachine stateMachine, List<Expression> parameters)
     {
         Session session = stateMachine.getSession();
-        QualifiedObjectName name = createQualifiedObjectName(session, statement, statement.getQualifiedName());
+        QualifiedObjectName name = createQualifiedObjectName(session, statement, statement.getName());
 
         accessControl.checkCanCreateView(session.getRequiredTransactionId(), session.getIdentity(), name);
 

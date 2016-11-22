@@ -66,7 +66,7 @@ public class Revoke
         return table;
     }
 
-    public QualifiedName getQualifiedName()
+    public QualifiedName getTableName()
     {
         return tableName;
     }

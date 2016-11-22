@@ -42,11 +42,6 @@ public final class RenameTable
         this.target = requireNonNull(target, "target name is null");
     }
 
-    public QualifiedName getQualifiedName()
-    {
-        return getSource();
-    }
-
     public QualifiedName getSource()
     {
         return source;

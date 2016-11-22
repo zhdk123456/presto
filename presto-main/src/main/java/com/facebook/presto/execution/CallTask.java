@@ -71,7 +71,7 @@ public class CallTask
         }
 
         Session session = stateMachine.getSession();
-        QualifiedObjectName procedureName = createQualifiedObjectName(session, call, call.getQualifiedName());
+        QualifiedObjectName procedureName = createQualifiedObjectName(session, call, call.getName());
         Procedure procedure = metadata.getProcedureRegistry().resolve(procedureName);
 
         // map declared argument names to positions

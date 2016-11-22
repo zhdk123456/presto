@@ -54,7 +54,7 @@ public class CreateTableTask
     @Override
     public String explain(CreateTable statement, List<Expression> parameters)
     {
-        return "CREATE TABLE " + statement.getQualifiedName();
+        return "CREATE TABLE " + statement.getName();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class CreateTableTask
         checkArgument(!statement.getElements().isEmpty(), "no columns for table");
 
         Session session = stateMachine.getSession();
-        QualifiedObjectName tableName = createQualifiedObjectName(session, statement, statement.getQualifiedName());
+        QualifiedObjectName tableName = createQualifiedObjectName(session, statement, statement.getName());
         Optional<TableHandle> tableHandle = metadata.getTableHandle(session, tableName);
         if (tableHandle.isPresent()) {
             if (!statement.isNotExists()) {

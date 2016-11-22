@@ -44,7 +44,7 @@ public class RenameColumn
         this.target = requireNonNull(target, "target is null");
     }
 
-    public QualifiedName getQualifiedName()
+    public QualifiedName getTable()
     {
         return table;
     }
