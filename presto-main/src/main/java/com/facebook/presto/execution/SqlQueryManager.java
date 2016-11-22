@@ -19,7 +19,6 @@ import com.facebook.presto.event.query.QueryMonitor;
 import com.facebook.presto.execution.QueryExecution.QueryExecutionFactory;
 import com.facebook.presto.execution.SqlQueryExecution.SqlQueryExecutionFactory;
 import com.facebook.presto.memory.ClusterMemoryManager;
-import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.sql.analyzer.SemanticException;
 import com.facebook.presto.sql.parser.ParsingException;
@@ -104,7 +103,6 @@ public class SqlQueryManager
     private final QueryMonitor queryMonitor;
     private final LocationFactory locationFactory;
 
-    private final Metadata metadata;
     private final TransactionManager transactionManager;
 
     private final Map<Class<? extends Statement>, QueryExecutionFactory<?>> executionFactories;
@@ -120,8 +118,7 @@ public class SqlQueryManager
             ClusterMemoryManager memoryManager,
             LocationFactory locationFactory,
             TransactionManager transactionManager,
-            Map<Class<? extends Statement>, QueryExecutionFactory<?>> executionFactories,
-            Metadata metadata)
+            Map<Class<? extends Statement>, QueryExecutionFactory<?>> executionFactories)
     {
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
 
@@ -138,7 +135,6 @@ public class SqlQueryManager
         this.locationFactory = requireNonNull(locationFactory, "locationFactory is null");
 
         this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
-        this.metadata = requireNonNull(metadata, "transactionManager is null");
 
         this.minQueryExpireAge = config.getMinQueryExpireAge();
         this.maxQueryHistory = config.getMaxQueryHistory();
@@ -312,7 +308,7 @@ public class SqlQueryManager
             // This is intentionally not a method, since after the state change listener is registered
             // it's not safe to do any of this, and we had bugs before where people reused this code in a method
             URI self = locationFactory.createQueryLocation(queryId);
-            QueryExecution execution = new FailedQueryExecution(queryId, query, session, self, transactionManager, queryExecutor, metadata, e);
+            QueryExecution execution = new FailedQueryExecution(queryId, query, session, self, transactionManager, queryExecutor, e);
 
             QueryInfo queryInfo = null;
             try {
