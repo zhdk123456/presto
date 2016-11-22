@@ -1076,7 +1076,7 @@ public class TestSqlParser
                 "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
                 "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
                 "a, a) FROM foo";
-        assertInvalidStatement(query, "more than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type");
+        assertInvalidStatement(query, "More than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type.");
     }
 
     @Test

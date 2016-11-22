@@ -32,7 +32,7 @@ public class GroupingOperation
         super(location);
         requireNonNull(groupingColumns);
         checkArgument(!groupingColumns.isEmpty(), "grouping operation columns cannot be empty");
-        if (groupingColumns.size() <= 63) {
+        if (groupingColumns.size() > 63) {
             throw new IllegalArgumentException("More than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type.");
         }
         this.groupingColumns = ImmutableList.copyOf(groupingColumns);
