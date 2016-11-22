@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 public class AddColumn
         extends DataDefinitionStatement
-        implements CatalogRelatedStatement
 {
     private final QualifiedName name;
     private final TableElement column;
@@ -43,7 +42,6 @@ public class AddColumn
         this.column = requireNonNull(column, "column is null");
     }
 
-    @Override
     public QualifiedName getQualifiedName()
     {
         return name;

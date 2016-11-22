@@ -20,7 +20,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 
 public class DropView
         extends DataDefinitionStatement
-        implements CatalogRelatedStatement
 {
     private final QualifiedName name;
     private final boolean exists;
@@ -42,7 +41,6 @@ public class DropView
         this.exists = exists;
     }
 
-    @Override
     public QualifiedName getQualifiedName()
     {
         return name;
