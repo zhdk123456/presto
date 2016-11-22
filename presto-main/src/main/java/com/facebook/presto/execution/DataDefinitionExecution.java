@@ -68,6 +68,14 @@ public class DataDefinitionExecution<T extends Statement>
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.stateMachine = requireNonNull(stateMachine, "stateMachine is null");
         this.parameters = parameters;
+
+        stateMachine.addStateChangeListener(state -> {
+            if (statement instanceof CatalogRelatedStatement) {
+                if (state.isDone()) {
+                    notifyEndQuery();
+                }
+            }
+        });
     }
 
     private void notifyBeginQuery(Node node, CatalogRelatedStatement statement)
@@ -129,22 +137,11 @@ public class DataDefinitionExecution<T extends Statement>
 
             CompletableFuture<?> future = task.execute(statement, transactionManager, metadata, accessControl, stateMachine, parameters);
             future.whenComplete((o, throwable) -> {
-                Throwable failure = throwable;
-                if (statement instanceof CatalogRelatedStatement) {
-                    try {
-                        notifyEndQuery();
-                    }
-                    catch (Throwable t) {
-                        if (failure == null) {
-                            failure = t;
-                        }
-                    }
-                }
-                if (failure == null) {
+                if (throwable == null) {
                     stateMachine.transitionToFinishing();
                 }
                 else {
-                    fail(failure);
+                    fail(throwable);
                 }
             });
         }
