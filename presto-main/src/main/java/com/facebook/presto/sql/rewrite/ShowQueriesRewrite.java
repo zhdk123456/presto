@@ -89,7 +89,6 @@ import static com.facebook.presto.metadata.MetadataUtil.createCatalogSchemaName;
 import static com.facebook.presto.metadata.MetadataUtil.createQualifiedName;
 import static com.facebook.presto.metadata.MetadataUtil.createQualifiedObjectName;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_TABLE_PROPERTY;
-import static com.facebook.presto.spi.security.AccessDeniedException.denyShowGrants;
 import static com.facebook.presto.sql.QueryUtil.aliased;
 import static com.facebook.presto.sql.QueryUtil.aliasedName;
 import static com.facebook.presto.sql.QueryUtil.aliasedNullToEmpty;
@@ -199,12 +198,7 @@ final class ShowQueriesRewrite
         protected Node visitShowGrants(ShowGrants showGrant, Void context)
         {
             String catalogName = session.getCatalog().orElse(null);
-            Expression predicate = equal(nameReference("grantee"), new StringLiteral(session.getUser()));
-
-            Optional<String> identity = showGrant.getIdentity();
-            if (identity.isPresent() && !identity.get().equals(session.getUser())) {
-                denyShowGrants(identity.get());
-            }
+            Optional<Expression> predicate = Optional.empty();
 
             Optional<QualifiedName> tableName = showGrant.getTableName();
             if (tableName.isPresent()) {
@@ -212,8 +206,7 @@ final class ShowQueriesRewrite
 
                 catalogName = qualifiedTableName.getCatalogName();
 
-                Expression tablePredicate = equal(nameReference("table_name"), new StringLiteral(qualifiedTableName.getObjectName()));
-                predicate = logicalAnd(predicate, tablePredicate);
+                predicate = Optional.of(equal(nameReference("table_name"), new StringLiteral(qualifiedTableName.getObjectName())));
             }
 
             if (catalogName == null) {
