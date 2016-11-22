@@ -229,11 +229,6 @@ public interface ConnectorMetadata
     }
 
     /**
-     * Start a SELECT/UPDATE/INSERT/DELETE query. This notification is triggered after the planning phase completes.
-     */
-    default void beginQuery(ConnectorSession session) {}
-
-    /**
      * Begin insert query
      */
     default ConnectorInsertTableHandle beginInsert(ConnectorSession session, ConnectorTableHandle tableHandle)

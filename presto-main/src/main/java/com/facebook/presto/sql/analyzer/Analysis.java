@@ -42,7 +42,6 @@ import com.google.common.collect.ListMultimap;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -389,11 +388,6 @@ public class Analysis
     public TableHandle getTableHandle(Table table)
     {
         return tables.get(table);
-    }
-
-    public Collection<TableHandle> getTableHandles()
-    {
-        return tables.values();
     }
 
     public void registerTable(Table table, TableHandle handle)

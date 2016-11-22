@@ -23,7 +23,6 @@ import com.facebook.presto.execution.scheduler.NodeScheduler;
 import com.facebook.presto.execution.scheduler.SqlQueryScheduler;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.metadata.TableHandle;
 import com.facebook.presto.security.AccessControl;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.split.SplitManager;
@@ -57,7 +56,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,7 +66,6 @@ import static com.facebook.presto.OutputBuffers.BROADCAST_PARTITION_ID;
 import static com.facebook.presto.OutputBuffers.createInitialEmptyOutputBuffers;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -100,8 +97,6 @@ public final class SqlQueryExecution
     private final NodeTaskMap nodeTaskMap;
     private final ExecutionPolicy executionPolicy;
     private final List<Expression> parameters;
-
-    private Collection<TableHandle> tableHandles;
 
     public SqlQueryExecution(QueryId queryId,
             String query,
@@ -245,9 +240,6 @@ public final class SqlQueryExecution
                 SqlQueryScheduler scheduler = queryScheduler.get();
 
                 if (!stateMachine.isDone()) {
-                    checkState(tableHandles != null, "Analysis must happen before query starts");
-                    metadata.beginQuery(getSession(), tableHandles);
-
                     scheduler.start();
                 }
             }
@@ -285,8 +277,6 @@ public final class SqlQueryExecution
         Analyzer analyzer = new Analyzer(stateMachine.getSession(), metadata, sqlParser, accessControl, Optional.of(queryExplainer), experimentalSyntaxEnabled, parameters);
         Analysis analysis = analyzer.analyze(statement);
 
-        tableHandles = extractTableHandles(analysis);
-
         stateMachine.setUpdateType(analysis.getUpdateType());
 
         // plan query
@@ -310,18 +300,6 @@ public final class SqlQueryExecution
 
         boolean explainAnalyze = analysis.getStatement() instanceof Explain && ((Explain) analysis.getStatement()).isAnalyze();
         return new PlanRoot(subplan, !explainAnalyze);
-    }
-
-    private static List<TableHandle> extractTableHandles(Analysis analysis)
-    {
-        ImmutableList.Builder<TableHandle> builder = ImmutableList.builder();
-        builder.addAll(analysis.getTableHandles());
-
-        if (analysis.getInsert().isPresent()) {
-            builder.add(analysis.getInsert().get().getTarget());
-        }
-
-        return builder.build();
     }
 
     private void planDistribution(PlanRoot plan)
