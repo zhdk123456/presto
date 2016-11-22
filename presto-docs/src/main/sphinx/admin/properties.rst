@@ -43,6 +43,59 @@ General properties
  * **Description:** Buffer size for IO writes while collecting pipeline results from cluster node. Increasing this value may improve the speed of IO operations, but will take memory away from other functions. Buffered data will be lost if the node crashes, so using a large value is not recommended when the environment is unstable.
 
 
+.. _tuning-spilling:
+
+Properties controlling spilling
+-------------------------------
+
+``experimental.spill-enabled``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``Boolean``
+ * **Default value:** ``false``
+ * **Description:** Enable :ref:`spilling <spilling-toggle>`. This config property can be overridden by the ``spill_enabled`` session property.
+
+
+``experimental.spiller-spill-path``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``String``
+ * **Default value:** ``java.io.tmpdir/presto/spills``
+ * **Description:** Directory where spilled content will be written. It can be a comma separated list to spill in round robin fashion into multiple directories.
+
+
+``experimental.spiller-minimum-free-space-threshold``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``Double``
+ * **Default value:** ``0.9``
+ * **Description:** If disk space usage of a given spill path is above this threshold, this spill path will not be eligible for spilling.
+
+
+``experimental.spiller-threads``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``Integer``
+ * **Default value:** ``4``
+ * **Description:** Number of spiller threads. Increase this value if the default is not able to saturate the underlying spilling device (for example, when using a RAID matrix with multiple disks)
+
+
+``experimental.max-spill-per-node``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``String`` (data size)
+ * **Default value:** ``100 GB``
+ * **Description:** Max spill space to be used by all queries on a single node.
+
+
+``experimental.query-max-spill-per-node``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``String`` (data size)
+ * **Default value:** ``100 GB``
+ * **Description:** Max spill space to be used by a single query on a single node.
+
+
 .. _tuning-pref-exchange:
 
 Exchange properties
