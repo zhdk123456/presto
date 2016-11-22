@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- fails with: $operator$MULTIPLY(double,decimal(7,2)):double not found
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT asceding.rnk,
        i1.i_product_name best_performing,
        i2.i_product_name worst_performing
