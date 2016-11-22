@@ -31,7 +31,7 @@ public class GroupingOperationAnalyzer
     {
         Extractor extractor = new Extractor();
         extractor.process(expression, null);
-        return extractor.containsGroupingOperations();
+        return extractor.containsGroupingOperation();
     }
 
     public static class Extractor
@@ -50,7 +50,7 @@ public class GroupingOperationAnalyzer
             return null;
         }
 
-        public boolean containsGroupingOperations()
+        public boolean containsGroupingOperation()
         {
             return !groupingOperationBuilder.build().isEmpty();
         }

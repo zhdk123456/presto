@@ -54,7 +54,8 @@ public final class GroupingOperationFunction
      *        means the the 0th list contains the set of columns that are present in
      *        the 0th grouping.
      * @return A bit set converted to decimal indicating which columns are present in
-     *         the grouping.
+     *         the grouping. If a column is NOT present in the grouping its corresponding
+     *         bit is set to 1 and to 0 if the column is present in the grouping.
      *
      */
     @ScalarFunction(deterministic = false)

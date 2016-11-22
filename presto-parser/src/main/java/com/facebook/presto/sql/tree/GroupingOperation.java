@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class GroupingOperation
@@ -33,7 +32,9 @@ public class GroupingOperation
         super(location);
         requireNonNull(groupingColumns);
         checkArgument(!groupingColumns.isEmpty(), "grouping operation columns cannot be empty");
-        checkState(groupingColumns.size() <= 63, "more than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type");
+        if (groupingColumns.size() <= 63) {
+            throw new IllegalArgumentException("More than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type.");
+        }
         this.groupingColumns = ImmutableList.copyOf(groupingColumns);
     }
 

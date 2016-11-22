@@ -73,12 +73,11 @@ public class GroupingOperationRewriter
     @Override
     public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
-        FunctionCall functionCall = treeRewriter.defaultRewrite(node, context);
+        FunctionCall rewrittenFunctionCall = treeRewriter.defaultRewrite(node, context);
 
-        if (functionCall != node && containsGroupingOperation) {
-            FunctionCall rewrittenFunction = functionCall;
-            if (functionCall.getWindow().isPresent()) {
-                List<Expression> rewrittenPartitionBy = rewrittenFunction.getWindow().get().getPartitionBy();
+        if (rewrittenFunctionCall != node && containsGroupingOperation) {
+            if (rewrittenFunctionCall.getWindow().isPresent()) {
+                List<Expression> rewrittenPartitionBy = rewrittenFunctionCall.getWindow().get().getPartitionBy();
                 List<Expression> originalPartitionBy = node.getWindow().get().getPartitionBy();
                 checkState(
                         originalPartitionBy.size() == rewrittenPartitionBy.size(),
@@ -87,12 +86,10 @@ public class GroupingOperationRewriter
 
                 for (int i = 0; i < rewrittenPartitionBy.size(); i++) {
                     Type originalType = analysis.getType(originalPartitionBy.get(i));
-                    IdentityHashMap<Expression, Type> newTypes = new IdentityHashMap<>();
-                    newTypes.put(rewrittenPartitionBy.get(i), originalType);
-                    analysis.addTypes(newTypes);
+                    analysis.addType(rewrittenPartitionBy.get(i), originalType);
                 }
 
-                List<SortItem> rewrittenOrderBy = rewrittenFunction.getWindow().get().getOrderBy();
+                List<SortItem> rewrittenOrderBy = rewrittenFunctionCall.getWindow().get().getOrderBy();
                 List<SortItem> originalOrderBy = node.getWindow().get().getOrderBy();
                 checkState(
                         originalOrderBy.size() == rewrittenOrderBy.size(),
@@ -101,23 +98,17 @@ public class GroupingOperationRewriter
 
                 for (int i = 0; i < rewrittenOrderBy.size(); i++) {
                     Type originalType = analysis.getType(originalOrderBy.get(i).getSortKey());
-                    IdentityHashMap<Expression, Type> newTypes = new IdentityHashMap<>();
-                    newTypes.put(rewrittenOrderBy.get(i).getSortKey(), originalType);
-                    analysis.addTypes(newTypes);
+                    analysis.addType(rewrittenOrderBy.get(i).getSortKey(), originalType);
                 }
             }
 
             Type functionType = analysis.getType(node);
-            IdentityHashMap<Expression, Type> updatedType = new IdentityHashMap<>();
-            updatedType.put(rewrittenFunction, functionType);
-            analysis.addTypes(updatedType);
+            analysis.addType(rewrittenFunctionCall, functionType);
 
             Signature signature = analysis.getFunctionSignature(node);
-            IdentityHashMap<FunctionCall, Signature> updatedSignature = new IdentityHashMap<>();
-            updatedSignature.put(rewrittenFunction, signature);
-            analysis.addFunctionSignatures(updatedSignature);
+            analysis.addFunctionSignature(rewrittenFunctionCall, signature);
 
-            return rewrittenFunction;
+            return rewrittenFunctionCall;
         }
 
         return node;

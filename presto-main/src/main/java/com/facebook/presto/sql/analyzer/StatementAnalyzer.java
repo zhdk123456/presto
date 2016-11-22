@@ -776,7 +776,7 @@ class StatementAnalyzer
                 analysis.addCoercion(expression, BOOLEAN, false);
             }
 
-            Analyzer.verifyNoAggregatesWindowOrGroupingFunctions(metadata, expression, "JOIN");
+            Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, expression, "JOIN");
 
             // expressionInterpreter/optimizer only understands a subset of expression types
             // TODO: remove this when the new expression tree is implemented
@@ -1231,7 +1231,7 @@ class StatementAnalyzer
                 groupByExpression = groupingColumn;
             }
 
-            Analyzer.verifyNoAggregatesWindowOrGroupingFunctions(metadata, groupByExpression, "GROUP BY");
+            Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, groupByExpression, "GROUP BY");
             Type type = analysis.getType(groupByExpression);
             if (!type.isComparable()) {
                 throw new SemanticException(TYPE_MISMATCH, node, "%s is not comparable, and therefore cannot be used in GROUP BY", type);
@@ -1337,7 +1337,7 @@ class StatementAnalyzer
 
     public void analyzeWhere(Node node, Scope scope, Expression predicate)
     {
-        Analyzer.verifyNoAggregatesWindowOrGroupingFunctions(metadata, predicate, "WHERE");
+        Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, predicate, "WHERE");
 
         ExpressionAnalysis expressionAnalysis = analyzeExpression(predicate, scope);
         analysis.recordSubqueries(node, expressionAnalysis);

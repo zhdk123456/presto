@@ -68,7 +68,7 @@ public class Analyzer
         return analysis;
     }
 
-    static void verifyNoAggregatesWindowOrGroupingFunctions(Metadata metadata, Expression predicate, String clause)
+    static void verifyNoAggregateWindowOrGroupingFunctions(Metadata metadata, Expression predicate, String clause)
     {
         AggregateExtractor extractor = new AggregateExtractor(metadata);
         extractor.process(predicate, null);
