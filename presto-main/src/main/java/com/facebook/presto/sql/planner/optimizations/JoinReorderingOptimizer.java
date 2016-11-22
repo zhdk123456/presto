@@ -27,6 +27,7 @@ import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static java.util.Objects.requireNonNull;
@@ -106,7 +107,8 @@ public class JoinReorderingOptimizer
                         node.getOutputSymbols(),
                         node.getFilter(),
                         node.getRightHashSymbol(),
-                        node.getLeftHashSymbol());
+                        node.getLeftHashSymbol(),
+                        Optional.empty());
             }
 
             if (leftRewritten != node.getLeft() || rightRewritten != node.getRight()) {
@@ -118,7 +120,8 @@ public class JoinReorderingOptimizer
                         node.getOutputSymbols(),
                         node.getFilter(),
                         node.getLeftHashSymbol(),
-                        node.getRightHashSymbol());
+                        node.getRightHashSymbol(),
+                        Optional.empty());
             }
 
             return node;
