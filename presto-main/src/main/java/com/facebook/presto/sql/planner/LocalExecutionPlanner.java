@@ -418,6 +418,7 @@ public class LocalExecutionPlanner
         private int nextOperatorId;
         private boolean inputDriver = true;
         private OptionalInt driverInstanceCount = OptionalInt.empty();
+        private Optional<Symbol> groupId = Optional.empty();
 
         public LocalExecutionPlanContext(Session session, Map<Symbol, Type> types)
         {
@@ -499,6 +500,16 @@ public class LocalExecutionPlanner
                 checkState(this.driverInstanceCount.getAsInt() == driverInstanceCount, "driverInstance count already set to " + this.driverInstanceCount.getAsInt());
             }
             this.driverInstanceCount = OptionalInt.of(driverInstanceCount);
+        }
+
+        public Optional<Symbol> getGroupIdSymbol()
+        {
+            return groupId;
+        }
+
+        public void setGroupIdSymbol(Optional<Symbol> groupId)
+        {
+            this.groupId = groupId;
         }
     }
 
@@ -884,6 +895,10 @@ public class LocalExecutionPlanner
         {
             PhysicalOperation source = node.getSource().accept(this, context);
 
+            if (node.getGroupIdSymbol().isPresent()) {
+                context.setGroupIdSymbol(node.getGroupIdSymbol());
+            }
+
             if (node.getGroupingKeys().isEmpty()) {
                 return planGlobalAggregation(context.getNextOperatorId(), node, source);
             }
@@ -944,7 +959,19 @@ public class LocalExecutionPlanner
 
             List<Symbol> outputSymbols = node.getOutputSymbols();
 
-            return visitScanFilterAndProject(context, node.getId(), sourceNode, filterExpression, node.getAssignments(), outputSymbols);
+            PhysicalOperation physicalOperation = visitScanFilterAndProject(context, node.getId(), sourceNode, filterExpression, node.getAssignments(), outputSymbols);
+
+            // Update groupId symbol if the Project node renames it
+            if (context.getGroupIdSymbol().isPresent()) {
+                SymbolReference groupIdSymbolReference = context.getGroupIdSymbol().get().toSymbolReference();
+                for (Map.Entry<Symbol, Expression> entry : node.getAssignments().entrySet()) {
+                    if (entry.getValue() instanceof SymbolReference && entry.getValue().equals(groupIdSymbolReference)) {
+                        context.setGroupIdSymbol(Optional.of(entry.getKey()));
+                    }
+                }
+            }
+
+            return physicalOperation;
         }
 
         // TODO: This should be refactored, so that there's an optimizer that merges scan-filter-project into a single PlanNode
@@ -998,7 +1025,7 @@ public class LocalExecutionPlanner
             Map<Symbol, Integer> outputMappings = outputMappingsBuilder.build();
 
             // compiler uses inputs instead of symbols, so rewrite the expressions first
-            SymbolToInputRewriter symbolToInputRewriter = new SymbolToInputRewriter(sourceLayout);
+            SymbolToInputRewriter symbolToInputRewriter = new SymbolToInputRewriter(sourceLayout, context.getGroupIdSymbol());
             Expression rewrittenFilter = ExpressionTreeRewriter.rewriteWith(symbolToInputRewriter, filterExpression);
 
             List<Expression> rewrittenProjections = new ArrayList<>();
@@ -1779,6 +1806,7 @@ public class LocalExecutionPlanner
 
                 DriverFactory driverFactory = new DriverFactory(subContext.isInputDriver(), false, operatorFactories, subContext.getDriverInstanceCount());
                 context.addDriverFactory(driverFactory);
+                context.setGroupIdSymbol(subContext.getGroupIdSymbol());
             }
 
             // the main driver is not an input... the exchange sources are the input for the plan

@@ -34,8 +34,6 @@ import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
-import com.facebook.presto.sql.tree.FunctionCall;
-import com.facebook.presto.sql.tree.GenericLiteral;
 import com.facebook.presto.sql.tree.LogicalBinaryExpression;
 import com.facebook.presto.sql.tree.NotExpression;
 import com.facebook.presto.sql.tree.NullLiteral;
@@ -52,11 +50,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
 import static com.facebook.presto.sql.ExpressionUtils.combinePredicates;
 import static com.facebook.presto.sql.ExpressionUtils.extractPredicates;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.getExpressionTypes;
-import static com.facebook.presto.sql.planner.plan.GroupIdNode.GROUPID_SYMBOL_HINT;
 import static com.facebook.presto.sql.tree.BooleanLiteral.FALSE_LITERAL;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
 import static com.facebook.presto.sql.tree.ComparisonExpressionType.IS_DISTINCT_FROM;
@@ -111,17 +107,17 @@ public class SimplifyExpressions
         @Override
         public PlanNode visitProject(ProjectNode node, RewriteContext<Void> context)
         {
-            PlanNode source = context.rewrite(node.getSource());
+            PlanNode source = context.rewrite(node.getSource(), context.get());
             Map<Symbol, Expression> assignments = ImmutableMap.copyOf(
-                    Maps.transformValues(node.getAssignments(), expression -> simplifyExpression(expression, source)));
+                    Maps.transformValues(node.getAssignments(), expression -> simplifyExpression(expression)));
             return new ProjectNode(node.getId(), source, assignments);
         }
 
         @Override
         public PlanNode visitFilter(FilterNode node, RewriteContext<Void> context)
         {
-            PlanNode source = context.rewrite(node.getSource());
-            Expression simplified = simplifyExpression(node.getPredicate(), source);
+            PlanNode source = context.rewrite(node.getSource(), context.get());
+            Expression simplified = simplifyExpression(node.getPredicate());
             if (simplified.equals(TRUE_LITERAL)) {
                 return source;
             }
@@ -138,7 +134,7 @@ public class SimplifyExpressions
         {
             Expression originalConstraint = null;
             if (node.getOriginalConstraint() != null) {
-                originalConstraint = simplifyExpression(node.getOriginalConstraint(), node.getSources().get(0));
+                originalConstraint = simplifyExpression(node.getOriginalConstraint());
             }
             return new TableScanNode(
                     node.getId(),
@@ -150,14 +146,13 @@ public class SimplifyExpressions
                     originalConstraint);
         }
 
-        private Expression simplifyExpression(Expression expression, PlanNode source)
+        private Expression simplifyExpression(Expression expression)
         {
             if (expression instanceof SymbolReference) {
                 return expression;
             }
             expression = ExpressionTreeRewriter.rewriteWith(new PushDownNegationsExpressionRewriter(), expression);
             expression = ExpressionTreeRewriter.rewriteWith(new ExtractCommonPredicatesExpressionRewriter(), expression, NodeContext.ROOT_NODE);
-            expression = ExpressionTreeRewriter.rewriteWith(new GroupingOperationToConstant(source), expression);
             IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypes(session, metadata, sqlParser, types, expression, emptyList() /* parameters already replaced */);
             ExpressionInterpreter interpreter = ExpressionInterpreter.expressionOptimizer(expression, metadata, session, expressionTypes);
             return LiteralInterpreter.toExpression(interpreter.optimize(NoOpSymbolResolver.INSTANCE), expressionTypes.get(expression));
@@ -275,34 +270,6 @@ public class SimplifyExpressions
             return collection.stream()
                     .filter(element -> !elementsToRemove.contains(element))
                     .collect(toImmutableList());
-        }
-    }
-
-    private static class GroupingOperationToConstant
-            extends ExpressionRewriter<Void>
-    {
-        private final PlanNode source;
-
-        GroupingOperationToConstant(PlanNode source)
-        {
-            this.source = source;
-        }
-
-        @Override
-        public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
-        {
-            // A grouping() is preceded by a GroupId node when the source node is projecting a groupid symbol
-            if (!source.getOutputSymbols().stream().anyMatch(symbol -> symbol.getName().contains(GROUPID_SYMBOL_HINT)) && node.getName().toString().equals(GROUPING)) {
-                // No GroupIdNode and a GROUPING() operation imply a single grouping, which
-                // means that any columns specified as arguments to GROUPING() will be included
-                // in the group and none of them will be aggregated over. Hence, re-write the
-                // GroupingOperation to a constant literal of 0.
-                // See SQL:2011:4.16.2 and SQL:2011:6.9.10.
-                return new GenericLiteral("INTEGER", "0");
-            }
-            else {
-                return node;
-            }
         }
     }
 }

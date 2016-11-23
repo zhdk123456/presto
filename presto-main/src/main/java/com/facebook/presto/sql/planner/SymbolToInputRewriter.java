@@ -25,10 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
-import static com.facebook.presto.sql.planner.plan.GroupIdNode.GROUPID_SYMBOL_HINT;
-import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -36,11 +35,19 @@ public class SymbolToInputRewriter
         extends ExpressionRewriter<Void>
 {
     private final Map<Symbol, Integer> symbolToChannelMapping;
+    private final Optional<Symbol> groupId;
 
     public SymbolToInputRewriter(Map<Symbol, Integer> symbolToChannelMapping)
     {
+        this(symbolToChannelMapping, Optional.empty());
+    }
+
+    public SymbolToInputRewriter(Map<Symbol, Integer> symbolToChannelMapping, Optional<Symbol> groupId)
+    {
         requireNonNull(symbolToChannelMapping, "symbolToChannelMapping is null");
+        requireNonNull(groupId, "groupId is null");
         this.symbolToChannelMapping = ImmutableMap.copyOf(symbolToChannelMapping);
+        this.groupId = groupId;
     }
 
     @Override
@@ -56,11 +63,9 @@ public class SymbolToInputRewriter
     public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
         if (node.getName().toString().equals(GROUPING)) {
-            List<Symbol> groupIdSymbols = symbolToChannelMapping.keySet().stream()
-                    .filter(symbol -> symbol.getName().contains(GROUPID_SYMBOL_HINT))
-                    .collect(toImmutableList());
-            checkState(groupIdSymbols.size() == 1, "grouping operation requires an available groupid channel");
-            List<Expression> arguments = Arrays.asList(new FieldReference(symbolToChannelMapping.get(groupIdSymbols.get(0))), node.getArguments().get(1), node.getArguments().get(2));
+            checkState(groupId.isPresent(), "groupId symbol must be present");
+            checkState(symbolToChannelMapping.containsKey(groupId.get()), "grouping operation requires an available groupId channel");
+            List<Expression> arguments = Arrays.asList(new FieldReference(symbolToChannelMapping.get(groupId.get())), node.getArguments().get(1), node.getArguments().get(2));
             return new FunctionCall(node.getName(), arguments);
         }
         else {

@@ -118,26 +118,29 @@ public class GroupingOperationRewriter
     public Expression rewriteGroupingOperation(GroupingOperation node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
         this.containsGroupingOperation = true;
-        FunctionCall rewrittenExpression = rewriteGroupingOperationToFunctionCall(node, queryNode);
-        IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
-        IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap<>();
-        List<TypeSignature> functionTypes = Arrays.asList(
-                BIGINT.getTypeSignature(),
-                ListLiteralType.LIST_LITERAL.getTypeSignature(),
-                ListLiteralType.LIST_LITERAL.getTypeSignature()
-        );
-        Signature functionSignature = resolveFunction(rewrittenExpression, functionTypes, metadata.getFunctionRegistry());
+        Expression rewrittenExpression = rewriteGroupingOperationToFunctionCall(node, queryNode);
+        if (rewrittenExpression instanceof FunctionCall) {
+            FunctionCall rewrittenFunctionCall = (FunctionCall) rewrittenExpression;
+            IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
+            IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap<>();
+            List<TypeSignature> functionTypes = Arrays.asList(
+                    BIGINT.getTypeSignature(),
+                    ListLiteralType.LIST_LITERAL.getTypeSignature(),
+                    ListLiteralType.LIST_LITERAL.getTypeSignature()
+            );
+            Signature functionSignature = resolveFunction(rewrittenFunctionCall, functionTypes, metadata.getFunctionRegistry());
 
-        expressionTypes.put(rewrittenExpression, INTEGER);
-        functionSignatures.put(rewrittenExpression, functionSignature);
+            expressionTypes.put(rewrittenExpression, INTEGER);
+            functionSignatures.put(rewrittenFunctionCall, functionSignature);
 
-        analysis.addTypes(expressionTypes);
-        analysis.addFunctionSignatures(functionSignatures);
+            analysis.addTypes(expressionTypes);
+            analysis.addFunctionSignatures(functionSignatures);
+        }
 
         return rewrittenExpression;
     }
 
-    public FunctionCall rewriteGroupingOperationToFunctionCall(GroupingOperation expression, QuerySpecification node)
+    public Expression rewriteGroupingOperationToFunctionCall(GroupingOperation expression, QuerySpecification node)
     {
         List<Expression> columnReferences = ImmutableList.copyOf(analysis.getColumnReferences());
         List<Expression> groupingOrdinals;
@@ -167,11 +170,13 @@ public class GroupingOperationRewriter
                 .filter(element -> element instanceof GroupingSets || element instanceof Rollup || element instanceof Cube)
                 .collect(toImmutableList());
         Expression firstArgument;
-        // If the query contains a GROUP BY and no GROUPING SETS, ROLLUP or CUBE then we use a dummy
-        // literal as a placeholder for the first argument because the GROUPING will be further re-written
-        // to a literal in SimplifyExpressions.
-        if (groupingElements.isEmpty()) {
-            firstArgument = new LongLiteral("0");
+        // No GroupIdNode and a GROUPING() operation imply a single grouping, which
+        // means that any columns specified as arguments to GROUPING() will be included
+        // in the group and none of them will be aggregated over. Hence, re-write the
+        // GroupingOperation to a constant literal of 0.
+        // See SQL:2011:4.16.2 and SQL:2011:6.9.10.
+        if (groupingElements.isEmpty() && !analysis.getGroupIdSymbol(node).isPresent()) {
+            return new LongLiteral("0");
         }
         else {
             checkState(analysis.getGroupIdSymbol(node).isPresent(), "groupId symbol for QuerySpecification node is missing");
