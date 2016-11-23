@@ -1,6 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect result
---- round(ss_qty/(coalesce(ws_qty+cs_qty,1)),2) ratio, returns BIGINT vs expected DECIMAL
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 WITH ws AS
   (SELECT d_year AS ws_sold_year,
           ws_item_sk,
@@ -52,7 +50,7 @@ ss AS
 SELECT ss_sold_year, 
        ss_item_sk,
        ss_customer_sk,
-       round(ss_qty/(coalesce(ws_qty+cs_qty,1)),2) ratio,
+       round(cast(ss_qty as decimal(10,2))/(coalesce(ws_qty+cs_qty,1)),2) ratio,
        ss_qty store_qty,
        ss_wc store_wholesale_cost,
        ss_sp store_sales_price,
@@ -78,4 +76,4 @@ ORDER BY ss_sold_year,
          other_chan_qty,
          other_chan_wholesale_cost,
          other_chan_sales_price,
-         round(ss_qty/(coalesce(ws_qty+cs_qty,1)),2) LIMIT 100;
+         round(cast(ss_qty as decimal(10,2))/(coalesce(ws_qty+cs_qty,1)),2) LIMIT 100;
