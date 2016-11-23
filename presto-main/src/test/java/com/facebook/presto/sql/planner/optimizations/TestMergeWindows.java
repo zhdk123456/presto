@@ -129,8 +129,8 @@ public class TestMergeWindows
                                                 anyNot(WindowNode.class,
                                                         anyTree())))));
 
-        Plan actualPlan = queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
         queryRunner.inTransaction(transactionSession -> {
+            Plan actualPlan = queryRunner.createPlan(transactionSession, sql);
             PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), costCalculator, actualPlan, pattern);
             return null;
         });
@@ -423,16 +423,16 @@ public class TestMergeWindows
         });
     }
 
-    private Plan unitPlan(Session transactionSession, @Language("SQL") String sql)
+    private Plan unitPlan(Session session, @Language("SQL") String sql)
     {
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
         List<PlanOptimizer> optimizers = ImmutableList.of(
-                        new UnaliasSymbolReferences(),
-                        new PruneIdentityProjections(),
-                        new MergeWindows(),
-                        new PruneUnreferencedOutputs());
-        return queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizers);
+                new UnaliasSymbolReferences(),
+                new PruneIdentityProjections(),
+                new MergeWindows(),
+                new PruneUnreferencedOutputs());
+        return queryRunner.createPlan(session, sql, featuresConfig, optimizers);
     }
 }

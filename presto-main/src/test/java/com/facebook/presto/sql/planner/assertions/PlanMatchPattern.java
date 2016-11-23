@@ -14,6 +14,7 @@
 package com.facebook.presto.sql.planner.assertions;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.cost.PlanNodeCost;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.spi.predicate.Domain;
 import com.facebook.presto.sql.parser.SqlParser;
@@ -148,7 +149,7 @@ public final class PlanMatchPattern
         this.sourcePatterns = ImmutableList.copyOf(sourcePatterns);
     }
 
-    List<PlanMatchingState> matches(PlanNode node, Session session, Metadata metadata, ExpressionAliases expressionAliases)
+    List<PlanMatchingState> matches(PlanNode node, Session session, Metadata metadata, Map<PlanNode, PlanNodeCost> planCost, ExpressionAliases expressionAliases)
     {
         ImmutableList.Builder<PlanMatchingState> states = ImmutableList.builder();
         if (anyTree) {
@@ -160,7 +161,7 @@ public final class PlanMatchPattern
                 states.add(new PlanMatchingState(ImmutableList.of(this), expressionAliases));
             }
         }
-        if (node.getSources().size() == sourcePatterns.size() && matchers.stream().allMatch(it -> it.matches(node, session, metadata, expressionAliases))) {
+        if (node.getSources().size() == sourcePatterns.size() && matchers.stream().allMatch(it -> it.matches(node, session, metadata, planCost, expressionAliases))) {
             states.add(new PlanMatchingState(sourcePatterns, expressionAliases));
         }
         return states.build();
@@ -182,6 +183,11 @@ public final class PlanMatchPattern
     public PlanMatchPattern withNumberOfOutputColumns(int numberOfSymbols)
     {
         return with(new SymbolCardinalityMatcher(numberOfSymbols));
+    }
+
+    public PlanMatchPattern withCost(PlanNodeCost cost)
+    {
+        return with(new PlanCostMatcher(cost));
     }
 
     public PlanMatchPattern with(Matcher matcher)
