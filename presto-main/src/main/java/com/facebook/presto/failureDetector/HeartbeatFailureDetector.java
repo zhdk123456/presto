@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.failureDetector;
 
-import com.facebook.presto.server.InternalCommunicationConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -80,7 +79,6 @@ public class HeartbeatFailureDetector
     private final boolean isEnabled;
     private final Duration warmupInterval;
     private final Duration gcGraceInterval;
-    private final boolean httpsRequired;
 
     private final AtomicBoolean started = new AtomicBoolean();
 
@@ -88,28 +86,25 @@ public class HeartbeatFailureDetector
     public HeartbeatFailureDetector(
             @ServiceType("presto") ServiceSelector selector,
             @ForFailureDetector HttpClient httpClient,
-            FailureDetectorConfig failureDetectorConfig,
-            NodeInfo nodeInfo,
-            InternalCommunicationConfig internalCommunicationConfig)
+            FailureDetectorConfig config,
+            NodeInfo nodeInfo)
     {
         requireNonNull(selector, "selector is null");
         requireNonNull(httpClient, "httpClient is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
-        requireNonNull(failureDetectorConfig, "config is null");
-        checkArgument(failureDetectorConfig.getHeartbeatInterval().toMillis() >= 1, "heartbeat interval must be >= 1ms");
+        requireNonNull(config, "config is null");
+        checkArgument(config.getHeartbeatInterval().toMillis() >= 1, "heartbeat interval must be >= 1ms");
 
         this.selector = selector;
         this.httpClient = httpClient;
         this.nodeInfo = nodeInfo;
 
-        this.failureRatioThreshold = failureDetectorConfig.getFailureRatioThreshold();
-        this.heartbeat = failureDetectorConfig.getHeartbeatInterval();
-        this.warmupInterval = failureDetectorConfig.getWarmupInterval();
-        this.gcGraceInterval = failureDetectorConfig.getExpirationGraceInterval();
+        this.failureRatioThreshold = config.getFailureRatioThreshold();
+        this.heartbeat = config.getHeartbeatInterval();
+        this.warmupInterval = config.getWarmupInterval();
+        this.gcGraceInterval = config.getExpirationGraceInterval();
 
-        this.isEnabled = failureDetectorConfig.isEnabled();
-
-        this.httpsRequired = internalCommunicationConfig.isHttpsRequired();
+        this.isEnabled = config.isEnabled();
     }
 
     @PostConstruct
@@ -222,17 +217,18 @@ public class HeartbeatFailureDetector
         }
     }
 
-    private URI getHttpUri(ServiceDescriptor descriptor)
+    private static URI getHttpUri(ServiceDescriptor service)
     {
-        String type = httpsRequired ? "https" : "http";
-        String url = descriptor.getProperties().get(type);
-        if (url != null) {
-            try {
-                return new URI(url);
-            }
-            catch (URISyntaxException ignored) {
+        try {
+            String uri = service.getProperties().get("http");
+            if (uri != null) {
+                return new URI(uri);
             }
         }
+        catch (URISyntaxException e) {
+            // ignore, not a valid http uri
+        }
+
         return null;
     }
 
