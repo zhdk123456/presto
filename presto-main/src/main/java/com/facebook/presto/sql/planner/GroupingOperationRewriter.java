@@ -55,7 +55,6 @@ public class GroupingOperationRewriter
     private final QuerySpecification queryNode;
     private final Analysis analysis;
     private final Metadata metadata;
-    private boolean containsGroupingOperation = false;
 
     public GroupingOperationRewriter(QuerySpecification queryNode, Analysis analysis, Metadata metadata)
     {
@@ -75,7 +74,7 @@ public class GroupingOperationRewriter
     {
         FunctionCall rewrittenFunctionCall = treeRewriter.defaultRewrite(node, context);
 
-        if (rewrittenFunctionCall != node && containsGroupingOperation) {
+        if (rewrittenFunctionCall != node) {
             if (rewrittenFunctionCall.getWindow().isPresent()) {
                 List<Expression> rewrittenPartitionBy = rewrittenFunctionCall.getWindow().get().getPartitionBy();
                 List<Expression> originalPartitionBy = node.getWindow().get().getPartitionBy();
@@ -117,7 +116,6 @@ public class GroupingOperationRewriter
     @Override
     public Expression rewriteGroupingOperation(GroupingOperation node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
-        this.containsGroupingOperation = true;
         Expression rewrittenExpression = rewriteGroupingOperationToFunctionCall(node, queryNode);
         if (rewrittenExpression instanceof FunctionCall) {
             FunctionCall rewrittenFunctionCall = (FunctionCall) rewrittenExpression;
