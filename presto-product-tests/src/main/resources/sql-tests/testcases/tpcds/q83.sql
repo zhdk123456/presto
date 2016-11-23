@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect results: got BIGINT while expected DECIMAL
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 WITH sr_items AS
   (SELECT i_item_id item_id,
           sum(sr_return_quantity) sr_item_qty
@@ -59,12 +58,12 @@ wr_items AS
 
 SELECT sr_items.item_id,
        sr_item_qty,
-       sr_item_qty/(sr_item_qty+cr_item_qty+wr_item_qty)/3.0 * 100 sr_dev,
+       cast((sr_item_qty/(cast(sr_item_qty as decimal(9,4))+cr_item_qty+wr_item_qty)/3.0 * 100) as decimal(7,2))sr_dev,
        cr_item_qty,
-       cr_item_qty/(sr_item_qty+cr_item_qty+wr_item_qty)/3.0 * 100 cr_dev,
+       cast((cr_item_qty/(cast(sr_item_qty as decimal(9,4))+cr_item_qty+wr_item_qty)/3.0 * 100) as decimal(7,2)) cr_dev,
        wr_item_qty,
-       wr_item_qty/(sr_item_qty+cr_item_qty+wr_item_qty)/3.0 * 100 wr_dev,
-       (sr_item_qty+cr_item_qty+wr_item_qty)/3.0 average
+       cast((wr_item_qty/(cast(sr_item_qty as decimal(9,4))+cr_item_qty+wr_item_qty)/3.0 * 100) as decimal(7,2)) wr_dev,
+       (sr_item_qty+cr_item_qty+wr_item_qty)/3.00 average
 FROM sr_items,
      cr_items,
      wr_items
