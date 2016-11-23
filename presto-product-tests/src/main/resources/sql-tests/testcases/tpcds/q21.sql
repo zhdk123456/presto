@@ -21,9 +21,9 @@ select *
                     and (cast ('2000-03-11' as date) + INTERVAL '30' DAY)
    group by w_warehouse_name, i_item_id) x
  where (case when inv_before > 0 
-             then inv_after / inv_before 
+             then cast(inv_after as decimal(7,2)) / inv_before
              else null
-             end) between 2.0/3.0 and 3.0/2.0
+             end) between 2.00/3.00 and 3.00/2.00
  order by w_warehouse_name
          ,i_item_id
  LIMIT 100;
