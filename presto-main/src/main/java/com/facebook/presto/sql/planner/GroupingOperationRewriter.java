@@ -18,8 +18,13 @@ import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.sql.analyzer.Analysis;
+import com.facebook.presto.sql.tree.ArithmeticBinaryExpression;
+import com.facebook.presto.sql.tree.ArithmeticUnaryExpression;
 import com.facebook.presto.sql.tree.ArrayConstructor;
+import com.facebook.presto.sql.tree.BetweenPredicate;
 import com.facebook.presto.sql.tree.Cast;
+import com.facebook.presto.sql.tree.CoalesceExpression;
+import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.Cube;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
@@ -28,11 +33,26 @@ import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.GroupingElement;
 import com.facebook.presto.sql.tree.GroupingOperation;
 import com.facebook.presto.sql.tree.GroupingSets;
+import com.facebook.presto.sql.tree.IfExpression;
+import com.facebook.presto.sql.tree.InListExpression;
+import com.facebook.presto.sql.tree.InPredicate;
+import com.facebook.presto.sql.tree.IsNotNullPredicate;
+import com.facebook.presto.sql.tree.IsNullPredicate;
+import com.facebook.presto.sql.tree.LambdaExpression;
+import com.facebook.presto.sql.tree.LikePredicate;
+import com.facebook.presto.sql.tree.LogicalBinaryExpression;
 import com.facebook.presto.sql.tree.LongLiteral;
+import com.facebook.presto.sql.tree.NotExpression;
+import com.facebook.presto.sql.tree.NullIfExpression;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.QuerySpecification;
 import com.facebook.presto.sql.tree.Rollup;
-import com.facebook.presto.sql.tree.SortItem;
+import com.facebook.presto.sql.tree.Row;
+import com.facebook.presto.sql.tree.SearchedCaseExpression;
+import com.facebook.presto.sql.tree.SimpleCaseExpression;
+import com.facebook.presto.sql.tree.SubscriptExpression;
+import com.facebook.presto.sql.tree.TryExpression;
+import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.type.ListLiteralType;
 import com.google.common.collect.ImmutableList;
 
@@ -70,40 +90,105 @@ public class GroupingOperationRewriter
     }
 
     @Override
+    public Expression rewriteRow(Row node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteArithmeticUnary(ArithmeticUnaryExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteArithmeticBinary(ArithmeticBinaryExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteComparisonExpression(ComparisonExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteBetweenPredicate(BetweenPredicate node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteLogicalBinaryExpression(LogicalBinaryExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteNotExpression(NotExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteIsNullPredicate(IsNullPredicate node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    public Expression rewriteIsNotNullPredicate(IsNotNullPredicate node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    public Expression rewriteNullIfExpression(NullIfExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteIfExpression(IfExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteSearchedCaseExpression(SearchedCaseExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteSimpleCaseExpression(SimpleCaseExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteWhenClause(WhenClause node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteCoalesceExpression(CoalesceExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteInListExpression(InListExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
     public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
     {
-        FunctionCall rewrittenFunctionCall = treeRewriter.defaultRewrite(node, context);
+        FunctionCall rewrittenFunctionCall = (FunctionCall) updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
 
         if (rewrittenFunctionCall != node) {
-            if (rewrittenFunctionCall.getWindow().isPresent()) {
-                List<Expression> rewrittenPartitionBy = rewrittenFunctionCall.getWindow().get().getPartitionBy();
-                List<Expression> originalPartitionBy = node.getWindow().get().getPartitionBy();
-                checkState(
-                        originalPartitionBy.size() == rewrittenPartitionBy.size(),
-                        "the original partition by clause and the rewritten one are not equal in size"
-                );
-
-                for (int i = 0; i < rewrittenPartitionBy.size(); i++) {
-                    Type originalType = analysis.getType(originalPartitionBy.get(i));
-                    analysis.addType(rewrittenPartitionBy.get(i), originalType);
-                }
-
-                List<SortItem> rewrittenOrderBy = rewrittenFunctionCall.getWindow().get().getOrderBy();
-                List<SortItem> originalOrderBy = node.getWindow().get().getOrderBy();
-                checkState(
-                        originalOrderBy.size() == rewrittenOrderBy.size(),
-                        "the original order by clause and the rewritten one are not equal in size"
-                );
-
-                for (int i = 0; i < rewrittenOrderBy.size(); i++) {
-                    Type originalType = analysis.getType(originalOrderBy.get(i).getSortKey());
-                    analysis.addType(rewrittenOrderBy.get(i).getSortKey(), originalType);
-                }
-            }
-
-            Type functionType = analysis.getType(node);
-            analysis.addType(rewrittenFunctionCall, functionType);
-
             Signature signature = analysis.getFunctionSignature(node);
             analysis.addFunctionSignature(rewrittenFunctionCall, signature);
 
@@ -111,6 +196,48 @@ public class GroupingOperationRewriter
         }
 
         return node;
+    }
+
+    @Override
+    public Expression rewriteLambdaExpression(LambdaExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteLikePredicate(LikePredicate node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteInPredicate(InPredicate node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteArrayConstructor(ArrayConstructor node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteSubscriptExpression(SubscriptExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteCast(Cast node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
+    }
+
+    @Override
+    public Expression rewriteTryExpression(TryExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    {
+        return updateTypeIfRewritten(treeRewriter.defaultRewrite(node, context), node);
     }
 
     @Override
@@ -187,5 +314,15 @@ public class GroupingOperationRewriter
                 new Cast(new ArrayConstructor(groupingSetOrdinals.stream().map(ArrayConstructor::new).collect(toImmutableList())), ListLiteralType.NAME)
         );
         return new FunctionCall(expression.getLocation().get(), QualifiedName.of(GROUPING), arguments);
+    }
+
+    private Expression updateTypeIfRewritten(Expression rewrittenExpression, Expression originalExpression)
+    {
+        if (rewrittenExpression != originalExpression) {
+            Type type = analysis.getType(originalExpression);
+            analysis.addType(rewrittenExpression, type);
+        }
+
+        return rewrittenExpression;
     }
 }

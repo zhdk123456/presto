@@ -1784,6 +1784,26 @@ public abstract class AbstractTestQueries
             "HAVING grouping(a, b) > 1 ",
             "VALUES (NULL, 'j', 11, 2), " +
                    "(NULL, 'l', 7, 2)");
+
+        assertQuery("" +
+            "SELECT * " +
+            "FROM " +
+            "   (SELECT orderkey, custkey, sum(totalprice) as agg_price, grouping(custkey, orderkey) as g " +
+            "    FROM orders " +
+            "    GROUP BY GROUPING SETS ((custkey), (orderkey)) " +
+            "    UNION ALL " +
+            "    SELECT orderkey, custkey, sum(totalprice) as agg_price, grouping(custkey, orderkey) as g " +
+            "    FROM orders " +
+            "    GROUP BY GROUPING SETS ((custkey), (orderkey))) as t " +
+            "ORDER BY t.orderkey, t.custkey " +
+            "LIMIT 6",
+            "VALUES (1, NULL, 172799.49, 2), " +
+            "       (1, NULL, 172799.49, 2), " +
+            "       (2, NULL, 38426.09,  2), " +
+            "       (2, NULL, 38426.09,  2), " +
+            "       (3, NULL, 205654.30, 2), " +
+            "       (3, NULL, 205654.30, 2)"
+        );
     }
 
     @Test
@@ -1815,7 +1835,7 @@ public abstract class AbstractTestQueries
     public void testGroupingInSubquery()
             throws Exception
     {
-        // In addition to testing grouping() in subqueries, the following two tests also
+        // In addition to testing grouping() in subqueries, the following tests also
         // ensure correct behavior in the case of alternating GROUPING SETS and GROUP BY
         // clauses in the same plan. This is significant because grouping() with GROUP BY
         // works only with a special re-write that should not happen in the presence of
@@ -1855,6 +1875,24 @@ public abstract class AbstractTestQueries
             "       (37415, NULL, 2, 986.63, 0), " +
             "       (58145, NULL, 2, 929.03, 0), " +
             "       (35271, NULL, 2, 874.89, 0)"
+        );
+
+        // Inner query has GROUPING SETS but no grouping and outer query has a simple GROUP BY
+        assertQuery("" +
+            "SELECT orderkey, custkey, sum(agg_price) as outer_sum, grouping(orderkey, custkey) " +
+            "   FROM " +
+            "       (SELECT orderkey, custkey, sum(totalprice) as agg_price " +
+            "           FROM orders " +
+            "               GROUP BY GROUPING SETS ((custkey), (orderkey)) " +
+            "               ORDER BY agg_price ASC NULLS FIRST) as t " +
+            "GROUP BY orderkey, custkey " +
+            "ORDER BY outer_sum ASC NULLS FIRST " +
+            "LIMIT 5",
+            "VALUES (35271, NULL, 874.89, 0), " +
+            "       (28647, NULL, 924.33, 0), " +
+            "       (58145, NULL, 929.03, 0), " +
+            "       (8354,  NULL, 974.04, 0), " +
+            "       (37415, NULL, 986.63, 0)"
         );
     }
 
