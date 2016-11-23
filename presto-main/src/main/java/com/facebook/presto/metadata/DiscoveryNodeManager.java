@@ -17,7 +17,6 @@ import com.facebook.presto.client.NodeVersion;
 import com.facebook.presto.connector.ConnectorId;
 import com.facebook.presto.connector.system.GlobalSystemConnector;
 import com.facebook.presto.failureDetector.FailureDetector;
-import com.facebook.presto.server.InternalCommunicationConfig;
 import com.facebook.presto.spi.Node;
 import com.facebook.presto.spi.NodeState;
 import com.google.common.base.Splitter;
@@ -57,6 +56,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Sets.difference;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static java.util.Arrays.asList;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
@@ -76,7 +76,6 @@ public final class DiscoveryNodeManager
     private final ConcurrentHashMap<String, RemoteNodeState> nodeStates = new ConcurrentHashMap<>();
     private final HttpClient httpClient;
     private final ScheduledExecutorService nodeStateUpdateExecutor;
-    private final boolean httpsRequired;
 
     @GuardedBy("this")
     private SetMultimap<ConnectorId, Node> activeNodesByConnectorId;
@@ -98,8 +97,7 @@ public final class DiscoveryNodeManager
             NodeInfo nodeInfo,
             FailureDetector failureDetector,
             NodeVersion expectedNodeVersion,
-            @ForNodeManager HttpClient httpClient,
-            InternalCommunicationConfig internalCommunicationConfig)
+            @ForNodeManager HttpClient httpClient)
     {
         this.serviceSelector = requireNonNull(serviceSelector, "serviceSelector is null");
         this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo is null");
@@ -107,7 +105,6 @@ public final class DiscoveryNodeManager
         this.expectedNodeVersion = requireNonNull(expectedNodeVersion, "expectedNodeVersion is null");
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.nodeStateUpdateExecutor = newSingleThreadScheduledExecutor(threadsNamed("node-state-poller-%s"));
-        this.httpsRequired = internalCommunicationConfig.isHttpsRequired();
         this.currentNode = refreshNodesInternal();
     }
 
@@ -326,15 +323,16 @@ public final class DiscoveryNodeManager
         return coordinators;
     }
 
-    private URI getHttpUri(ServiceDescriptor descriptor)
+    private static URI getHttpUri(ServiceDescriptor descriptor)
     {
-        String type = httpsRequired ? "https" : "http";
-        String url = descriptor.getProperties().get(type);
-        if (url != null) {
-            try {
-                return new URI(url);
-            }
-            catch (URISyntaxException ignored) {
+        for (String type : asList("http", "https")) {
+            String url = descriptor.getProperties().get(type);
+            if (url != null) {
+                try {
+                    return new URI(url);
+                }
+                catch (URISyntaxException ignored) {
+                }
             }
         }
         return null;
