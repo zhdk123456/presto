@@ -4,13 +4,12 @@ set -e
 
 CONFIG=$1
 
-PRESTO_CONFIG_DIRECTORY="/docker/volumes/conf/presto/etc"
-CONFIG_PROPERTIES_LOCATION="${PRESTO_CONFIG_DIRECTORY}/${CONFIG}.properties"
-
-if [[ ! -e ${CONFIG_PROPERTIES_LOCATION} ]]; then
-   echo "${CONFIG_PROPERTIES_LOCATION} does not exist"
+if [[ "$CONFIG" != "singlenode" && "$CONFIG" != "multinode-master" && "$CONFIG" != "multinode-worker" && "$CONFIG" != "singlenode-kerberized" && "$CONFIG" != "singlenode-ldap" ]]; then
+   echo "Usage: launcher-wrapper <singlenode|multinode-master|multinode-worker|singlenode-kerberized|singlenode-ldap> <launcher args>"
    exit 1
 fi
+
+PRESTO_CONFIG_DIRECTORY="/docker/volumes/conf/presto/etc"
 
 shift 1
 
