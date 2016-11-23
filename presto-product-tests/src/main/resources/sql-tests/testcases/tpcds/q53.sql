@@ -36,14 +36,14 @@ FROM
                            'exportiunivamalg #9                               ',
                            'scholaramalgamalg #9                              ')) 
         OR(i_category IN ('Women','Music','Men')
-          AND i_class IN ('accessories                                        ',
-                          'classical                                          ',
-                          'fragrances                                         ',
-                          'pants                                              ')
-          AND i_brand IN ('amalgimporto #1                                    ',
-                          'edu packscholar #1                                 ',
-                          'exportiimporto #1                                  ', 
-                          'importoamalg #1                                    ')))
+          AND i_class IN ('accessories                                       ',
+                          'classical                                         ',
+                          'fragrances                                        ',
+                          'pants                                             ')
+          AND i_brand IN ('amalgimporto #1                                   ',
+                          'edu packscholar #1                                ',
+                          'exportiimporto #1                                 ', 
+                          'importoamalg #1                                   ')))
    GROUP BY i_manufact_id,
             d_qoy) tmp1
 WHERE CASE
