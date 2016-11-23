@@ -107,7 +107,7 @@ public class SimplifyExpressions
         @Override
         public PlanNode visitProject(ProjectNode node, RewriteContext<Void> context)
         {
-            PlanNode source = context.rewrite(node.getSource(), context.get());
+            PlanNode source = context.rewrite(node.getSource());
             Map<Symbol, Expression> assignments = ImmutableMap.copyOf(
                     Maps.transformValues(node.getAssignments(), expression -> simplifyExpression(expression)));
             return new ProjectNode(node.getId(), source, assignments);
@@ -116,7 +116,7 @@ public class SimplifyExpressions
         @Override
         public PlanNode visitFilter(FilterNode node, RewriteContext<Void> context)
         {
-            PlanNode source = context.rewrite(node.getSource(), context.get());
+            PlanNode source = context.rewrite(node.getSource());
             Expression simplified = simplifyExpression(node.getPredicate());
             if (simplified.equals(TRUE_LITERAL)) {
                 return source;

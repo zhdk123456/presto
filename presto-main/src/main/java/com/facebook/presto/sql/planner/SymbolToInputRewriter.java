@@ -17,37 +17,23 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionRewriter;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.FieldReference;
-import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class SymbolToInputRewriter
         extends ExpressionRewriter<Void>
 {
     private final Map<Symbol, Integer> symbolToChannelMapping;
-    private final Optional<Symbol> groupId;
 
     public SymbolToInputRewriter(Map<Symbol, Integer> symbolToChannelMapping)
     {
-        this(symbolToChannelMapping, Optional.empty());
-    }
-
-    public SymbolToInputRewriter(Map<Symbol, Integer> symbolToChannelMapping, Optional<Symbol> groupId)
-    {
         requireNonNull(symbolToChannelMapping, "symbolToChannelMapping is null");
-        requireNonNull(groupId, "groupId is null");
         this.symbolToChannelMapping = ImmutableMap.copyOf(symbolToChannelMapping);
-        this.groupId = groupId;
     }
 
     @Override
@@ -57,19 +43,5 @@ public class SymbolToInputRewriter
         Preconditions.checkArgument(channel != null, "Cannot resolve symbol %s", node.getName());
 
         return new FieldReference(channel);
-    }
-
-    @Override
-    public Expression rewriteFunctionCall(FunctionCall node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
-    {
-        if (node.getName().toString().equals(GROUPING)) {
-            checkState(groupId.isPresent(), "groupId symbol must be present");
-            checkState(symbolToChannelMapping.containsKey(groupId.get()), "grouping operation requires an available groupId channel");
-            List<Expression> arguments = Arrays.asList(new FieldReference(symbolToChannelMapping.get(groupId.get())), node.getArguments().get(1), node.getArguments().get(2));
-            return new FunctionCall(node.getName(), arguments);
-        }
-        else {
-            return rewriteExpression(node, context, treeRewriter);
-        }
     }
 }
