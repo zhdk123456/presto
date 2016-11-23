@@ -25,16 +25,13 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 
-import static com.facebook.presto.jdbc.ConnectionProperties.PASSWORD;
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL;
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL_ENABLED;
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PASSWORD;
 import static com.facebook.presto.jdbc.ConnectionProperties.SSL_TRUST_STORE_PATH;
-import static com.facebook.presto.jdbc.ConnectionProperties.USER;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static java.lang.String.format;
@@ -53,8 +50,6 @@ final class PrestoConnectionConfig
     private final HostAndPort address;
     private final URI uri;
     private final Properties connectionProperties;
-    private final String user;
-    private final Optional<String> password;
 
     private String catalog;
     private String schema;
@@ -81,8 +76,6 @@ final class PrestoConnectionConfig
         validateConnectionProperties(connectionProperties);
 
         useSecureConnection = SSL.getValue(connectionProperties).get() == SSL_ENABLED;
-        user = USER.getValue(connectionProperties).get();
-        password = PASSWORD.getValue(connectionProperties);
 
         initCatalogAndSchema();
     }
@@ -115,7 +108,7 @@ final class PrestoConnectionConfig
     public HttpClientCreator getCreator(String userAgent, JettyIoPool jettyIoPool)
             throws SQLException
     {
-        return new HttpClientCreator(userAgent, jettyIoPool, getConfigSetters(), user, password);
+        return new HttpClientCreator(userAgent, jettyIoPool, getConfigSetters());
     }
 
     private Map<String, BiConsumer<HttpClientConfig, String>> getConfigSetters()
