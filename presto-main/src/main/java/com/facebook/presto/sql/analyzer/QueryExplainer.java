@@ -97,10 +97,10 @@ public class QueryExplainer
 
         switch (planType) {
             case LOGICAL:
-                Plan plan = getLogicalPlan(session, statement, parameters, globalProperties);
+                Plan plan = getLogicalPlan(session, statement, parameters);
                 return PlanPrinter.textLogicalPlan(plan.getRoot(), plan.getTypes(), metadata, costCalculator, session);
             case DISTRIBUTED:
-                SubPlan subPlan = getDistributedPlan(session, statement, parameters, globalProperties);
+                SubPlan subPlan = getDistributedPlan(session, statement, parameters);
                 return PlanPrinter.textDistributedPlan(subPlan, metadata, costCalculator, session);
         }
         throw new IllegalArgumentException("Unhandled plan type: " + planType);
@@ -121,16 +121,16 @@ public class QueryExplainer
 
         switch (planType) {
             case LOGICAL:
-                Plan plan = getLogicalPlan(session, statement, parameters, globalProperties);
+                Plan plan = getLogicalPlan(session, statement, parameters);
                 return PlanPrinter.graphvizLogicalPlan(plan.getRoot(), plan.getTypes());
             case DISTRIBUTED:
-                SubPlan subPlan = getDistributedPlan(session, statement, parameters, globalProperties);
+                SubPlan subPlan = getDistributedPlan(session, statement, parameters);
                 return PlanPrinter.graphvizDistributedPlan(subPlan);
         }
         throw new IllegalArgumentException("Unhandled plan type: " + planType);
     }
 
-    private Plan getLogicalPlan(Session session, Statement statement, List<Expression> parameters, GlobalProperties globalProperties)
+    public Plan getLogicalPlan(Session session, Statement statement, List<Expression> parameters)
     {
         // analyze statement
         Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(this), parameters);
@@ -143,7 +143,7 @@ public class QueryExplainer
         return logicalPlanner.plan(analysis);
     }
 
-    private SubPlan getDistributedPlan(Session session, Statement statement, List<Expression> parameters, GlobalProperties globalProperties)
+    private SubPlan getDistributedPlan(Session session, Statement statement, List<Expression> parameters)
     {
         // analyze statement
         Analyzer analyzer = new Analyzer(session, metadata, sqlParser, accessControl, Optional.of(this), parameters);
