@@ -58,17 +58,17 @@ WHERE ss1.d_qoy = 1
   AND ws3.d_qoy = 3
   AND ws3.d_year =2000
   AND CASE
-          WHEN ws1.web_sales > 0 THEN ws2.web_sales/ws1.web_sales
+          WHEN ws1.web_sales > 0 THEN cast(ws2.web_sales as decimal(38,3))/ws1.web_sales
           ELSE NULL
       END > CASE
-                WHEN ss1.store_sales > 0 THEN ss2.store_sales/ss1.store_sales
+                WHEN ss1.store_sales > 0 THEN cast(ss2.store_sales as decimal(38,3))/ss1.store_sales
                 ELSE NULL
             END
   AND CASE
-          WHEN ws2.web_sales > 0 THEN ws3.web_sales/ws2.web_sales
+          WHEN ws2.web_sales > 0 THEN cast(ws3.web_sales as decimal(38,3))/ws2.web_sales
           ELSE NULL
       END > CASE
-                WHEN ss2.store_sales > 0 THEN ss3.store_sales/ss2.store_sales
+                WHEN ss2.store_sales > 0 THEN cast(ss3.store_sales as decimal(38,3))/ss2.store_sales
                 ELSE NULL
             END
 ORDER BY ss1.ca_county;
