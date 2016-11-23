@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- fails with: $operator$MULTIPLY(double,decimal(38,2)):double not found
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
  WITH frequent_ss_items AS
   (SELECT substr(i_item_desc,1,30) itemdesc,
           i_item_sk item_sk,
