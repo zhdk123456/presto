@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql.planner.optimizations;
 
+import com.facebook.presto.Session;
 import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.Plan;
@@ -139,13 +140,13 @@ public class TestReorderWindows
                                         ImmutableList.of(
                                                 functionCall("sum", commonFrame, quantityReference)),
                                         anyTree(
-                                        window(windowB,
-                                                ImmutableList.of(
-                                                        functionCall("avg", commonFrame, discountReference)),
-                                                anyTree())))));
+                                                window(windowB,
+                                                        ImmutableList.of(
+                                                                functionCall("avg", commonFrame, discountReference)),
+                                                        anyTree())))));
 
-        Plan actualPlan = queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql));
         queryRunner.inTransaction(transactionSession -> {
+            Plan actualPlan = queryRunner.createPlan(transactionSession, sql);
             PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), queryRunner.getCostCalculator(), actualPlan, pattern);
             return null;
         });
@@ -165,12 +166,12 @@ public class TestReorderWindows
                         window(windowAp,
                                 ImmutableList.of(
                                         functionCall("min", commonFrame, taxReference)),
-                                        window(windowA,
+                                window(windowA,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, quantityReference)),
+                                        window(windowB,
                                                 ImmutableList.of(
-                                                        functionCall("sum", commonFrame, quantityReference)),
-                                                        window(windowB,
-                                                                ImmutableList.of(
-                                                                        functionCall("avg", commonFrame, discountReference)),
+                                                        functionCall("avg", commonFrame, discountReference)),
                                                 anyTree())))));
     }
 
@@ -223,22 +224,22 @@ public class TestReorderWindows
                         ImmutableList.of(
                                 functionCall("lag", commonFrame, taxReference, new SymbolReference("expr"))),
                         project(
-                        window(windowApp,
-                                ImmutableList.of(
-                                        functionCall("sum", commonFrame, quantityReference)),
-                                anyTree())))));
+                                window(windowApp,
+                                        ImmutableList.of(
+                                                functionCall("sum", commonFrame, quantityReference)),
+                                        anyTree())))));
     }
 
     private void assertUnitPlan(@Language("SQL") String sql, PlanMatchPattern pattern)
     {
-        Plan actualPlan = unitPlan(sql);
         queryRunner.inTransaction(transactionSession -> {
+            Plan actualPlan = unitPlan(transactionSession, sql);
             PlanAssert.assertPlan(transactionSession, queryRunner.getMetadata(), queryRunner.getCostCalculator(), actualPlan, pattern);
             return null;
         });
     }
 
-    private Plan unitPlan(@Language("SQL") String sql)
+    private Plan unitPlan(Session transactionSession, @Language("SQL") String sql)
     {
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
@@ -250,6 +251,6 @@ public class TestReorderWindows
                 new PruneUnreferencedOutputs()
         );
 
-        return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizerLists));
+        return queryRunner.createPlan(transactionSession, sql, featuresConfig, optimizerLists);
     }
 }
