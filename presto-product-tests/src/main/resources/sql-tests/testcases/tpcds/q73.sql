@@ -19,7 +19,7 @@ FROM
      AND store_sales.ss_hdemo_sk = household_demographics.hd_demo_sk
      AND date_dim.d_dom BETWEEN 1 AND 2
      AND (household_demographics.hd_buy_potential = '>10000         '
-          OR household_demographics.hd_buy_potential = 'Unknown       m ')
+          OR household_demographics.hd_buy_potential = 'Unknown        ')
      AND household_demographics.hd_vehicle_count > 0
      AND CASE WHEN household_demographics.hd_vehicle_count > 0 THEN household_demographics.hd_dep_count/ household_demographics.hd_vehicle_count ELSE NULL END > 1
      AND date_dim.d_year IN (1999,
