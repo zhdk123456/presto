@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds,quarantine,big_query; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- quarantined as it does not end
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT i_item_id,
        ca_country,
        ca_state,
@@ -32,7 +31,7 @@ WHERE cs_sold_date_sk = d_date_sk
                         9,
                         12,
                         2)
-  AND d_year = 1999
+  AND d_year = 1998
   AND ca_state IN ('MS',
                    'IN',
                    'ND',
