@@ -19,6 +19,7 @@ import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.connector.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import com.facebook.presto.spi.predicate.TupleDomain;
 import com.google.common.collect.ImmutableList;
 import io.airlift.tpch.TpchColumn;
 import io.airlift.tpch.TpchColumnType;
@@ -26,6 +27,7 @@ import io.airlift.tpch.TpchEntity;
 import io.airlift.tpch.TpchTable;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.facebook.presto.tpch.TpchRecordSet.createTpchRecordSet;
 import static com.facebook.presto.tpch.Types.checkType;
@@ -43,7 +45,7 @@ public class TpchRecordSetProvider
 
         TpchTable<?> tpchTable = TpchTable.getTable(tableName);
 
-        return getRecordSet(tpchTable, columns, tpchSplit.getTableHandle().getScaleFactor(), tpchSplit.getTableHandle().isUseDecimalNumericType(), tpchSplit.getPartNumber(), tpchSplit.getTotalParts());
+        return getRecordSet(tpchTable, columns, tpchSplit.getTableHandle().getScaleFactor(), tpchSplit.getTableHandle().isUseDecimalNumericType(), tpchSplit.getPartNumber(), tpchSplit.getTotalParts(), tpchSplit.getPredicate());
     }
 
     public <E extends TpchEntity> RecordSet getRecordSet(
@@ -51,9 +53,10 @@ public class TpchRecordSetProvider
             List<? extends ColumnHandle> columns,
             double scaleFactor,
             int partNumber,
-            int totalParts)
+            int totalParts,
+            Optional<TupleDomain<ColumnHandle>> predicate)
     {
-        return getRecordSet(table, columns, scaleFactor, false, partNumber, totalParts);
+        return getRecordSet(table, columns, scaleFactor, false, partNumber, totalParts, predicate);
     }
 
     public <E extends TpchEntity> RecordSet getRecordSet(
@@ -62,7 +65,8 @@ public class TpchRecordSetProvider
             double scaleFactor,
             boolean useDecimalNumericType,
             int partNumber,
-            int totalParts)
+            int totalParts,
+            Optional<TupleDomain<ColumnHandle>> predicate)
     {
         ImmutableList.Builder<TpchColumn<E>> builder = ImmutableList.builder();
         for (ColumnHandle column : columns) {
@@ -75,7 +79,7 @@ public class TpchRecordSetProvider
             }
         }
 
-        return createTpchRecordSet(table, builder.build(), scaleFactor, useDecimalNumericType, partNumber + 1, totalParts);
+        return createTpchRecordSet(table, builder.build(), scaleFactor, useDecimalNumericType, partNumber + 1, totalParts, predicate);
     }
 
     private static class RowNumberTpchColumn<E extends TpchEntity>
@@ -84,7 +88,7 @@ public class TpchRecordSetProvider
         @Override
         public String getColumnName()
         {
-            throw new UnsupportedOperationException();
+            return TpchMetadata.ROW_NUMBER_COLUMN_NAME;
         }
 
         @Override
