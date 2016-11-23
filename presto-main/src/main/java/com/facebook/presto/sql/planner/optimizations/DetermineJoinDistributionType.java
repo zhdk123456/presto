@@ -57,7 +57,7 @@ public class DetermineJoinDistributionType
         requireNonNull(plan, "plan is null");
         requireNonNull(session, "session is null");
 
-        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator), plan);
+        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator, types), plan);
     }
 
     private static class Rewriter
@@ -69,13 +69,15 @@ public class DetermineJoinDistributionType
         private final Session session;
         private final GlobalProperties globalProperties;
         private final CostCalculator costCalculator;
+        private final Map<Symbol, Type> types;
         private boolean isDeleteQuery;
 
-        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator)
+        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator, Map<Symbol, Type> types)
         {
             this.session = session;
             this.globalProperties = globalProperties;
             this.costCalculator = costCalculator;
+            this.types = types;
         }
 
         @Override
@@ -215,12 +217,12 @@ public class DetermineJoinDistributionType
 
         private Estimate getOutputSizeEstimate(PlanNode node)
         {
-            Estimate dataSize = costCalculator.calculateCostForNode(session, node).getOutputSizeInBytes();
+            Estimate dataSize = costCalculator.calculateCostForNode(session, types, node).getOutputSizeInBytes();
             if (!dataSize.isValueUnknown()) {
                 return dataSize;
             }
 
-            dataSize = costCalculator.calculateCostForNode(session, node).getOutputRowCount();
+            dataSize = costCalculator.calculateCostForNode(session, types, node).getOutputRowCount();
             if (!dataSize.isValueUnknown()) {
                 dataSize = new Estimate(dataSize.getValue() * ROW_SIZE_ESTIMATE);
             }
@@ -235,6 +237,7 @@ public class DetermineJoinDistributionType
                     node.getRight(),
                     node.getLeft(),
                     flipJoinCriteria(node.getCriteria()),
+                    node.getOutputSymbols(),
                     node.getFilter(),
                     node.getRightHashSymbol(),
                     node.getLeftHashSymbol(),

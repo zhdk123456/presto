@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.aliasPair;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.join;
@@ -52,12 +54,10 @@ public class TestDetermineJoinDistributionType
 
         automaticJoinDistributionSession = Session.builder(queryRunner.getDefaultSession())
                 .setSystemProperty(SystemSessionProperties.JOIN_DISTRIBUTION_TYPE, "automatic")
-                .setSystemProperty(SystemSessionProperties.JOIN_REORDERING, "true")
                 .build();
 
         partitionedJoinSession = Session.builder(queryRunner.getDefaultSession())
                 .setSystemProperty(SystemSessionProperties.JOIN_DISTRIBUTION_TYPE, "repartitioned")
-                .setSystemProperty(SystemSessionProperties.JOIN_REORDERING, "true")
                 .build();
 
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
@@ -75,6 +75,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.INNER,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.REPLICATED,
                                 anyTree(tableScan("nation")),
                                 anyTree(tableScan("region"))));
@@ -91,6 +92,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.INNER,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.REPLICATED,
                                 anyTree(tableScan("lineitem")),
                                 anyTree(tableScan("nation"))));
@@ -107,6 +109,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.LEFT,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.PARTITIONED,
                                 anyTree(tableScan("nation")),
                                 anyTree(tableScan("lineitem"))));
@@ -118,6 +121,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.LEFT,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.REPLICATED,
                                 anyTree(tableScan("lineitem")),
                                 anyTree(tableScan("nation"))));
@@ -134,6 +138,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.INNER,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.PARTITIONED,
                                 anyTree(tableScan("lineitem")),
                                 anyTree(tableScan("lineitem"))));
@@ -150,6 +155,7 @@ public class TestDetermineJoinDistributionType
                 anyTree(
                         join(JoinNode.Type.INNER,
                                 ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
                                 JoinNode.DistributionType.PARTITIONED,
                                 anyTree(tableScan("region")),
                                 anyTree(tableScan("nation"))));

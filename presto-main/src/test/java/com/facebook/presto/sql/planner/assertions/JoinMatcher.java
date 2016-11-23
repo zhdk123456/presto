@@ -36,10 +36,10 @@ final class JoinMatcher
 
     JoinMatcher(JoinNode.Type joinType, List<AliasPair> equiCriteria, Optional<Expression> filter)
     {
-        this(joinType, equiCriteria, Optional.empty());
+        this(joinType, equiCriteria, filter, Optional.empty());
     }
 
-    JoinMatcher(JoinNode.Type joinType, List<AliasPair> equiCriteria, Optional<JoinNode.DistributionType> distributionType)
+    JoinMatcher(JoinNode.Type joinType, List<AliasPair> equiCriteria, Optional<Expression> filter, Optional<JoinNode.DistributionType> distributionType)
     {
         this.joinType = requireNonNull(joinType, "joinType is null");
         this.equiCriteria = requireNonNull(equiCriteria, "equiCriteria is null");
