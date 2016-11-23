@@ -82,10 +82,7 @@ public class ClientOptions
     public String user = System.getProperty("user.name");
 
     @Option(name = "--password", title = "password", description = "Prompt for password")
-    public boolean showPasswordPrompt;
-
-    @Option(name = "-P", hidden = true)
-    public String password;
+    public boolean password;
 
     @Option(name = "--source", title = "source", description = "Name of source making query")
     public String source = "presto-cli";
