@@ -57,7 +57,7 @@ public class TestResourceUtil
                         .put(PRESTO_LANGUAGE, "zh-TW")
                         .put(PRESTO_TIME_ZONE, "Asia/Taipei")
                         .put(PRESTO_SESSION, QUERY_MAX_MEMORY + "=1GB")
-                        .put(PRESTO_SESSION, JOIN_DISTRIBUTION_TYPE + "=partitioned," + HASH_PARTITION_COUNT + " = 43")
+                        .put(PRESTO_SESSION, JOIN_DISTRIBUTION_TYPE + "=repartitioned," + HASH_PARTITION_COUNT + " = 43")
                         .put(PRESTO_PREPARED_STATEMENT, "query1=select * from foo,query2=select * from bar")
                         .build(),
                 "testRemote");
@@ -79,7 +79,7 @@ public class TestResourceUtil
         assertEquals(session.getRemoteUserAddress().get(), "testRemote");
         assertEquals(session.getSystemProperties(), ImmutableMap.<String, String>builder()
                 .put(QUERY_MAX_MEMORY, "1GB")
-                .put(JOIN_DISTRIBUTION_TYPE, "partitioned")
+                .put(JOIN_DISTRIBUTION_TYPE, "repartitioned")
                 .put(HASH_PARTITION_COUNT, "43")
                 .build());
         assertEquals(session.getPreparedStatements(), ImmutableMap.<String, String>builder()

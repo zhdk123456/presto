@@ -131,11 +131,16 @@ public final class PlanMatchPattern
     public static PlanMatchPattern join(
             JoinNode.Type joinType,
             List<AliasPair> expectedEquiCriteria,
+            Optional<String> expectedFilter,
             JoinNode.DistributionType distributionType,
             PlanMatchPattern left,
             PlanMatchPattern right)
     {
-        return node(JoinNode.class, left, right).with(new JoinMatcher(joinType, expectedEquiCriteria, Optional.of(distributionType)));
+        return node(JoinNode.class, left, right).with(new JoinMatcher(
+                joinType,
+                expectedEquiCriteria,
+                expectedFilter.map(predicate -> new SqlParser().createExpression(predicate)),
+                Optional.of(distributionType)));
     }
 
     public static AliasPair aliasPair(String left, String right)
