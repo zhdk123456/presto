@@ -1,4 +1,4 @@
--- database: presto_tpcds; groups: tpcds,quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
+-- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 --- incorrect results
 SELECT c_last_name,
        c_first_name,
@@ -22,7 +22,7 @@ FROM
      AND (household_demographics.hd_buy_potential = '>10000         '
           OR household_demographics.hd_buy_potential = 'Unknown        ')
      AND household_demographics.hd_vehicle_count > 0
-     AND (CASE WHEN household_demographics.hd_vehicle_count > 0 THEN household_demographics.hd_dep_count/ household_demographics.hd_vehicle_count ELSE NULL END) > 1.2
+     AND (CASE WHEN household_demographics.hd_vehicle_count > 0 THEN cast(household_demographics.hd_dep_count as decimal(7,2)) / household_demographics.hd_vehicle_count ELSE NULL END) > 1.2
      AND date_dim.d_year IN (1999,
                              1999+1,
                              1999+2)
