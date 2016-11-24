@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect result (due some issue with CASE?)
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT *
 FROM
   (SELECT i_manufact_id,
@@ -47,7 +46,7 @@ FROM
    GROUP BY i_manufact_id,
             d_qoy) tmp1
 WHERE CASE
-          WHEN avg_quarterly_sales > 0 THEN ABS (sum_sales - avg_quarterly_sales)/ avg_quarterly_sales
+          WHEN avg_quarterly_sales > 0 THEN ABS (cast(sum_sales as decimal(38,4)) - avg_quarterly_sales)/ avg_quarterly_sales
           ELSE NULL
       END > 0.1
 ORDER BY avg_quarterly_sales,
