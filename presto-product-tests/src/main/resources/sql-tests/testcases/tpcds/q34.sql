@@ -42,4 +42,7 @@ WHERE ss_customer_sk = c_customer_sk
 ORDER BY c_last_name,
          c_first_name,
          c_salutation,
-         c_preferred_cust_flag DESC;
+         c_preferred_cust_flag DESC
+, ss_ticket_number --  added modification as tempto does not support partial sorting
+;
+
