@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds,big_query,quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect results
+-- database: presto_tpcds; groups: tpcds, big_query; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT i_item_desc,
        w_warehouse_name,
        d1.d_week_seq,
@@ -16,16 +15,13 @@ JOIN date_dim d1 ON (cs_sold_date_sk = d1.d_date_sk)
 JOIN date_dim d2 ON (inv_date_sk = d2.d_date_sk)
 JOIN date_dim d3 ON (cs_ship_date_sk = d3.d_date_sk)
 LEFT OUTER JOIN promotion ON (cs_promo_sk=p_promo_sk)
-LEFT OUTER JOIN catalog_returns ON (cr_item_sk = cs_item_sk
-                                    AND cr_order_number = cs_order_number)
+LEFT OUTER JOIN catalog_returns ON (cr_item_sk = cs_item_sk AND cr_order_number = cs_order_number)
 WHERE d1.d_week_seq = d2.d_week_seq
   AND inv_quantity_on_hand < cs_quantity
   AND d3.d_date > d1.d_date + INTERVAL '5' DAY
   AND hd_buy_potential = '>10000         '
   AND d1.d_year = 1999
-  AND hd_buy_potential = '>10000         '
   AND cd_marital_status = 'D'
-  AND d1.d_year = 1999
 GROUP BY i_item_desc,
          w_warehouse_name,
          d1.d_week_seq
