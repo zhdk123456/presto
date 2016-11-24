@@ -21,7 +21,7 @@ FROM
      AND (household_demographics.hd_buy_potential = '>10000         '
           OR household_demographics.hd_buy_potential = 'Unknown        ')
      AND household_demographics.hd_vehicle_count > 0
-     AND CASE WHEN household_demographics.hd_vehicle_count > 0 THEN household_demographics.hd_dep_count/ household_demographics.hd_vehicle_count ELSE NULL END > 1
+     AND CASE WHEN household_demographics.hd_vehicle_count > 0 THEN cast(household_demographics.hd_dep_count as decimal(7,2))/ household_demographics.hd_vehicle_count ELSE NULL END > 1
      AND date_dim.d_year IN (1999,
                              1999+1,
                              1999+2)
