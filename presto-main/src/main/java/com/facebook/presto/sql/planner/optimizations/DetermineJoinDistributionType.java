@@ -39,6 +39,7 @@ import static com.facebook.presto.sql.planner.plan.JoinNode.Type.FULL;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.RIGHT;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class DetermineJoinDistributionType
@@ -101,12 +102,15 @@ public class DetermineJoinDistributionType
 
             // flip the join if the distribution type is replicated, the left side is smaller, and you're allowed to flip it.
             JoinNode flipped = flipJoin(rewritten);
-            if (getJoinDistributionType(session).equals(FeaturesConfig.JoinDistributionType.AUTOMATIC)
-                    && targetJoinDistributionType.equals(JoinNode.DistributionType.REPLICATED)
-                    && !mustPartitionJoin(flipped)
-                    && !getOutputSizeEstimate(node.getLeft()).isValueUnknown()
-                    && (getOutputSizeEstimate(node.getRight()).isValueUnknown() || getOutputSizeEstimate(node.getLeft()).getValue() < getOutputSizeEstimate(node.getRight()).getValue())) {
-                rewritten = flipped;
+            if (getJoinDistributionType(session).equals(FeaturesConfig.JoinDistributionType.AUTOMATIC) && targetJoinDistributionType.equals(JoinNode.DistributionType.REPLICATED)) {
+                checkState(!mustPartitionJoin(flipped) || !mustPartitionJoin(node), "Cannot replicate join");
+                if (mustPartitionJoin(node)
+                        || (!(mustPartitionJoin(flipped))
+                        && !getOutputSizeEstimate(node.getLeft()).isValueUnknown()
+                        && (getOutputSizeEstimate(node.getRight()).isValueUnknown()
+                        || getOutputSizeEstimate(node.getLeft()).getValue() < getOutputSizeEstimate(node.getRight()).getValue()))) {
+                    rewritten = flipped;
+                }
             }
 
             return rewritten;
