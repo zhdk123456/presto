@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect results (due some issue with CASE?)
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 WITH ss AS
   (SELECT ca_county,
           d_qoy,

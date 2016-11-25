@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds,quarantine,big_query; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- does not end
+-- database: presto_tpcds; groups: tpcds, big_query, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 WITH cs_ui AS
   (SELECT cs_item_sk,
           sum(cs_ext_list_price) AS sale,

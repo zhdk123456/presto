@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds,quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect results
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT i_item_id
       ,i_item_desc 
       ,i_category 

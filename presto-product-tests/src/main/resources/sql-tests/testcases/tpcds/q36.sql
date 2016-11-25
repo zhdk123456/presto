@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- fails with:  no viable alternative at input 'grouping'
+-- database: presto_tpcds; groups: tpcds,quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 
 SELECT sum(ss_net_profit)/sum(ss_ext_sales_price) AS gross_margin,
        i_category,
