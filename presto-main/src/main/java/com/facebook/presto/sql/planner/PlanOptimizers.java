@@ -44,7 +44,6 @@ import com.facebook.presto.sql.planner.optimizations.ProjectionPushDown;
 import com.facebook.presto.sql.planner.optimizations.PruneIdentityProjections;
 import com.facebook.presto.sql.planner.optimizations.PruneUnreferencedOutputs;
 import com.facebook.presto.sql.planner.optimizations.PushTableWriteThroughUnion;
-import com.facebook.presto.sql.planner.optimizations.RemoveRedundantApply;
 import com.facebook.presto.sql.planner.optimizations.SetFlatteningOptimizer;
 import com.facebook.presto.sql.planner.optimizations.SimplifyExpressions;
 import com.facebook.presto.sql.planner.optimizations.SingleDistinctOptimizer;
@@ -103,7 +102,6 @@ public class PlanOptimizers
                 new PruneIdentityProjections(), // This MUST run after PruneUnreferencedOutputs as it may introduce new redundant projections
                 new MetadataQueryOptimizer(metadata),
                 new EvaluateConstantApply(),
-                new RemoveRedundantApply(),
                 new EliminateCrossJoins(), // This can pull up Filter and Project nodes from between Joins, so we need to push them down again
                 new PredicatePushDown(metadata, sqlParser),
                 new ProjectionPushDown());
