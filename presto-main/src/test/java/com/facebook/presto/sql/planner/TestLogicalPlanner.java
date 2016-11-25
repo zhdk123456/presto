@@ -331,11 +331,10 @@ public class TestLogicalPlanner
                                         apply(ImmutableList.of(),
                                                 project(
                                                         tableScan("orders").withSymbol("orderkey", "X")),
-                                                node(EnforceSingleRowNode.class,
-                                                        node(AggregationNode.class,
-                                                                anyTree(
-                                                                        node(ValuesNode.class)))).withSymbol("min", "MIN").withSymbol("max", "MAX")
-                                        )))));
+                                                node(AggregationNode.class,
+                                                        anyTree(
+                                                                node(ValuesNode.class)))).withSymbol("min", "MIN").withSymbol("max", "MAX")
+                                ))));
         assertPlan(query, anyTree(
                 node(JoinNode.class,
                         anyTree(
@@ -358,17 +357,15 @@ public class TestLogicalPlanner
                                         apply(ImmutableList.of(),
                                                 project(
                                                         tableScan("orders").withSymbol("orderkey", "X")),
-                                                node(EnforceSingleRowNode.class,
-                                                        node(AggregationNode.class,
-                                                                anyTree(
-                                                                        node(ValuesNode.class)))).withSymbol("min", "MIN").withSymbol("max", "MAX")
-                                        )))));
+                                                node(AggregationNode.class,
+                                                        anyTree(
+                                                                node(ValuesNode.class)))).withSymbol("min", "MIN").withSymbol("max", "MAX")
+                                ))));
         assertPlan(query, anyTree(
                 node(JoinNode.class,
                         tableScan("orders"),
-                        anyTree(
-                                node(AggregationNode.class,
-                                        node(ValuesNode.class)))))
+                        node(AggregationNode.class,
+                                node(ValuesNode.class))))
         );
     }
 
@@ -508,20 +505,17 @@ public class TestLogicalPlanner
                                 apply(ImmutableList.of(),
                                         project(
                                                 tableScan("orders").withSymbol("orderkey", columnMapping)),
-                                        node(EnforceSingleRowNode.class,
-                                                node(AggregationNode.class,
-                                                        anyTree(
-                                                                node(ValuesNode.class))).withSymbol(function, functionAlias)
-                                        ))))));
+                                        node(AggregationNode.class,
+                                                anyTree(
+                                                        node(ValuesNode.class))).withSymbol(function, functionAlias)
+                                )))));
         assertPlan(query, anyTree(
                 project(
-                        filter(filter,
-                                join(INNER, ImmutableList.of(),
-                                        tableScan("orders").withSymbol("orderkey", columnMapping),
-                                        node(EnforceSingleRowNode.class,
-                                                node(AggregationNode.class,
-                                                        node(ValuesNode.class)).withSymbol(function, functionAlias)
-                                        ))))));
+                        join(INNER, ImmutableList.of(),
+                                tableScan("orders").withSymbol("orderkey", columnMapping),
+                                node(AggregationNode.class,
+                                        node(ValuesNode.class)).withSymbol(function, functionAlias)
+                        ))));
     }
 
     private static final class PlanNodeExtractor
