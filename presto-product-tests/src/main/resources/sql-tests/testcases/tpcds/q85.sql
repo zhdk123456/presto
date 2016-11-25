@@ -1,5 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- returns incorrect results
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT substr(r_reason_desc,1,20),
        avg(ws_quantity),
        avg(wr_refunded_cash),
