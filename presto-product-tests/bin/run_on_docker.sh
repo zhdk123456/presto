@@ -60,7 +60,7 @@ function run_product_tests() {
     com.facebook.presto.tests.TemptoProductTestRunner \
     --report-dir "/docker/volumes/test-reports" \
     --config-local "/docker/volumes/tempto/tempto-configuration-local.yaml" \
-    "$@" \
+    $@ \
     &
   PRODUCT_TESTS_PROCESS_ID=$!
   wait ${PRODUCT_TESTS_PROCESS_ID}
