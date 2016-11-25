@@ -11,7 +11,7 @@ WITH
       , "ws_ext_sales_price" "sales_price"
       FROM
         web_sales
-   )  x
+   )  
 UNION ALL (
       SELECT
         "cs_sold_date_sk" "sold_date_sk"
