@@ -70,6 +70,7 @@ public class TestLogicalPlanner
                 .setCatalog("local")
                 .setSchema("tiny")
                 .setSystemProperty("task_concurrency", "1") // these tests don't handle exchanges from local parallel
+                .setSystemProperty("join_distribution_type", "repartitioned")
                 .build());
 
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
