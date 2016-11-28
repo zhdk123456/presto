@@ -7,13 +7,13 @@ SELECT
 , "avg"("ss_quantity") "store_sales_quantityave"
 , "stddev_samp"("ss_quantity") "store_sales_quantitystdev"
 , ("stddev_samp"("ss_quantity") / "avg"("ss_quantity")) "store_sales_quantitycov"
-, "count"("sr_return_quantity") "as_store_returns_quantitycount"
-, "avg"("sr_return_quantity") "as_store_returns_quantityave"
-, "stddev_samp"("sr_return_quantity") "as_store_returns_quantitystdev"
+, "count"("sr_return_quantity") "store_returns_quantitycount"
+, "avg"("sr_return_quantity") "store_returns_quantityave"
+, "stddev_samp"("sr_return_quantity") "store_returns_quantitystdev"
 , ("stddev_samp"("sr_return_quantity") / "avg"("sr_return_quantity")) "store_returns_quantitycov"
 , "count"("cs_quantity") "catalog_sales_quantitycount"
 , "avg"("cs_quantity") "catalog_sales_quantityave"
-, ("stddev_samp"("cs_quantity") / "avg"("cs_quantity")) "catalog_sales_quantitystdev"
+, "stddev_samp"("cs_quantity") "catalog_sales_quantitystdev"
 , ("stddev_samp"("cs_quantity") / "avg"("cs_quantity")) "catalog_sales_quantitycov"
 FROM
   store_sales
