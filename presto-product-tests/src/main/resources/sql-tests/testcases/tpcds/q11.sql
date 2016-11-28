@@ -43,6 +43,8 @@ SELECT
 , "t_s_secyear"."customer_first_name"
 , "t_s_secyear"."customer_last_name"
 , "t_s_secyear"."customer_preferred_cust_flag"
+, "t_s_secyear"."customer_birth_country"
+, "t_s_secyear"."customer_login"
 FROM
   year_total t_s_firstyear
 , year_total t_s_secyear
