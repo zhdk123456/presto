@@ -31,7 +31,7 @@ UNION ALL       SELECT
    , date_dim
    , store
    WHERE ("date_sk" = "d_date_sk")
-      AND "d_date" BETWEEN CAST('2000-08-23' AS DATE) AND (CAST('2000-08-23' AS DATE) + INTERVAL  '14' DAY))
+      AND ("d_date" BETWEEN CAST('2000-08-23' AS DATE) AND (CAST('2000-08-23' AS DATE) + INTERVAL  '14' DAY))
       AND ("store_sk" = "s_store_sk")
    GROUP BY "s_store_id"
 ) 
