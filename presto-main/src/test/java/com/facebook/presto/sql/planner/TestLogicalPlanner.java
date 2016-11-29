@@ -171,6 +171,12 @@ public class TestLogicalPlanner
     }
 
     @Test
+    public void testRemoveUnreferencedScalarInputApplyNodes()
+    {
+        assertPlanContainsNoApplyOrJoin("SELECT (SELECT 1)");
+    }
+
+    @Test
     public void testSubqueryPruning()
     {
         List<String> subqueries = ImmutableList.of(
