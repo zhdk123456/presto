@@ -5,7 +5,7 @@ WITH
      "s_store_id"
    , "sum"("sales_price") "sales"
    , "sum"("profit") "profit"
-   , "sum"("return_amt") "RETURNS"
+   , "sum"("return_amt") "returns"
    , "sum"("net_loss") "profit_loss"
    FROM
      (
@@ -40,7 +40,7 @@ UNION ALL       SELECT
      "cp_catalog_page_id"
    , "sum"("sales_price") "sales"
    , "sum"("profit") "profit"
-   , "sum"("return_amt") "RETURNS"
+   , "sum"("return_amt") "returns"
    , "sum"("net_loss") "profit_loss"
    FROM
      (
@@ -75,7 +75,7 @@ UNION ALL       SELECT
      "web_site_id"
    , "sum"("sales_price") "sales"
    , "sum"("profit") "profit"
-   , "sum"("return_amt") "RETURNS"
+   , "sum"("return_amt") "returns"
    , "sum"("net_loss") "profit_loss"
    FROM
      (
@@ -111,7 +111,7 @@ SELECT
   "channel"
 , "id"
 , "sum"("sales") "sales"
-, "sum"("returns") "RETURNS"
+, "sum"("returns") "returns"
 , "sum"("profit") "profit"
 FROM
   (
