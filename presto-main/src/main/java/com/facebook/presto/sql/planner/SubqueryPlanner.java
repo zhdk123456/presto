@@ -49,7 +49,6 @@ import com.facebook.presto.sql.tree.QuantifiedComparisonExpression;
 import com.facebook.presto.sql.tree.QuantifiedComparisonExpression.Quantifier;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.SubqueryExpression;
-import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -73,7 +72,6 @@ import static com.facebook.presto.sql.tree.ComparisonExpressionType.LESS_THAN;
 import static com.facebook.presto.sql.tree.ComparisonExpressionType.LESS_THAN_OR_EQUAL;
 import static com.facebook.presto.sql.util.AstUtils.nodeContains;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
-import static com.facebook.presto.util.ImmutableCollectors.toImmutableMap;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -189,7 +187,7 @@ class SubqueryPlanner
         checkState(inPredicate.getValueList() instanceof SubqueryExpression);
         SubqueryExpression subqueryExpression = ((SubqueryExpression) inPredicate.getValueList());
         PlanNode subquery = createRelationPlan(subqueryExpression.getQuery()).getRoot();
-        Map<Expression, Symbol> correlation = extractCorrelation(subPlan, subquery);
+        Map<Expression, Expression> correlation = extractCorrelation(subPlan, subquery);
         if (!correlationAllowed && correlation.isEmpty()) {
             throwNotSupportedException(inPredicate, "Correlated subquery in given context");
         }
@@ -208,7 +206,7 @@ class SubqueryPlanner
                 new ApplyNode(idAllocator.getNextId(),
                         subPlan.getRoot(),
                         coercedSubqueryPlan,
-                        ImmutableList.copyOf(correlation.values())),
+                        ImmutableList.copyOf(DependencyExtractor.extractUnique(correlation.values()))),
                 analysis.getParameters());
 
         return subPlan;
@@ -480,7 +478,7 @@ class SubqueryPlanner
 
     private PlanBuilder appendSubqueryApplyNode(PlanBuilder subPlan, Expression subqueryExpression, Node subquery, PlanNode subqueryNode, boolean correlationAllowed)
     {
-        Map<Expression, Symbol> correlation = extractCorrelation(subPlan, subqueryNode);
+        Map<Expression, Expression> correlation = extractCorrelation(subPlan, subqueryNode);
         if (!correlationAllowed && !correlation.isEmpty()) {
             throwNotSupportedException(subquery, "Correlated subquery in given context");
         }
@@ -503,7 +501,7 @@ class SubqueryPlanner
                     new ApplyNode(idAllocator.getNextId(),
                             root,
                             subqueryWithCoercions,
-                            ImmutableList.copyOf(correlation.values())),
+                            ImmutableList.copyOf(DependencyExtractor.extractUnique(correlation.values()))),
                     analysis.getParameters());
         }
     }
@@ -586,15 +584,15 @@ class SubqueryPlanner
                 .collect(toImmutableList());
     }
 
-    private Map<Expression, Symbol> extractCorrelation(PlanBuilder subPlan, PlanNode subquery)
+    private Map<Expression, Expression> extractCorrelation(PlanBuilder subPlan, PlanNode subquery)
     {
         Set<Expression> missingReferences = extractOuterColumnReferences(subquery);
-        ImmutableMap.Builder<Expression, Symbol> correlation = ImmutableMap.builder();
+        ImmutableMap.Builder<Expression, Expression> correlation = ImmutableMap.builder();
         for (Expression missingReference : missingReferences) {
             // missing reference expression can be solved within current subPlan,
             // or within outer plans in case of multiple nesting levels of subqueries.
             tryResolveMissingExpression(subPlan, missingReference)
-                    .ifPresent(symbolReference -> correlation.put(missingReference, Symbol.from(symbolReference)));
+                    .ifPresent(symbolReference -> correlation.put(missingReference, symbolReference));
         }
         return correlation.build();
     }
@@ -605,7 +603,7 @@ class SubqueryPlanner
     private Optional<Expression> tryResolveMissingExpression(PlanBuilder subPlan, Expression expression)
     {
         Expression rewritten = subPlan.rewrite(expression);
-        if (rewritten instanceof SymbolReference) {
+        if (rewritten != expression) {
             return Optional.of(rewritten);
         }
         return Optional.empty();
@@ -644,15 +642,13 @@ class SubqueryPlanner
         return expressionColumnReferences.build();
     }
 
-    private PlanNode replaceExpressionsWithSymbols(PlanNode planNode, Map<Expression, Symbol> mapping)
+    private PlanNode replaceExpressionsWithSymbols(PlanNode planNode, Map<Expression, Expression> mapping)
     {
         if (mapping.isEmpty()) {
             return planNode;
         }
 
-        Map<Expression, Expression> expressionMapping = mapping.entrySet().stream()
-                .collect(toImmutableMap(Map.Entry::getKey, e -> e.getValue().toSymbolReference()));
-        return SimplePlanRewriter.rewriteWith(new ExpressionReplacer(idAllocator, expressionMapping), planNode, null);
+        return SimplePlanRewriter.rewriteWith(new ExpressionReplacer(idAllocator, mapping), planNode, null);
     }
 
     private static class Coercion
