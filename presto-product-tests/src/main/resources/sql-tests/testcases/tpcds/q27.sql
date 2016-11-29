@@ -1,4 +1,4 @@
--- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
+-- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
 SELECT
   "i_item_id"
 , "s_state"
@@ -18,7 +18,7 @@ WHERE ("ss_sold_date_sk" = "d_date_sk")
    AND ("ss_store_sk" = "s_store_sk")
    AND ("ss_cdemo_sk" = "cd_demo_sk")
    AND ("cd_gender" = 'M')
-   AND ("cd_marital_status" = 'M')
+   AND ("cd_marital_status" = 'S')
    AND ("cd_education_status" = 'College             ')
    AND ("d_year" = 2002)
    AND ("s_state" IN (
