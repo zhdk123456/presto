@@ -17,7 +17,7 @@ WITH
 , sr AS (
    SELECT
      "s_store_sk"
-   , "sum"("sr_return_amt") "RETURNS"
+   , "sum"("sr_return_amt") "returns"
    , "sum"("sr_net_loss") "profit_loss"
    FROM
      store_returns
@@ -43,7 +43,7 @@ WITH
 , cr AS (
    SELECT
      "cr_call_center_sk"
-   , "sum"("cr_return_amount") "RETURNS"
+   , "sum"("cr_return_amount") "returns"
    , "sum"("cr_net_loss") "profit_loss"
    FROM
      catalog_returns
@@ -69,7 +69,7 @@ WITH
 , wr AS (
    SELECT
      "wp_web_page_sk"
-   , "sum"("wr_return_amt") "RETURNS"
+   , "sum"("wr_return_amt") "returns"
    , "sum"("wr_net_loss") "profit_loss"
    FROM
      web_returns
@@ -84,7 +84,7 @@ SELECT
   "channel"
 , "id"
 , "sum"("sales") "sales"
-, "sum"("returns") "RETURNS"
+, "sum"("returns") "returns"
 , "sum"("profit") "profit"
 FROM
   (
@@ -92,7 +92,7 @@ FROM
      'store channel' "channel"
    , "ss"."s_store_sk" "id"
    , "sales"
-   , COALESCE("returns", 0) "RETURNS"
+   , COALESCE("returns", 0) "returns"
    , ("profit" - COALESCE("profit_loss", 0)) "profit"
    FROM
      (ss
@@ -110,7 +110,7 @@ UNION ALL    SELECT
      'web channel' "channel"
    , "ws"."wp_web_page_sk" "id"
    , "sales"
-   , COALESCE("returns", 0) "RETURNS"
+   , COALESCE("returns", 0) "returns"
    , ("profit" - COALESCE("profit_loss", 0)) "profit"
    FROM
      (ws

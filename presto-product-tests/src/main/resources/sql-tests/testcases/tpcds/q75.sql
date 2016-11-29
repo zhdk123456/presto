@@ -61,7 +61,7 @@ UNION       SELECT
 ) 
 SELECT
   "prev_yr"."d_year" "prev_year"
-, "curr_yr"."d_year" "YEAR"
+, "curr_yr"."d_year" "year"
 , "curr_yr"."i_brand_id"
 , "curr_yr"."i_class_id"
 , "curr_yr"."i_category_id"
