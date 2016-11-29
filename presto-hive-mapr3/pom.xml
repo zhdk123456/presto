@@ -14,15 +14,8 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <dep.hadoop.version>5.0.0.36837-mapr</dep.hadoop.version>
+        <dep.hadoop.version>1.0.3-mapr-5.2.0</dep.hadoop.version>
     </properties>
-
-    <repositories>
-        <repository>
-        <id>mapr-releases</id>
-        <url>http://repository.mapr.com/maven/</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
@@ -55,101 +48,18 @@
             <scope>provided</scope>
         </dependency>
 
-
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-hive</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.facebook.presto.hadoop</groupId>
-            <artifactId>hadoop-apache2</artifactId>
-            <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <!-- for mapr -->
 
         <dependency>
-            <groupId>com.mapr.hadoop</groupId>
-            <artifactId>maprfs-core</artifactId>
-            <version>${dep.hadoop.version}</version>
+            <groupId>com.facebook.presto.hadoop</groupId>
+            <artifactId>hadoop-mapr5</artifactId>
+            <version>0.1-SNAPSHOT</version>
             <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging-api</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-annotations</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-auth</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.apache.htrace</groupId>
-                    <artifactId>htrace-core</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-
-                <exclusion>
-                    <groupId>commons-beanutils</groupId>
-                    <artifactId>commons-beanutils-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-java</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.mapr.util</groupId>
-                    <artifactId>baseutils</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.mapr.hadoop</groupId>
-                    <artifactId>maprfs-jni</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.mapr.hadoop</groupId>
-                    <artifactId>maprfs</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- for testing -->

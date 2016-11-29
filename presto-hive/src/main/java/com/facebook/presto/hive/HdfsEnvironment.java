@@ -57,7 +57,14 @@ public class HdfsEnvironment
     public FileSystem getFileSystem(String user, Path path)
             throws IOException
     {
-        return getFileSystem(user, path, getConfiguration(path));
+        Configuration conf = getConfiguration(path);
+        String cldb1node = "10.25.208.214";
+        String clusterName = "akshat-mapr";
+        conf.set("dfs.nameservices", clusterName);
+        conf.set("dfs.ha.namenodes." + clusterName, "cldb1");
+        conf.set("dfs.namenode.rpc-address." + clusterName + ".cldb1", cldb1node + ":7222");
+        conf.setBoolean("fs.mapr.impl.clustername.unique", false);
+        return getFileSystem(user, path, conf);
     }
 
     public FileSystem getFileSystem(String user, Path path, Configuration configuration)
