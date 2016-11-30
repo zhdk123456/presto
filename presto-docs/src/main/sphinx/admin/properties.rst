@@ -134,7 +134,7 @@ Optimizer properties
 --------------------
 
 ``optimizer.processing-optimization``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``String`` (``disabled``, ``columnar`` or ``columnar_dictionary``)
  * **Default value:** ``disabled``
@@ -317,7 +317,7 @@ Tasks managment properties
 .. _task-concurrency:
 
 ``task.concurrency``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``Integer``
  * **Default value:** ``1``
@@ -347,7 +347,7 @@ Tasks managment properties
 
 
 ``task.info-update-interval``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``String`` (duration)
  * **Default value:** ``200 ms``
@@ -476,7 +476,7 @@ Session properties
 
 
 ``task_concurrency``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``Integer`` (power of 2).
  * **Default value:** ``task.concurrency`` (``1``)
