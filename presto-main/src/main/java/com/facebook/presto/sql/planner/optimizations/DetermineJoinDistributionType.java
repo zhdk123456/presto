@@ -15,6 +15,7 @@
 package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.SystemSessionProperties;
 import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.metadata.GlobalProperties;
 import com.facebook.presto.spi.statistics.Estimate;
@@ -214,7 +215,7 @@ public class DetermineJoinDistributionType
 
         private boolean isSmall(PlanNode node)
         {
-            double smallSizeLimit = .1 * globalProperties.getMaxMemoryPerNode().toBytes();
+            double smallSizeLimit = SystemSessionProperties.getSmallTableCoefficient(session) * globalProperties.getMaxMemoryPerNode().toBytes();
             Estimate dataSize = getOutputSizeEstimate(node);
             return !dataSize.isValueUnknown() && dataSize.getValue() < smallSizeLimit;
         }

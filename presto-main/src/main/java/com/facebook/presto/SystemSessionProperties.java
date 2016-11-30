@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.facebook.presto.spi.session.PropertyMetadata.booleanSessionProperty;
+import static com.facebook.presto.spi.session.PropertyMetadata.doubleSessionProperty;
 import static com.facebook.presto.spi.session.PropertyMetadata.integerSessionProperty;
 import static com.facebook.presto.spi.session.PropertyMetadata.stringSessionProperty;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -41,6 +42,7 @@ public final class SystemSessionProperties
     public static final String OPTIMIZE_HASH_GENERATION = "optimize_hash_generation";
     public static final String DISTRIBUTED_INDEX_JOIN = "distributed_index_join";
     public static final String JOIN_DISTRIBUTION_TYPE = "join_distribution_type";
+    public static final String SMALL_TABLE_COEFFICIENT = "small_table_coefficient";
     public static final String HASH_PARTITION_COUNT = "hash_partition_count";
     public static final String PREFER_STREAMING_OPERATORS = "prefer_streaming_operators";
     public static final String TASK_WRITER_COUNT = "task_writer_count";
@@ -102,6 +104,11 @@ public final class SystemSessionProperties
                         JOIN_DISTRIBUTION_TYPE,
                         "What join method to use. Options are repartitioned, replicated, and automatic",
                         featuresConfig.getJoinDistributionType(),
+                        false),
+                doubleSessionProperty(
+                        SMALL_TABLE_COEFFICIENT,
+                        "If table size is less than small_table_coefficient * query_memory_per_node it is considered small",
+                        featuresConfig.getSmallTableCoefficient(),
                         false),
                 integerSessionProperty(
                         HASH_PARTITION_COUNT,
@@ -426,5 +433,10 @@ public final class SystemSessionProperties
     public static String getJoinDistributionType(Session session)
     {
         return session.getSystemProperty(JOIN_DISTRIBUTION_TYPE, String.class);
+    }
+
+    public static double getSmallTableCoefficient(Session session)
+    {
+        return session.getSystemProperty(SMALL_TABLE_COEFFICIENT, Double.class);
     }
 }

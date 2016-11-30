@@ -68,6 +68,7 @@ public class FeaturesConfig
     private boolean optimizeMixedDistinctAggregations;
     private boolean joinReorderingEnabled = false;
     private String joinDistributionType = JoinDistributionType.AUTOMATIC;
+    private double smallTableCoefficient = 0.01;
 
     private String processingOptimization = ProcessingOptimization.DISABLED;
     private boolean dictionaryAggregation;
@@ -381,5 +382,17 @@ public class FeaturesConfig
     public String getJoinDistributionType()
     {
         return joinDistributionType;
+    }
+
+    @Config("small-table-coefficient")
+    public FeaturesConfig setSmallTableCoefficient(double smallTableCoefficient)
+    {
+        this.smallTableCoefficient = smallTableCoefficient;
+        return this;
+    }
+
+    public double getSmallTableCoefficient()
+    {
+        return smallTableCoefficient;
     }
 }
