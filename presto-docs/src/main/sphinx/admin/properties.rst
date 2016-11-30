@@ -11,13 +11,25 @@ General properties
 ------------------
 
 
-``distributed-joins-enabled``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``join-distribution-type``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- * **Type:** ``Boolean``
- * **Default value:** ``true``
- * **Description:** Use hash distributed joins instead of broadcast joins. Distributed joins require redistributing both tables using a hash of the join key. This can be slower (sometimes substantially) than broadcast joins but allows much larger joins. Broadcast joins require that the tables on the right side of the join after filtering fit in memory on each node whereas distributed joins only need to fit in distributed memory across all nodes. This can also be specified on a per-query basis using the ``distributed_join`` session property.
+ * **Type:** ``String``
+ * **Default value:** ``repartitioned``
+ * **Description:** Whether to use repartitioned or replicated joins. Possible
+   values are ``automatic``, ``repartitioned``, and ``replicated``. See
+   :doc:`../optimizer/join-distribution-type` for more information.
 
+``small-table-coefficient``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``Integer``
+ * **Default value:** ``0.01``
+ * **Description:** Coefficient to determine if a table is small enough to be
+   replicated as part of a join. A table will be considered for replication if
+   it is smaller than ``small-table-coefficient * query.max-memory-per-node``.
+   This property only applies when ``join-distribution-type=automatic``. See
+   :doc:`../optimizer/join-distribution-type` for more information.
 
 ``redistribute-writes``
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -424,6 +436,12 @@ Session properties
  * **Default value:** ``query.initial-hash-partitions`` (``100``)
  * **Description:** See :ref:`query.initial-hash-partitions <tuning-pref-query>`.
 
+``join_distribution_type``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``String``
+ * **Default value:** ``join-distribution-type (``repartitioned``)
+ * **Description:** See :ref:`join-distribution-type <tuning-pref-general>`.
 
 ``optimize_hash_generation``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -473,6 +491,14 @@ Session properties
  * **Type:** ``Boolean``
  * **Default value:** ``false``
  * **Description:** Use resources that are not guaranteed to be available to a query. This property allows you to exceed the limits of memory available per query and session. It may allow resources to be used more efficiently, but may also cause non-deterministic query drops due to insufficient memory on machine. It can be particularly useful for performing more demanding queries.
+
+
+``small_table_coefficient``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ * **Type:** ``Integer``
+ * **Default value:** ``small-table-coefficient`` (``0.01``)
+ * **Description:** See :ref:`small-table-coefficient <tuning-pref-general>`.
 
 
 ``task_concurrency``
