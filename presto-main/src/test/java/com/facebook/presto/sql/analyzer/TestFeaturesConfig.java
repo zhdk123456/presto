@@ -56,7 +56,8 @@ public class TestFeaturesConfig
                 .setSpillerSpillPath(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
                 .setOptimizeMixedDistinctAggregations(false)
-                .setJoinReorderingEnabled(false));
+                .setJoinReorderingEnabled(false)
+                .setSmallTableCoefficient(0.01));
     }
 
     @Test
@@ -85,6 +86,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
                 .put("join-reordering-enabled", "true")
+                .put("small-table-coefficient", "0.2")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -109,6 +111,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path")
                 .put("experimental.spiller-threads", "42")
                 .put("join-reordering-enabled", "true")
+                .put("small-table-coefficient", "0.2")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -133,7 +136,8 @@ public class TestFeaturesConfig
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"))
                 .setSpillerSpillPath("/tmp/custom/spill/path")
                 .setSpillerThreads(42)
-                .setJoinReorderingEnabled(true);
+                .setJoinReorderingEnabled(true)
+                .setSmallTableCoefficient(0.2);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
