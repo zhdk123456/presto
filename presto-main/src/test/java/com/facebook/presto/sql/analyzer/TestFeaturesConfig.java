@@ -61,7 +61,8 @@ public class TestFeaturesConfig
                 .setLegacyOrderBy(false)
                 .setParseDecimalLiteralsAsDouble(false)
                 .setMemoryRevokingThreshold(0.9)
-                .setMemoryRevokingTarget(0.5));
+                .setMemoryRevokingTarget(0.5)
+                .setSmallTableCoefficient(0.01));
     }
 
     @Test
@@ -96,6 +97,7 @@ public class TestFeaturesConfig
                 .put("parse-decimal-literals-as-double", "true")
                 .put("experimental.memory-revoking-threshold", "0.2")
                 .put("experimental.memory-revoking-target", "0.8")
+                .put("small-table-coefficient", "0.2")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -126,6 +128,7 @@ public class TestFeaturesConfig
                 .put("parse-decimal-literals-as-double", "true")
                 .put("experimental.memory-revoking-threshold", "0.2")
                 .put("experimental.memory-revoking-target", "0.8")
+                .put("small-table-coefficient", "0.2")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -156,7 +159,8 @@ public class TestFeaturesConfig
                 .setLegacyOrderBy(true)
                 .setParseDecimalLiteralsAsDouble(true)
                 .setMemoryRevokingThreshold(0.2)
-                .setMemoryRevokingTarget(0.8);
+                .setMemoryRevokingTarget(0.8)
+                .setSmallTableCoefficient(0.2);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
