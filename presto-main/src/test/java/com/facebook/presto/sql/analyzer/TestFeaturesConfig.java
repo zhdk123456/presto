@@ -60,7 +60,8 @@ public class TestFeaturesConfig
                 .setSpillMaxUsedSpaceThreshold(0.9)
                 .setOptimizeMixedDistinctAggregations(false)
                 .setLegacyOrderBy(false)
-                .setParseDecimalLiteralsAsDouble(false));
+                .setParseDecimalLiteralsAsDouble(false)
+                .setSmallTableCoefficient(0.01));
     }
 
     @Test
@@ -93,6 +94,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("small-table-coefficient", "0.2")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -121,6 +123,7 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("small-table-coefficient", "0.2")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -149,7 +152,8 @@ public class TestFeaturesConfig
                 .setSpillerThreads(42)
                 .setSpillMaxUsedSpaceThreshold(0.8)
                 .setLegacyOrderBy(true)
-                .setParseDecimalLiteralsAsDouble(true);
+                .setParseDecimalLiteralsAsDouble(true)
+                .setSmallTableCoefficient(0.2);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
