@@ -50,6 +50,15 @@ public final class HashCollisionsSimulator
         return (double) collisions / NUMBER_OF_PROBES;
     }
 
+    public static double simulate(int numberOfValues, int hashSize, int iterations)
+    {
+        int collisions = 0;
+        for (int i = 0; i < iterations; ++i) {
+            collisions += simulationIteration(numberOfValues, hashSize);
+        }
+        return (double) collisions / iterations;
+    }
+
     private static int simulationIteration(int numberOfValues, int hashSize)
     {
         int collisions = 0;

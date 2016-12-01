@@ -17,6 +17,20 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.ceil;
 import static java.lang.Math.floor;
 
+/**
+ * Estimates number of collisions when inserting values into hash table. The number of hash collisions is
+ * estimated based on extrapolated precalculated values. Precalculated values are results of simulation
+ * by HashCollisionsSimulator which mimics hash table with linear conflict resolution strategy (e.g:
+ * after collision the next position is tried).
+ * <p>
+ * Extrapolation of estimates works very well for large hash tables. For instance assume c is the number of
+ * collisions when inserting x entries into y sized hash table. Then the number of collisions for
+ * inserting x*scale entries into y*scale sized hash table is approximately c*scale
+ * (see TestHashCollisionsEstimator#hashEstimatesShouldApproximateSimulations).
+ * <p>
+ * It is not possible to deduce closed collisions formula for hash tables with linear conflict resolution
+ * strategy. This is because one cannot assume uniform data distribution when inserting new value.
+ */
 public final class HashCollisionsEstimator
 {
     private static final int NUMBER_OF_ESTIMATES = 500;
@@ -55,6 +69,8 @@ public final class HashCollisionsEstimator
             456302.552, 532254.102, 619384.78
     };
 
+    private HashCollisionsEstimator() {}
+
     public static double estimateNumberOfHashCollisions(int numberOfValues, int hashSize)
     {
         checkState(0 <= numberOfValues && numberOfValues <= hashSize);
@@ -78,6 +94,4 @@ public final class HashCollisionsEstimator
 
         return (lowerEstimation * (1 - estimationIndexDistanceFromLower) + upperEstimation * estimationIndexDistanceFromLower) * estimateRescaleFactor;
     }
-
-    private HashCollisionsEstimator() {}
 }
