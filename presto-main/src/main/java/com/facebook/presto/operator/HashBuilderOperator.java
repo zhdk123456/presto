@@ -192,6 +192,8 @@ public class HashBuilderOperator
 
         LookupSourceSupplier partition = index.createLookupSourceSupplier(operatorContext.getSession(), hashChannels, preComputedHashChannel, filterFunctionFactory, Optional.of(outputChannels));
         lookupSourceFactory.setPartitionLookupSourceSupplier(partitionIndex, partition);
+
+        operatorContext.setMemoryReservation(partition.get().getInMemorySizeInBytes());
         hashCollisionsCounter.recordHashCollision(partition.getHashCollisions(), partition.getExpectedHashCollisions());
     }
 
