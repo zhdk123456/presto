@@ -49,14 +49,15 @@ Logical plan:
              _col1 := count
          - RemoteExchange[GATHER] => regionkey:bigint, count:bigint
              - Aggregate(FINAL)[regionkey] => [regionkey:bigint, count:bigint]
-                     count := "count"("count_8")
-                 - RemoteExchange[REPARTITION] => regionkey:bigint, count_8:bigint, $hashvalue:bigint
-                     - Project[] => [regionkey:bigint, count_8:bigint, $hashvalue_9:bigint]
-                             $hashvalue_9 := "combine_hash"(BIGINT '0', COALESCE("$operator$hash_code"("regionkey"), 0))
-                     - Aggregate(PARTIAL)[regionkey] => [regionkey:bigint, count_8:bigint]
-                             count_8 := "count"(*)
-                         - TableScan[tpch:tpch:nation:sf0.01, originalConstraint = true] => [regionkey:bigint]
-                                 regionkey := tpch:regionkey
+                    count := "count"("count_8")
+                 - LocalExchange[HASH][$hashvalue] ("regionkey") => regionkey:bigint, count_8:bigint, $hashvalue:bigint
+                     - RemoteExchange[REPARTITION][$hashvalue_9] => regionkey:bigint, count_8:bigint, $hashvalue_9:bigint
+                         - Project[] => [regionkey:bigint, count_8:bigint, $hashvalue_10:bigint]
+                                 $hashvalue_10 := "combine_hash"(BIGINT '0', COALESCE("$operator$hash_code"("regionkey"), 0))
+                             - Aggregate(PARTIAL)[regionkey] => [regionkey:bigint, count_8:bigint]
+                                     count_8 := "count"(*)
+                                 - TableScan[tpch:tpch:nation:sf0.1, originalConstraint = true] => [regionkey:bigint]
+                                         regionkey := tpch:regionkey
 
 Distributed plan:
 
@@ -77,16 +78,17 @@ Distributed plan:
          Output partitioning: SINGLE []
          - Aggregate(FINAL)[regionkey] => [regionkey:bigint, count:bigint]
                  count := "count"("count_8")
-             - RemoteSource[2] => [regionkey:bigint, count_8:bigint, $hashvalue:bigint]
+             - LocalExchange[HASH][$hashvalue] ("regionkey") => regionkey:bigint, count_8:bigint, $hashvalue:bigint
+                 - RemoteSource[2] => [regionkey:bigint, count_8:bigint, $hashvalue_9:bigint]
 
      Fragment 2 [SOURCE]
-         Output layout: [regionkey, count_8, $hashvalue_9]
-         Output partitioning: HASH [regionkey]
-         - Project[] => [regionkey:bigint, count_8:bigint, $hashvalue_9:bigint]
-                 $hashvalue_9 := "combine_hash"(BIGINT '0', COALESCE("$operator$hash_code"("regionkey"), 0))
+         Output layout: [regionkey, count_8, $hashvalue_10]
+         Output partitioning: HASH [regionkey][$hashvalue_10]
+         - Project[] => [regionkey:bigint, count_8:bigint, $hashvalue_10:bigint]
+                 $hashvalue_10 := "combine_hash"(BIGINT '0', COALESCE("$operator$hash_code"("regionkey"), 0))
              - Aggregate(PARTIAL)[regionkey] => [regionkey:bigint, count_8:bigint]
                      count_8 := "count"(*)
-                 - TableScan[tpch:tpch:nation:sf0.01, originalConstraint = true] => [regionkey:bigint]
+                 - TableScan[tpch:tpch:nation:sf0.1, originalConstraint = true] => [regionkey:bigint]
                          regionkey := tpch:regionkey
 
 See Also
