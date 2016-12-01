@@ -170,6 +170,7 @@ public class DriverContext
         endNanos.set(System.nanoTime());
 
         freeMemory(memoryReservation.get());
+        freeRevocableMemory(revocableMemoryReservation.get());
 
         pipelineContext.driverFinished(this);
     }
@@ -180,6 +181,7 @@ public class DriverContext
         finished.set(true);
 
         freeMemory(memoryReservation.get());
+        freeRevocableMemory(revocableMemoryReservation.get());
     }
 
     public boolean isDone()
