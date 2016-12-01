@@ -87,6 +87,7 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorPageSource;
 import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.NodeState;
 import com.facebook.presto.spi.PageIndexerFactory;
 import com.facebook.presto.spi.PageSorter;
 import com.facebook.presto.spi.Plugin;
@@ -665,7 +666,7 @@ public class LocalQueryRunner
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
-        PlanOptimizers planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, !distributed);
+        PlanOptimizers planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, !distributed, nodeManager.getNodes(NodeState.ACTIVE).size());
         return createPlan(session, sql, featuresConfig, planOptimizers.get(), stage);
     }
 
@@ -676,7 +677,7 @@ public class LocalQueryRunner
 
     public Plan createPlan(Session session, @Language("SQL") String sql, FeaturesConfig featuresConfig, Predicate<PlanOptimizer> optimizersFilter)
     {
-        List<PlanOptimizer> planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, false).get().stream()
+        List<PlanOptimizer> planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, false, nodeManager.getNodes(NodeState.ACTIVE).size()).get().stream()
                 .filter(optimizersFilter)
                 .collect(toImmutableList());
         return createPlan(session, sql, featuresConfig, planOptimizers, LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED);

@@ -14,7 +14,9 @@
 package com.facebook.presto.sql.planner;
 
 import com.facebook.presto.cost.CostCalculator;
+import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.spi.NodeState;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.optimizations.AddExchanges;
@@ -66,12 +68,12 @@ public class PlanOptimizers
     private final List<PlanOptimizer> optimizers;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, InternalNodeManager nodeManager)
     {
-        this(metadata, sqlParser, featuresConfig, costCalculator, false);
+        this(metadata, sqlParser, featuresConfig, costCalculator, false, nodeManager.getNodes(NodeState.ACTIVE).size());
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, boolean forceSingleNode)
+    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, boolean forceSingleNode, int nodeCount)
     {
         ImmutableList.Builder<PlanOptimizer> builder = ImmutableList.builder();
 
@@ -124,7 +126,7 @@ public class PlanOptimizers
         // For now we place it before AddExchanges/PickLayout optimizer.
         // This implies that that default layout returned by connector will be used for determining statistics for TableScan nodes - which
         // is not necessarily the same layout which would be selected by latter optimizers.
-        builder.add(new DetermineJoinDistributionType(costCalculator)); // Must run before AddExchanges
+        builder.add(new DetermineJoinDistributionType(costCalculator, nodeCount)); // Must run before AddExchanges
 
         if (!forceSingleNode) {
             builder.add(new PushTableWriteThroughUnion()); // Must run before AddExchanges

@@ -47,10 +47,12 @@ public class DetermineJoinDistributionType
         implements PlanOptimizer
 {
     private final CostCalculator costCalculator;
+    private final int nodeCount;
 
-    public DetermineJoinDistributionType(CostCalculator costCalculator)
+    public DetermineJoinDistributionType(CostCalculator costCalculator, int nodeCount)
     {
         this.costCalculator = requireNonNull(costCalculator, "statisticsCalculator can not be null");
+        this.nodeCount = nodeCount;
     }
 
     @Override
@@ -59,7 +61,7 @@ public class DetermineJoinDistributionType
         requireNonNull(plan, "plan is null");
         requireNonNull(session, "session is null");
 
-        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator, types), plan);
+        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator, types, nodeCount), plan);
     }
 
     private static class Rewriter
@@ -72,14 +74,16 @@ public class DetermineJoinDistributionType
         private final GlobalProperties globalProperties;
         private final CostCalculator costCalculator;
         private final Map<Symbol, Type> types;
+        private final int nodeCount;
         private boolean isDeleteQuery;
 
-        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator, Map<Symbol, Type> types)
+        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator, Map<Symbol, Type> types, int nodeCount)
         {
             this.session = session;
             this.globalProperties = globalProperties;
             this.costCalculator = costCalculator;
             this.types = types;
+            this.nodeCount = nodeCount;
         }
 
         @Override
