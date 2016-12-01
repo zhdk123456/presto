@@ -122,6 +122,7 @@ import static com.google.common.base.CaseFormat.UPPER_UNDERSCORE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.getLast;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Lists.reverse;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.succinctBytes;
@@ -229,12 +230,8 @@ public class PlanPrinter
         Map<PlanNodeId, Long> planNodeOutputBytes = new HashMap<>();
         Map<PlanNodeId, Long> planNodeWallMillis = new HashMap<>();
 
-        Map<PlanNodeId, Map<String, Long>> operatorTotalDrivers = new HashMap<>();
-        Map<PlanNodeId, Map<String, Long>> operatorInputPositions = new HashMap<>();
-        Map<PlanNodeId, Map<String, Double>> operatorSumSquaredInputPositions = new HashMap<>();
-        Map<PlanNodeId, Map<String, Double>> operatorWeightedHashCollisions = new HashMap<>();
-        Map<PlanNodeId, Map<String, Double>> operatorWeightedSumSquaredHashCollisions = new HashMap<>();
-        Map<PlanNodeId, Map<String, Double>> operatorWeightedExpectedHashCollisions = new HashMap<>();
+        Map<PlanNodeId, Map<String, OperatorInputStats>> operatorInputStats = new HashMap<>();
+        Map<PlanNodeId, Map<String, OperatorHashCollisionsStats>> operatorHashCollisionsStats = new HashMap<>();
 
         for (PipelineStats pipelineStats : taskStats.getPipelines()) {
             // Due to eventual consistently collected stats, these could be empty
@@ -253,52 +250,33 @@ public class PlanPrinter
                 long wall = operatorStats.getAddInputWall().toMillis() + operatorStats.getGetOutputWall().toMillis() + operatorStats.getFinishWall().toMillis();
                 planNodeWallMillis.merge(planNodeId, wall, Long::sum);
 
-                operatorTotalDrivers.merge(planNodeId,
-                        ImmutableMap.of(
-                                operatorStats.getOperatorType(),
-                                operatorStats.getTotalDrivers()),
-                        PlanPrinter::sumLongsMap);
-
-                operatorInputPositions.merge(planNodeId,
-                        ImmutableMap.of(
-                                operatorStats.getOperatorType(),
-                                operatorStats.getInputPositions()),
-                        PlanPrinter::sumLongsMap);
-                operatorSumSquaredInputPositions.merge(planNodeId,
-                        ImmutableMap.of(
-                                operatorStats.getOperatorType(),
-                                operatorStats.getSumSquaredInputPositions()
-                        ),
-                        PlanPrinter::sumDoublesMap);
-
-                if (operatorStats.getInfo() instanceof HashCollisionsInfo) {
-                    HashCollisionsInfo hashCollisionsInfo = (HashCollisionsInfo) operatorStats.getInfo();
-                    operatorWeightedHashCollisions.merge(planNodeId,
-                            ImmutableMap.of(
-                                    operatorStats.getOperatorType(),
-                                    hashCollisionsInfo.getWeightedHashCollisions()
-                            ),
-                            PlanPrinter::sumDoublesMap);
-                    operatorWeightedSumSquaredHashCollisions.merge(planNodeId,
-                            ImmutableMap.of(
-                                    operatorStats.getOperatorType(),
-                                    hashCollisionsInfo.getWeightedSumSquaredHashCollisions()
-                            ),
-                            PlanPrinter::sumDoublesMap);
-                    operatorWeightedExpectedHashCollisions.merge(planNodeId,
-                            ImmutableMap.of(
-                                    operatorStats.getOperatorType(),
-                                    hashCollisionsInfo.getWeightedExpectedHashCollisions()
-                            ),
-                            PlanPrinter::sumDoublesMap);
-                }
-
                 // A pipeline like hash build before join might link to another "internal" pipelines which provide actual input for this plan node
                 if (operatorStats.getPlanNodeId().equals(inputPlanNode) && !pipelineStats.isInputPipeline()) {
                     continue;
                 }
                 if (processedNodes.contains(planNodeId)) {
                     continue;
+                }
+
+                operatorInputStats.merge(planNodeId,
+                        ImmutableMap.of(
+                                operatorStats.getOperatorType(),
+                                new OperatorInputStats(
+                                        operatorStats.getTotalDrivers(),
+                                        operatorStats.getInputPositions(),
+                                        operatorStats.getSumSquaredInputPositions())),
+                        PlanPrinter::mergeOperatorInputStatsMaps);
+
+                if (operatorStats.getInfo() instanceof HashCollisionsInfo) {
+                    HashCollisionsInfo hashCollisionsInfo = (HashCollisionsInfo) operatorStats.getInfo();
+                    operatorHashCollisionsStats.merge(planNodeId,
+                            ImmutableMap.of(
+                                    operatorStats.getOperatorType(),
+                                    new OperatorHashCollisionsStats(
+                                            hashCollisionsInfo.getWeightedHashCollisions(),
+                                            hashCollisionsInfo.getWeightedSumSquaredHashCollisions(),
+                                            hashCollisionsInfo.getWeightedExpectedHashCollisions())),
+                            PlanPrinter::mergeOperatorHashCollisionsStatsMaps);
                 }
 
                 planNodeInputPositions.merge(planNodeId, operatorStats.getInputPositions(), Long::sum);
@@ -339,13 +317,9 @@ public class PlanPrinter
                     // and therefore only have wall time, but no output stats
                     planNodeOutputPositions.getOrDefault(planNodeId, 0L),
                     succinctDataSize(planNodeOutputBytes.getOrDefault(planNodeId, 0L), BYTE),
-                    operatorTotalDrivers.get(planNodeId),
-                    operatorInputPositions.get(planNodeId),
-                    operatorSumSquaredInputPositions.get(planNodeId),
+                    operatorInputStats.get(planNodeId),
                     // Only some operators emit hash collisions statistics
-                    operatorWeightedHashCollisions.getOrDefault(planNodeId, emptyMap()),
-                    operatorWeightedSumSquaredHashCollisions.getOrDefault(planNodeId, emptyMap()),
-                    operatorWeightedExpectedHashCollisions.getOrDefault(planNodeId, emptyMap())));
+                    operatorHashCollisionsStats.getOrDefault(planNodeId, emptyMap())));
         }
         return stats;
     }
@@ -507,8 +481,6 @@ public class PlanPrinter
 
     private void printDistributions(int indent, PlanNodeStats nodeStats)
     {
-        Map<String, Long> totalDrivers = nodeStats.getOperatorTotalDrivers();
-
         Map<String, Double> inputAverages = nodeStats.getOperatorInputPositionsAverages();
         Map<String, Double> inputStdDevs = nodeStats.getOperatorInputPositionsStdDevs();
 
@@ -516,32 +488,60 @@ public class PlanPrinter
         Map<String, Double> hashCollisionsStdDevs = nodeStats.getOperatorHashCollisionsStdDevs();
         Map<String, Double> expectedHashCollisionsAverages = nodeStats.getOperatorExpectedCollisionsAverages();
 
-        for (String operator : inputAverages.keySet()) {
-            output.append(indentString(indent));
+        Map<String, String> translatedOperatorTypes = translateOperatorTypes(nodeStats.getOperatorTypes());
+
+        for (String operator : translatedOperatorTypes.keySet()) {
+            String translatedOperatorType = translatedOperatorTypes.get(operator);
             double inputAverage = inputAverages.get(operator);
-            output.append(format(Locale.US, "%s := Drivers: %d, Input avg.: %s lines, Input std.dev.: %s%%",
-                    operator, totalDrivers.get(operator), formatDouble(inputAverage), formatDouble(100.0d * inputStdDevs.get(operator) / inputAverage)));
+
+            output.append(indentString(indent));
+            output.append(translatedOperatorType);
+            output.append(format(Locale.US, "Input avg.: %s lines, Input std.dev.: %s%%",
+                    formatDouble(inputAverage), formatDouble(100.0d * inputStdDevs.get(operator) / inputAverage)));
             output.append('\n');
 
             double hashCollisionsAverage = hashCollisionsAverages.getOrDefault(operator, 0.0d);
             double expectedHashCollisionsAverage = expectedHashCollisionsAverages.getOrDefault(operator, 0.0d);
             if (hashCollisionsAverage != 0.0d) {
-                output.append(indentString(indent));
-
                 double hashCollisionsStdDevRatio = hashCollisionsStdDevs.get(operator) / hashCollisionsAverage;
-                if (expectedHashCollisionsAverage != 0.0d) {
-                    double hashCollisionsRatio = hashCollisionsAverage / expectedHashCollisionsAverage;
-                    output.append(format(Locale.US, "%s := Collisions avg.: %s (%s%% est.), Collisions std.dev.: %s%%",
-                            operator, formatDouble(hashCollisionsAverage), formatDouble(hashCollisionsRatio * 100.0d), formatDouble(hashCollisionsStdDevRatio * 100.0d)));
+
+                if (translatedOperatorType.isEmpty()) {
+                    output.append(indentString(indent));
                 }
                 else {
-                    output.append(format(Locale.US, "%s := Collisions avg.: %s, Collisions std.dev.: %s%%",
-                            operator, formatDouble(hashCollisionsAverage), formatDouble(hashCollisionsStdDevRatio * 100.0d)));
+                    output.append(indentString(indent + 2));
+                }
+
+                if (expectedHashCollisionsAverage != 0.0d) {
+                    double hashCollisionsRatio = hashCollisionsAverage / expectedHashCollisionsAverage;
+                    output.append(format(Locale.US, "Collisions avg.: %s (%s%% est.), Collisions std.dev.: %s%%",
+                            formatDouble(hashCollisionsAverage), formatDouble(hashCollisionsRatio * 100.0d), formatDouble(hashCollisionsStdDevRatio * 100.0d)));
+                }
+                else {
+                    output.append(format(Locale.US, "Collisions avg.: %s, Collisions std.dev.: %s%%",
+                            formatDouble(hashCollisionsAverage), formatDouble(hashCollisionsStdDevRatio * 100.0d)));
                 }
 
                 output.append('\n');
             }
         }
+    }
+
+    private static Map<String, String> translateOperatorTypes(Set<String> operators)
+    {
+        if (operators.size() == 1) {
+            // don't display operator (plan node) name again
+            return ImmutableMap.of(getOnlyElement(operators), "");
+        }
+
+        if (operators.contains("LookupJoinOperator") && operators.contains("HashBuilderOperator")) {
+            // join plan node
+            return ImmutableMap.of(
+                    "LookupJoinOperator", "Left (probe) ",
+                    "HashBuilderOperator", "Right (build) ");
+        }
+
+        return ImmutableMap.of();
     }
 
     private static String formatDouble(double value)
@@ -1344,12 +1344,8 @@ public class PlanPrinter
         private final long planNodeOutputPositions;
         private final DataSize planNodeOutputDataSize;
 
-        private final Map<String, Long> operatorTotalDrivers;
-        private final Map<String, Long> operatorInputPositions;
-        private final Map<String, Double> operatorSumSquaredInputPositions;
-        private final Map<String, Double> operatorWeightedHashCollisions;
-        private final Map<String, Double> operatorWeightedSumSquaredHashCollisions;
-        private final Map<String, Double> operatorWeightedExpectedHashCollisions;
+        private final Map<String, OperatorInputStats> operatorInputStats;
+        private final Map<String, OperatorHashCollisionsStats> operatorHashCollisionsStats;
 
         private PlanNodeStats(
                 PlanNodeId planNodeId,
@@ -1358,12 +1354,8 @@ public class PlanPrinter
                 DataSize planNodeInputDataSize,
                 long planNodeOutputPositions,
                 DataSize planNodeOutputDataSize,
-                Map<String, Long> operatorTotalDrivers,
-                Map<String, Long> operatorInputPositions,
-                Map<String, Double> operatorSumSquaredInputPositions,
-                Map<String, Double> operatorWeightedHashCollisions,
-                Map<String, Double> operatorWeightedSumSquaredHashCollisions,
-                Map<String, Double> operatorWeightedExpectedHashCollisions)
+                Map<String, OperatorInputStats> operatorInputStats,
+                Map<String, OperatorHashCollisionsStats> operatorHashCollisionsStats)
         {
             this.planNodeId = requireNonNull(planNodeId, "planNodeId is null");
 
@@ -1373,12 +1365,8 @@ public class PlanPrinter
             this.planNodeOutputPositions = planNodeOutputPositions;
             this.planNodeOutputDataSize = planNodeOutputDataSize;
 
-            this.operatorTotalDrivers = requireNonNull(operatorTotalDrivers, "operatorTotalDrivers is null");
-            this.operatorInputPositions = requireNonNull(operatorInputPositions, "operatorInputPositions is null");
-            this.operatorSumSquaredInputPositions = requireNonNull(operatorSumSquaredInputPositions, "operatorSumSquaredInputPositions is null");
-            this.operatorWeightedHashCollisions = requireNonNull(operatorWeightedHashCollisions, "operatorWeightedHashCollisions is null");
-            this.operatorWeightedSumSquaredHashCollisions = requireNonNull(operatorWeightedSumSquaredHashCollisions, "operatorWeightedSumSquaredHashCollisions is null");
-            this.operatorWeightedExpectedHashCollisions = requireNonNull(operatorWeightedExpectedHashCollisions, "operatorWeightedExpectedHashCollisions is null");
+            this.operatorInputStats = requireNonNull(operatorInputStats, "operatorInputStats is null");
+            this.operatorHashCollisionsStats = requireNonNull(operatorHashCollisionsStats, "operatorHashCollisionsStats is null");
         }
 
         public PlanNodeId getPlanNodeId()
@@ -1391,9 +1379,9 @@ public class PlanPrinter
             return planNodeWallTime;
         }
 
-        public Map<String, Long> getOperatorTotalDrivers()
+        public Set<String> getOperatorTypes()
         {
-            return operatorTotalDrivers;
+            return operatorInputStats.keySet();
         }
 
         public long getPlanNodeInputPositions()
@@ -1418,48 +1406,48 @@ public class PlanPrinter
 
         public Map<String, Double> getOperatorInputPositionsAverages()
         {
-            return operatorInputPositions.entrySet().stream()
+            return operatorInputStats.entrySet().stream()
                     .collect(toMap(
                             Map.Entry::getKey,
-                            entry -> (double) entry.getValue() / operatorTotalDrivers.get(entry.getKey())));
+                            entry -> (double) entry.getValue().getInputPositions() / operatorInputStats.get(entry.getKey()).getTotalDrivers()));
         }
 
         public Map<String, Double> getOperatorInputPositionsStdDevs()
         {
-            return operatorInputPositions.keySet().stream()
+            return operatorInputStats.entrySet().stream()
                     .collect(toMap(
-                            key -> key,
-                            key -> computedStdDev(
-                                    operatorSumSquaredInputPositions.get(key),
-                                    operatorInputPositions.get(key),
-                                    operatorTotalDrivers.get(key))));
+                            Map.Entry::getKey,
+                            entry -> computedStdDev(
+                                    entry.getValue().getSumSquaredInputPositions(),
+                                    entry.getValue().getInputPositions(),
+                                    entry.getValue().getTotalDrivers())));
         }
 
         public Map<String, Double> getOperatorHashCollisionsAverages()
         {
-            return operatorWeightedHashCollisions.entrySet().stream()
+            return operatorHashCollisionsStats.entrySet().stream()
                     .collect(toMap(
                             Map.Entry::getKey,
-                            entry -> entry.getValue() / operatorInputPositions.get(entry.getKey())));
+                            entry -> entry.getValue().getWeightedHashCollisions() / operatorInputStats.get(entry.getKey()).getInputPositions()));
         }
 
         public Map<String, Double> getOperatorHashCollisionsStdDevs()
         {
-            return operatorWeightedHashCollisions.keySet().stream()
+            return operatorHashCollisionsStats.entrySet().stream()
                     .collect(toMap(
-                            key -> key,
-                            key -> computedWeightedStdDev(
-                                    operatorWeightedSumSquaredHashCollisions.get(key),
-                                    operatorWeightedHashCollisions.get(key),
-                                    operatorInputPositions.get(key))));
+                            Map.Entry::getKey,
+                            entry -> computedWeightedStdDev(
+                                    entry.getValue().getWeightedSumSquaredHashCollisions(),
+                                    entry.getValue().getWeightedHashCollisions(),
+                                    operatorInputStats.get(entry.getKey()).getInputPositions())));
         }
 
         public Map<String, Double> getOperatorExpectedCollisionsAverages()
         {
-            return operatorWeightedExpectedHashCollisions.entrySet().stream()
+            return operatorHashCollisionsStats.entrySet().stream()
                     .collect(toMap(
                             Map.Entry::getKey,
-                            entry -> entry.getValue() / operatorInputPositions.get(entry.getKey())));
+                            entry -> entry.getValue().getWeightedExpectedHashCollisions() / operatorInputStats.get(entry.getKey()).getInputPositions()));
         }
 
         public static PlanNodeStats merge(PlanNodeStats planNodeStats1, PlanNodeStats planNodeStats2)
@@ -1471,22 +1459,16 @@ public class PlanPrinter
             long planNodeOutputPositions = planNodeStats1.planNodeOutputPositions + planNodeStats2.planNodeOutputPositions;
             DataSize planNodeOutputDataSize = succinctBytes(planNodeStats1.planNodeOutputDataSize.toBytes() + planNodeStats2.planNodeOutputDataSize.toBytes());
 
-            Map<String, Long> operatorTotalDrivers = sumLongsMap(planNodeStats1.operatorTotalDrivers, planNodeStats2.operatorTotalDrivers);
-            Map<String, Long> operatorInputPositions = sumLongsMap(planNodeStats1.operatorInputPositions, planNodeStats2.operatorInputPositions);
-            Map<String, Double> operatorSumSquaredInputPositions = sumDoublesMap(planNodeStats1.operatorSumSquaredInputPositions, planNodeStats2.operatorSumSquaredInputPositions);
-            Map<String, Double> operatorWeightedHashCollisions = sumDoublesMap(planNodeStats1.operatorWeightedHashCollisions, planNodeStats2.operatorWeightedHashCollisions);
-            Map<String, Double> operatorWeightedSumSquaredHashCollisions = sumDoublesMap(planNodeStats1.operatorWeightedSumSquaredHashCollisions, planNodeStats2.operatorWeightedSumSquaredHashCollisions);
-            Map<String, Double> operatorWeightedExpectedHashCollisions = sumDoublesMap(planNodeStats1.operatorWeightedExpectedHashCollisions, planNodeStats2.operatorWeightedExpectedHashCollisions);
+            Map<String, OperatorInputStats> operatorInputStats = mergeOperatorInputStatsMaps(planNodeStats1.operatorInputStats, planNodeStats2.operatorInputStats);
+            Map<String, OperatorHashCollisionsStats> operatorHashCollisionsStats = mergeOperatorHashCollisionsStatsMaps(planNodeStats1.operatorHashCollisionsStats, planNodeStats2.operatorHashCollisionsStats);
 
             return new PlanNodeStats(
                     planNodeStats1.getPlanNodeId(),
                     new Duration(planNodeStats1.getPlanNodeWallTime().toMillis() + planNodeStats2.getPlanNodeWallTime().toMillis(), MILLISECONDS),
                     planNodeInputPositions, planNodeInputDataSize,
                     planNodeOutputPositions, planNodeOutputDataSize,
-                    operatorTotalDrivers,
-                    operatorInputPositions, operatorSumSquaredInputPositions,
-                    operatorWeightedHashCollisions, operatorWeightedSumSquaredHashCollisions,
-                    operatorWeightedExpectedHashCollisions);
+                    operatorInputStats,
+                    operatorHashCollisionsStats);
         }
     }
 
@@ -1506,14 +1488,14 @@ public class PlanPrinter
         return sqrt(max(variance, 0d));
     }
 
-    private static <K> Map<K, Long> sumLongsMap(Map<K, Long> map1, Map<K, Long> map2)
+    private static <K> Map<K, OperatorInputStats> mergeOperatorInputStatsMaps(Map<K, OperatorInputStats> map1, Map<K, OperatorInputStats> map2)
     {
-        return mergeMaps(map1, map2, (left, right) -> left + right);
+        return mergeMaps(map1, map2, OperatorInputStats::merge);
     }
 
-    private static <K> Map<K, Double> sumDoublesMap(Map<K, Double> map1, Map<K, Double> map2)
+    private static <K> Map<K, OperatorHashCollisionsStats> mergeOperatorHashCollisionsStatsMaps(Map<K, OperatorHashCollisionsStats> map1, Map<K, OperatorHashCollisionsStats> map2)
     {
-        return mergeMaps(map1, map2, (left, right) -> left + right);
+        return mergeMaps(map1, map2, OperatorHashCollisionsStats::merge);
     }
 
     private static <K, V> Map<K, V> mergeMaps(Map<K, V> map1, Map<K, V> map2, BinaryOperator<V> merger)
@@ -1525,5 +1507,79 @@ public class PlanPrinter
                         Map.Entry::getKey,
                         Map.Entry::getValue,
                         merger::apply));
+    }
+
+    private static class OperatorInputStats
+    {
+        private final long totalDrivers;
+        private final long inputPositions;
+        private final double sumSquaredInputPositions;
+
+        public OperatorInputStats(long totalDrivers, long inputPositions, double sumSquaredInputPositions)
+        {
+            this.totalDrivers = totalDrivers;
+            this.inputPositions = inputPositions;
+            this.sumSquaredInputPositions = sumSquaredInputPositions;
+        }
+
+        public long getTotalDrivers()
+        {
+            return totalDrivers;
+        }
+
+        public long getInputPositions()
+        {
+            return inputPositions;
+        }
+
+        public double getSumSquaredInputPositions()
+        {
+            return sumSquaredInputPositions;
+        }
+
+        public static OperatorInputStats merge(OperatorInputStats first, OperatorInputStats second)
+        {
+            return new OperatorInputStats(
+                    first.totalDrivers + second.totalDrivers,
+                    first.inputPositions + second.inputPositions,
+                    first.sumSquaredInputPositions + second.sumSquaredInputPositions);
+        }
+    }
+
+    private static class OperatorHashCollisionsStats
+    {
+        private final double weightedHashCollisions;
+        private final double weightedSumSquaredHashCollisions;
+        private final double weightedExpectedHashCollisions;
+
+        public OperatorHashCollisionsStats(double weightedHashCollisions, double weightedSumSquaredHashCollisions, double weightedExpectedHashCollisions)
+        {
+            this.weightedHashCollisions = weightedHashCollisions;
+            this.weightedSumSquaredHashCollisions = weightedSumSquaredHashCollisions;
+            this.weightedExpectedHashCollisions = weightedExpectedHashCollisions;
+        }
+
+        public double getWeightedHashCollisions()
+        {
+            return weightedHashCollisions;
+        }
+
+        public double getWeightedSumSquaredHashCollisions()
+        {
+            return weightedSumSquaredHashCollisions;
+        }
+
+        public double getWeightedExpectedHashCollisions()
+        {
+            return weightedExpectedHashCollisions;
+        }
+
+        public static OperatorHashCollisionsStats merge(OperatorHashCollisionsStats first, OperatorHashCollisionsStats second)
+        {
+            return new OperatorHashCollisionsStats(
+                    first.weightedHashCollisions + second.weightedHashCollisions,
+                    first.weightedSumSquaredHashCollisions + second.weightedSumSquaredHashCollisions,
+                    first.weightedExpectedHashCollisions + second.weightedExpectedHashCollisions);
+        }
     }
 }
