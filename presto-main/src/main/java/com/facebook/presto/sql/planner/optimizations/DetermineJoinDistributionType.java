@@ -40,7 +40,6 @@ import static com.facebook.presto.sql.planner.plan.JoinNode.Type.FULL;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.RIGHT;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class DetermineJoinDistributionType
@@ -105,17 +104,22 @@ public class DetermineJoinDistributionType
                     node.getRightHashSymbol(),
                     Optional.of(targetJoinDistributionType));
 
-            // flip the join if the distribution type is replicated, the left side is smaller, and you're allowed to flip it.
+            // Check if flipping the join allows you to replicate
             JoinNode flipped = flipJoin(rewritten);
-            if (getJoinDistributionType(session).equals(FeaturesConfig.JoinDistributionType.AUTOMATIC) && targetJoinDistributionType.equals(JoinNode.DistributionType.REPLICATED)) {
-                checkState(!mustPartitionJoin(flipped) || !mustPartitionJoin(node), "Cannot replicate join");
-                if (mustPartitionJoin(node)
-                        || (!(mustPartitionJoin(flipped))
-                        && !getOutputSizeEstimate(node.getLeft()).isValueUnknown()
-                        && (getOutputSizeEstimate(node.getRight()).isValueUnknown()
-                        || getOutputSizeEstimate(node.getLeft()).getValue() < getOutputSizeEstimate(node.getRight()).getValue()))) {
-                    rewritten = flipped;
-                }
+            if (getJoinDistributionType(session).equals(FeaturesConfig.JoinDistributionType.AUTOMATIC)
+                    && targetJoinDistributionType == JoinNode.DistributionType.PARTITIONED
+                    && getTargetJoinDistributionType(flipped) == JoinNode.DistributionType.REPLICATED) {
+                rewritten = new JoinNode(
+                        flipped.getId(),
+                        flipped.getType(),
+                        flipped.getLeft(),
+                        flipped.getRight(),
+                        flipped.getCriteria(),
+                        flipped.getOutputSymbols(),
+                        flipped.getFilter(),
+                        flipped.getLeftHashSymbol(),
+                        flipped.getRightHashSymbol(),
+                        Optional.of(getTargetJoinDistributionType(flipped)));
             }
 
             return rewritten;
@@ -157,6 +161,9 @@ public class DetermineJoinDistributionType
         private JoinNode.DistributionType getTargetJoinDistributionType(JoinNode node)
         {
             // join distribution type forced by limitation of implementation
+            if (mustPartitionJoin(node)) {
+                return JoinNode.DistributionType.PARTITIONED;
+            }
             if (mustReplicateJoin(node)) {
                 return JoinNode.DistributionType.REPLICATED;
             }
@@ -170,8 +177,7 @@ public class DetermineJoinDistributionType
             }
 
             // Choose based on stats.
-            // We'll flip right and left later if the left side is smaller.
-            if (!mustPartitionJoin(node) && isSmall(node.getRight()) || !mustPartitionJoin(flipJoin(node)) && isSmall(node.getLeft())) {
+            if (isSmall(node.getRight()) && isMuchSmaller(node.getRight(), node.getLeft())) {
                 return JoinNode.DistributionType.REPLICATED;
             }
 
@@ -222,6 +228,13 @@ public class DetermineJoinDistributionType
             double smallSizeLimit = SystemSessionProperties.getSmallTableCoefficient(session) * globalProperties.getMaxMemoryPerNode().toBytes();
             Estimate dataSize = getOutputSizeEstimate(node);
             return !dataSize.isValueUnknown() && dataSize.getValue() < smallSizeLimit;
+        }
+
+        private boolean isMuchSmaller(PlanNode node, PlanNode other)
+        {
+            Estimate nodeDataSize = getOutputSizeEstimate(node);
+            Estimate otherDataSize = getOutputSizeEstimate(other);
+            return !nodeDataSize.isValueUnknown() && !otherDataSize.isValueUnknown() && nodeDataSize.getValue() * nodeCount < otherDataSize.getValue();
         }
 
         private Estimate getOutputSizeEstimate(PlanNode node)
