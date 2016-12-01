@@ -37,7 +37,7 @@ public class TestFeaturesConfig
         assertRecordedDefaults(ConfigAssertions.recordDefaults(FeaturesConfig.class)
                 .setResourceGroupsEnabled(false)
                 .setDistributedIndexJoinsEnabled(false)
-                .setJoinDistributionType("automatic")
+                .setJoinDistributionType("repartitioned")
                 .setColocatedJoinsEnabled(false)
                 .setJoinReorderingEnabled(false)
                 .setRedistributeWrites(true)

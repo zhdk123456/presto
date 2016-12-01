@@ -67,7 +67,7 @@ public class FeaturesConfig
     private boolean legacyArrayAgg;
     private boolean optimizeMixedDistinctAggregations;
     private boolean joinReorderingEnabled = false;
-    private String joinDistributionType = JoinDistributionType.AUTOMATIC;
+    private String joinDistributionType = JoinDistributionType.REPARTITIONED;
     private double smallTableCoefficient = 0.01;
 
     private String processingOptimization = ProcessingOptimization.DISABLED;
