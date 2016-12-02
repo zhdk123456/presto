@@ -15,7 +15,9 @@ package com.facebook.presto.sql.planner;
 
 import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.metadata.GlobalProperties;
+import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.spi.NodeState;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.iterative.IterativeOptimizer;
@@ -93,9 +95,16 @@ public class PlanOptimizers
     private final MBeanExporter exporter;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, MBeanExporter exporter, CostCalculator costCalculator, GlobalProperties globalProperties)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            MBeanExporter exporter,
+            CostCalculator costCalculator,
+            GlobalProperties globalProperties,
+            InternalNodeManager nodeManager)
     {
-        this(metadata, sqlParser, featuresConfig, false, exporter, costCalculator, globalProperties);
+        this(metadata, sqlParser, featuresConfig, exporter, costCalculator, globalProperties, nodeManager.getNodes(NodeState.ACTIVE).size(), false);
     }
 
     @PostConstruct
@@ -110,7 +119,15 @@ public class PlanOptimizers
         stats.unexport(exporter);
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, boolean forceSingleNode, MBeanExporter exporter, CostCalculator costCalculator, GlobalProperties globalProperties)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            MBeanExporter exporter,
+            CostCalculator costCalculator,
+            GlobalProperties globalProperties,
+            int nodeCount,
+            boolean forceSingleNode)
     {
         this.exporter = exporter;
         ImmutableList.Builder<PlanOptimizer> builder = ImmutableList.builder();
