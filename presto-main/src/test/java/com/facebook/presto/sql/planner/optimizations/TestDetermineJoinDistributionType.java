@@ -84,6 +84,23 @@ public class TestDetermineJoinDistributionType
     }
 
     @Test
+    public void testRepartitionsSameSizeTables()
+    {
+        @Language("SQL") String sql = "select * from nation n1 join nation n2 on n1.nationkey = n2.nationkey";
+
+        PlanMatchPattern pattern =
+                anyTree(
+                        join(JoinNode.Type.INNER,
+                                ImmutableList.of(aliasPair("X", "Y")),
+                                Optional.empty(),
+                                JoinNode.DistributionType.PARTITIONED,
+                                anyTree(tableScan("nation")),
+                                anyTree(tableScan("nation"))));
+
+        assertPlan(automaticJoinDistributionSession, sql, pattern);
+    }
+
+    @Test
     public void testReplicatesAndFlipsSmallJoin()
     {
         @Language("SQL") String sql = "select * from nation join lineitem on nation.regionkey = lineitem.orderkey";
