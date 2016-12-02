@@ -278,7 +278,15 @@ public abstract class AbstractTestQueryFramework
         Metadata metadata = queryRunner.getMetadata();
         FeaturesConfig featuresConfig = new FeaturesConfig().setOptimizeHashGeneration(true);
         boolean forceSingleNode = queryRunner.getNodeCount() == 1;
-        List<PlanOptimizer> optimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, forceSingleNode, new MBeanExporter(new TestingMBeanServer()) new CoefficientBasedCostCalculator(metadata), new GlobalProperties()).get();
+        List<PlanOptimizer> optimizers = new PlanOptimizers(
+                metadata,
+                sqlParser,
+                featuresConfig,
+                new MBeanExporter(new TestingMBeanServer()),
+                new CoefficientBasedCostCalculator(metadata),
+                new GlobalProperties(),
+                getNodeCount(),
+                forceSingleNode).get();
         return new QueryExplainer(
                 optimizers,
                 metadata,
