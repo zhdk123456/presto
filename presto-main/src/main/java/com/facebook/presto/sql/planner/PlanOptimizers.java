@@ -15,7 +15,9 @@ package com.facebook.presto.sql.planner;
 
 import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.metadata.GlobalProperties;
+import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.spi.NodeState;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.iterative.IterativeOptimizer;
@@ -71,12 +73,25 @@ public class PlanOptimizers
     private final List<PlanOptimizer> optimizers;
 
     @Inject
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, GlobalProperties globalProperties)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            CostCalculator costCalculator,
+            GlobalProperties globalProperties,
+            InternalNodeManager nodeManager)
     {
-        this(metadata, sqlParser, featuresConfig, costCalculator, globalProperties, false);
+        this(metadata, sqlParser, featuresConfig, costCalculator, globalProperties, nodeManager.getNodes(NodeState.ACTIVE).size(), false);
     }
 
-    public PlanOptimizers(Metadata metadata, SqlParser sqlParser, FeaturesConfig featuresConfig, CostCalculator costCalculator, GlobalProperties globalProperties, boolean forceSingleNode)
+    public PlanOptimizers(
+            Metadata metadata,
+            SqlParser sqlParser,
+            FeaturesConfig featuresConfig,
+            CostCalculator costCalculator,
+            GlobalProperties globalProperties,
+            int nodeCount,
+            boolean forceSingleNode)
     {
         ImmutableList.Builder<PlanOptimizer> builder = ImmutableList.builder();
 
