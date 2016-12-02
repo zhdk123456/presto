@@ -16,8 +16,8 @@ package com.facebook.presto.sql.planner;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.spi.type.Type;
-import com.facebook.presto.spi.type.TypeSignature;
 import com.facebook.presto.sql.analyzer.Analysis;
+import com.facebook.presto.sql.analyzer.TypeSignatureProvider;
 import com.facebook.presto.sql.tree.ArithmeticBinaryExpression;
 import com.facebook.presto.sql.tree.ArithmeticUnaryExpression;
 import com.facebook.presto.sql.tree.ArrayConstructor;
@@ -54,11 +54,10 @@ import com.facebook.presto.sql.tree.SubscriptExpression;
 import com.facebook.presto.sql.tree.TryExpression;
 import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.type.ListLiteralType;
-import com.facebook.presto.util.maps.IdentityMap;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -247,12 +246,12 @@ public class GroupingOperationRewriter
         Expression rewrittenExpression = rewriteGroupingOperationToExpression(node, queryNode);
         if (rewrittenExpression instanceof FunctionCall) {
             FunctionCall rewrittenFunctionCall = (FunctionCall) rewrittenExpression;
-            IdentityMap<Expression, Type> expressionTypes = new IdentityMap<>(LinkedHashMap::new);
-            IdentityMap<FunctionCall, Signature> functionSignatures = new IdentityMap<>(LinkedHashMap::new);
-            List<TypeSignature> functionTypes = Arrays.asList(
-                    BIGINT.getTypeSignature(),
-                    ListLiteralType.LIST_LITERAL.getTypeSignature(),
-                    ListLiteralType.LIST_LITERAL.getTypeSignature()
+            IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
+            IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap();
+            List<TypeSignatureProvider> functionTypes = Arrays.asList(
+                    new TypeSignatureProvider(BIGINT.getTypeSignature()),
+                    new TypeSignatureProvider(ListLiteralType.LIST_LITERAL.getTypeSignature()),
+                    new TypeSignatureProvider(ListLiteralType.LIST_LITERAL.getTypeSignature())
             );
             Signature functionSignature = resolveFunction(rewrittenFunctionCall, functionTypes, metadata.getFunctionRegistry());
 
