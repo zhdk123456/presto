@@ -44,7 +44,7 @@ final class PlanMatchingVisitor
     @Override
     public Boolean visitProject(ProjectNode node, PlanMatchingContext context)
     {
-        context.getExpressionAliases().updateAssignments(node.getAssignments());
+        context.getExpressionAliases().updateAssignments(node.getAssignments().getMap());
         return super.visitProject(node, context);
     }
 
