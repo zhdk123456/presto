@@ -89,6 +89,7 @@ import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorPageSource;
 import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.NodeState;
 import com.facebook.presto.spi.PageIndexerFactory;
 import com.facebook.presto.spi.PageSorter;
 import com.facebook.presto.spi.Plugin;
@@ -683,7 +684,14 @@ public class LocalQueryRunner
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
-        PlanOptimizers planOptimizers = new PlanOptimizers(metadata, sqlParser, featuresConfig, costCalculator, new GlobalProperties(), true);
+        PlanOptimizers planOptimizers = new PlanOptimizers(
+                metadata,
+                sqlParser,
+                featuresConfig,
+                costCalculator,
+                new GlobalProperties(),
+                nodeManager.getNodes(NodeState.ACTIVE).size(),
+                true);
         return createPlan(session, sql, planOptimizers.get(), stage);
     }
 
