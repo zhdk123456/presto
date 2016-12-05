@@ -210,6 +210,11 @@ public class TestLocalQueriesDeterministic
     }
 
     @Override
+    public void testDescribeInputWithAggregation()
+    {
+    }
+
+    @Override
     public void testDescribeInputNoParameters()
     {
     }
