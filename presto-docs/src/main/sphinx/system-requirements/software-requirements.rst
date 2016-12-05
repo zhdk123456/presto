@@ -4,7 +4,7 @@ Software Requirements
 
 **Operating System**
 
-* RHEL 6.x (Red Hat Enterprise Linux)
+* RHEL 6.x, 7.x (Red Hat Enterprise Linux)
 * CentOS equivalent to RHEL (Community ENTerprise Operating System)
 * SLES 11 SP3 (SUSE Linux Enterprise Server) **Teradata Support for SLES on Teradata Hadoop Appliances only**
   
