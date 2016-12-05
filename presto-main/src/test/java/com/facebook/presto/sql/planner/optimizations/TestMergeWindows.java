@@ -14,7 +14,6 @@
 package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.spi.block.SortOrder;
-import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.assertions.BasePlanTest;
 import com.facebook.presto.sql.planner.assertions.ExpectedValueProvider;
@@ -79,9 +78,9 @@ public class TestMergeWindows
                     EXTENDEDPRICE_ALIAS, "extendedprice"));
 
     private static final Optional<WindowFrame> COMMON_FRAME = Optional.of(new WindowFrame(
-        WindowFrame.Type.ROWS,
-                new FrameBound(FrameBound.Type.UNBOUNDED_PRECEDING),
-                Optional.of(new FrameBound(FrameBound.Type.CURRENT_ROW))));
+            WindowFrame.Type.ROWS,
+            new FrameBound(FrameBound.Type.UNBOUNDED_PRECEDING),
+            Optional.of(new FrameBound(FrameBound.Type.CURRENT_ROW))));
 
     private static final Optional<WindowFrame> UNSPECIFIED_FRAME = Optional.empty();
 
@@ -106,7 +105,7 @@ public class TestMergeWindows
     /**
      * There are two types of tests in here, and they answer two different
      * questions about MergeWindows (MW):
-     *
+     * <p>
      * 1) Is MW working as it's supposed to be? The tests running the minimal
      * set of optimizers can tell us this.
      * 2) Has some other optimizer changed the plan in such a way that MW no
@@ -114,7 +113,7 @@ public class TestMergeWindows
      * that MW sees cannot be optimized by MW? The test running the full set
      * of optimizers answers this, though it isn't actually meaningful unless
      * we know the answer to question 1 is "yes".
-     *
+     * <p>
      * The tests that use only the minimal set of optimizers are closer to true
      * "unit" tests in that they verify the behavior of MW with as few
      * external dependencies as possible. Those dependencies to include the
@@ -124,7 +123,7 @@ public class TestMergeWindows
      * 1) The tests are more self-maintaining.
      * 2) They're a lot easier to read.
      * 3) It's a lot less typing.
-     *
+     * <p>
      * The test that runs with all of the optimzers acts as an integration test
      * and ensures that MW is effective when run with the complete set of
      * optimizers.
@@ -142,12 +141,12 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationB,
                                 ImmutableList.of(
-                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                 anyTree(
                                         window(specificationA,
                                                 ImmutableList.of(
-                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
-                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
+                                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
+                                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
                                                 anyNot(WindowNode.class,
                                                         anyTree(LINEITEM_TABLESCAN_DOQSS))))));
 
@@ -167,11 +166,11 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationB,
                                 ImmutableList.of(
-                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                 window(specificationA,
                                         ImmutableList.of(
-                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
-                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
+                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
+                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
                                         LINEITEM_TABLESCAN_DOQSS))));
     }
 
@@ -193,7 +192,7 @@ public class TestMergeWindows
                                         project(ImmutableMap.of("ONE", expression("1"), "ZERO", expression("0.0")),
                                                 window(specificationA,
                                                         ImmutableList.of(
-                                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                                         LINEITEM_TABLESCAN_DOQSS))))));
     }
 
@@ -210,12 +209,12 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationA,
                                 ImmutableList.of(
-                                functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS)),
-                                functionCall("lag", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS, "ONE", "ZERO"))),
+                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(DISCOUNT_ALIAS)),
+                                        functionCall("lag", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS, "ONE", "ZERO"))),
                                 project(ImmutableMap.of("ONE", expression("1"), "ZERO", expression("0.0")),
                                         window(specificationA,
                                                 ImmutableList.of(
-                                                functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                                        functionCall("sum", COMMON_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                                 LINEITEM_TABLESCAN_DOQS)))));
     }
 
@@ -242,11 +241,11 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationD,
                                 ImmutableList.of(
-                                functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                        functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                 window(specificationC,
                                         ImmutableList.of(
-                                        functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
-                                        functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
+                                                functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS)),
+                                                functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(DISCOUNT_ALIAS))),
                                         LINEITEM_TABLESCAN_DOQSS))));
     }
 
@@ -278,9 +277,9 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationC,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, ImmutableList.of(QUANTITY_ALIAS)),
-                                functionCall("sum", frameC, ImmutableList.of(DISCOUNT_ALIAS)),
-                                functionCall("sum", frameC, ImmutableList.of(QUANTITY_ALIAS))),
+                                        functionCall("avg", frameD, ImmutableList.of(QUANTITY_ALIAS)),
+                                        functionCall("sum", frameC, ImmutableList.of(DISCOUNT_ALIAS)),
+                                        functionCall("sum", frameC, ImmutableList.of(QUANTITY_ALIAS))),
                                 LINEITEM_TABLESCAN_DOQS)));
     }
 
@@ -307,9 +306,9 @@ public class TestMergeWindows
                 anyTree(
                         window(specificationD,
                                 ImmutableList.of(
-                                functionCall("avg", frameD, ImmutableList.of(QUANTITY_ALIAS)),
-                                functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(DISCOUNT_ALIAS)),
-                                functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
+                                        functionCall("avg", frameD, ImmutableList.of(QUANTITY_ALIAS)),
+                                        functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(DISCOUNT_ALIAS)),
+                                        functionCall("sum", UNSPECIFIED_FRAME, ImmutableList.of(QUANTITY_ALIAS))),
                                 LINEITEM_TABLESCAN_DOQS)));
     }
 
@@ -408,7 +407,7 @@ public class TestMergeWindows
                 "SUM(quantity) OVER (PARTITION BY suppkey ORDER BY quantity ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) sum_quantity_C " +
                 "FROM lineitem";
 
-       ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
+        ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
                 ImmutableList.of(SUPPKEY_ALIAS),
                 ImmutableList.of(QUANTITY_ALIAS),
                 ImmutableMap.of(QUANTITY_ALIAS, SortOrder.ASC_NULLS_LAST));
@@ -431,7 +430,7 @@ public class TestMergeWindows
                 "SUM(discount) over (PARTITION BY suppkey ORDER BY orderkey ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) sum_discount_A " +
                 "FROM lineitem";
 
-       ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
+        ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
                 ImmutableList.of(SUPPKEY_ALIAS),
                 ImmutableList.of(ORDERKEY_ALIAS),
                 ImmutableMap.of(ORDERKEY_ALIAS, SortOrder.DESC_NULLS_LAST));
@@ -455,7 +454,7 @@ public class TestMergeWindows
                 "SUM(discount) OVER (PARTITION BY suppkey ORDER BY orderkey ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) sum_discount_A " +
                 "FROM lineitem";
 
-       ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
+        ExpectedValueProvider<WindowNode.Specification> specificationC = specification(
                 ImmutableList.of(SUPPKEY_ALIAS),
                 ImmutableList.of(ORDERKEY_ALIAS),
                 ImmutableMap.of(ORDERKEY_ALIAS, SortOrder.ASC_NULLS_FIRST));
@@ -489,10 +488,10 @@ public class TestMergeWindows
     {
         LocalQueryRunner queryRunner = getQueryRunner();
         List<PlanOptimizer> optimizers = ImmutableList.of(
-                        new UnaliasSymbolReferences(),
-                        new PruneIdentityProjections(),
-                        new MergeWindows(),
-                        new PruneUnreferencedOutputs());
+                new UnaliasSymbolReferences(),
+                new PruneIdentityProjections(),
+                new MergeWindows(),
+                new PruneUnreferencedOutputs());
         return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, optimizers));
     }
 }
