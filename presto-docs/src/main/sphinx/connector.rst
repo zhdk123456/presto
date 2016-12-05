@@ -11,6 +11,7 @@ from different data sources.
     connector/teradata
     connector/hive
     connector/hive-security
+    connector/cassandra
     connector/mysql
     connector/postgresql
     connector/tpch
