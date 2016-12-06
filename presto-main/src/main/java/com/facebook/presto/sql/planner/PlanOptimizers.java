@@ -24,7 +24,6 @@ import com.facebook.presto.sql.planner.optimizations.CountConstantOptimizer;
 import com.facebook.presto.sql.planner.optimizations.DesugaringOptimizer;
 import com.facebook.presto.sql.planner.optimizations.EliminateCrossJoins;
 import com.facebook.presto.sql.planner.optimizations.EmptyDeleteOptimizer;
-import com.facebook.presto.sql.planner.optimizations.EvaluateConstantApply;
 import com.facebook.presto.sql.planner.optimizations.HashGenerationOptimizer;
 import com.facebook.presto.sql.planner.optimizations.ImplementFilteredAggregations;
 import com.facebook.presto.sql.planner.optimizations.ImplementIntersectAndExceptAsUnion;
@@ -107,7 +106,6 @@ public class PlanOptimizers
                 new PruneUnreferencedOutputs(), // Make sure to run this at the end to help clean the plan for logging/execution and not remove info that other optimizers might need at an earlier point
                 new PruneIdentityProjections(), // This MUST run after PruneUnreferencedOutputs as it may introduce new redundant projections
                 new MetadataQueryOptimizer(metadata),
-                new EvaluateConstantApply(),
                 new EliminateCrossJoins(), // This can pull up Filter and Project nodes from between Joins, so we need to push them down again
                 new PredicatePushDown(metadata, sqlParser),
                 new ProjectionPushDown());
