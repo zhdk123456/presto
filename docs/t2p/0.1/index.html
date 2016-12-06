@@ -1,0 +1,616 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to QueryGrid’s documentation! &mdash; QueryGrid 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="QueryGrid 0.1 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">QueryGrid 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-querygrid-s-documentation">
+<h1>Welcome to QueryGrid&#8217;s documentation!<a class="headerlink" href="#welcome-to-querygrid-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<div class="section" id="installation-on-teradata">
+<h2>Installation on Teradata<a class="headerlink" href="#installation-on-teradata" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
+<p>Querygrid requires <strong>JRE 7</strong> (or higher). Teradata Database 15 has <strong>JRE 7</strong> pre-installed along with the <strong>JRE 6</strong>.
+In order to change JRE run below code snippet on any of the Teradata nodes:</p>
+<blockquote>
+<div></div></blockquote>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">echo</span> <span class="s2">&quot;JREPath: /opt/teradata/jvm64/jre7/jre/&quot;</span> &gt; /tmp/jre_config<span class="p">;</span>
+cufconfig -f /tmp/jre_config<span class="p">;</span>
+tpareset <span class="s1">&#39;JRE version changed&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>We recommend to use G1 collector with the following properties:</p>
+<div class="highlight-bash"><div class="highlight"><pre>-XX:+UseG1GC
+-XX:G1HeapRegionSize<span class="o">=</span>32M
+-XX:+ExplicitGCInvokesConcurrent
+</pre></div>
+</div>
+<p>You must ensure that you have enough memory for query and IO buffers. In case of frequent GC invocations try to increase JVM heap size.</p>
+<div class="highlight-bash"><div class="highlight"><pre>-Xms30g
+-Xmx30g
+</pre></div>
+</div>
+<p>In Teradata Database JVM properties can be set with using <strong>*cufconfig*</strong>.
+Provided properties will be applied for all of the Teradata nodes.
+Below is the set of properties which are a good start point of configuring your JVM.</p>
+<blockquote>
+<div></div></blockquote>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">echo</span> <span class="s2">&quot;JVMOptions: -Xms30g -Xmx30g -XX:+UseG1GC -XX:G1HeapRegionSize=32M -XX:+ExplicitGCInvokesConcurrent&quot;</span> &gt; /tmp/jre_config<span class="p">;</span>
+cufconfig -f /tmp/jre_config<span class="p">;</span>
+tpareset <span class="s1">&#39;JVMOptions has been changed&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Be aware that the <strong>*cufconfig*</strong> doesn&#8217;t append the newly added properties but just overwrite them instead.
+In order to list your existing properties please run <strong>*cufconfig -o*</strong>.
+Among other things you will find <strong>*JVMOptions*</strong> that contains your current JVM settings.</p>
+<p>In Presto you can change JVM properties with editing the <cite>jvm.config</cite> file.
+It can be easily distributed across the cluster using the <strong>presto-admin</strong> utility.
+Please refer to <strong>presto-admin</strong> <a class="reference external" href="http://prestodb.github.io/presto-admin/presto-admin-commands.html#configuration-deploy">documentation</a> for more details.</p>
+</div>
+<div class="section" id="upload">
+<h3>Upload<a class="headerlink" href="#upload" title="Permalink to this headline">¶</a></h3>
+<p>Please upload a package zip (teradata-to-presto-driver.zip) file on Teradata and Presto systems and unzip it.</p>
+<div class="highlight-bash"><div class="highlight"><pre>unzip teradata-to-presto-driver.zip -D presto-teradata-driver
+<span class="nb">cd </span>presto-teradata-driver
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>The archive contains the following:</dt>
+<dd><ul class="first last simple">
+<li>the driver jar file</li>
+<li>the installation bash script</li>
+<li>the rpm file to be installed on Presto cluster</li>
+<li>the sample properties files to be copied on Presto cluster</li>
+<li>this documentation</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="installation-on-presto">
+<h3>Installation on Presto<a class="headerlink" href="#installation-on-presto" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Now make Presto compatible with Querygrid by executing the following commands:</dt>
+<dd><ul class="first simple">
+<li>Use Teradata provided distribution of Presto (version 0.127t), installed with <strong>presto-admin</strong> tool.</li>
+<li>Install the querygrid-presto-connector rpm</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>presto-admin package install querygrid-presto-connector-*.noarch.rpm
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li>Copy <strong>properties/querygrid.properties</strong> to <strong>/etc/opt/prestoadmin/connectors</strong>.</li>
+<li>In <strong>/etc/opt/prestoadmin/connectors/querygrid.properties</strong> replace <strong>&lt;PRESTO-HOST&gt;</strong> with the actual Presto coordinator hostname or IP reachable by Teradata.</li>
+<li>Deploy Querygrid connector configuration using presto-admin</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>presto-admin connector add querygrid
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li>Restart Presto</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>presto-admin server restart
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li>Make sure that Querygrid connector is installed</li>
+</ul>
+<blockquote class="last">
+<div><div class="highlight-bash"><div class="highlight"><pre>presto:default&gt; show catalogs<span class="p">;</span>
+  Catalog
+-----------
+ ...
+ querygrid
+ ...
+</pre></div>
+</div>
+</div></blockquote>
+</dd>
+</dl>
+</div>
+<div class="section" id="driver-installation">
+<h3>Driver installation<a class="headerlink" href="#driver-installation" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Driver installation consists of the following steps:</dt>
+<dd><ul class="first last simple">
+<li>register the driver jar file in the Teradata database</li>
+<li>grant proper rights to the user (in order to use Querygrid functionality)</li>
+<li>register import and export functions (needed to create Teradata&#8217;s foreign server).</li>
+</ul>
+</dd>
+<dt>To perform installation you need the following information:</dt>
+<dd><ul class="first last simple">
+<li><strong>dba_logon</strong> - Teradata&#8217;s database admin credentials</li>
+<li><strong>user_logon</strong> - Teradata&#8217;s database credentials of user who will use the Presto Querygrid driver.</li>
+<li><strong>presto ip address</strong> - and port Presto server, accessible from Teradata&#8217;s host</li>
+</ul>
+</dd>
+</dl>
+<p>To see a full list of supported options type the following:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Installation scripts contain four commands:</dt>
+<dd><ul class="first last simple">
+<li><strong>install</strong> - installs the querygrid driver</li>
+<li><strong>uninstall</strong> - uninstall the querygrid driver</li>
+<li><strong>create_teradata_to_presto_server</strong> - creates foreign server which will be using querygrid driver</li>
+<li><strong>drop_server</strong> - drops foreign server</li>
+</ul>
+</dd>
+</dl>
+<p>Once you have all needed information you can install the driver with the following command:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata install <span class="se">\</span>
+                   --dba_logon dba_login,dba_password <span class="se">\</span>
+                   --user_logon user_login,user_password
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All values used in command examples must be replaced with values corresponding to your environment.</p>
+</div>
+<p>After this step you need to create a foreign server (you can skip static configuration).</p>
+</div>
+<div class="section" id="static-driver-configuration">
+<h3>Static driver configuration<a class="headerlink" href="#static-driver-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Currently there are following static configurable properties shared across all foreign servers:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>data-exchange.server.buffer-size</strong> - query results write buffer size. Buffer is shared between all the queries that are in progress. Defaults to: 2GB.</li>
+<li><strong>data-exchange.server.port</strong> - querygrid server port. Defaults to: 21337.</li>
+<li><strong>data-exchange.client.buffer-size</strong> - query results read buffer size. Buffer is shared between all the queries that are in progress. Defaults to: 2GB.</li>
+</ul>
+</div></blockquote>
+<p>Static properties can be set for both Presto and Teradata.</p>
+<p>In order to change static property for Presto you must edit the querygrid connector configuration file (<cite>/etc/opt/prestoadmin/connectors/querygrid.properties</cite>).
+To apply your changes you must distribute new properties file to all Presto nodes and restart the Presto server:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>presto-admin connector add querygrid
+presto-admin server restart
+</pre></div>
+</div>
+</div></blockquote>
+<p>In order to change static property for Teradata you must set JVM system property in the following format: <cite>-Dt2p.property.name=value</cite>.
+Properties for Teradata JVM can be set using the <strong>cufconfig</strong> utility. To apply your changes you must
+restart the Teradata database using the <strong>tpareset</strong> command.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Buffer sizes must be specified in human readable data size notation: 100MB, 1GB, 1TB</p>
+</div>
+</div>
+<div class="section" id="foreign-server-creation">
+<h3>Foreign server creation<a class="headerlink" href="#foreign-server-creation" title="Permalink to this headline">¶</a></h3>
+<p>To create a foreign server issue the following command:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server
+</pre></div>
+</div>
+<p>By default <strong>hive</strong> catalog is queried. You can specify another one via <strong>server_catalog</strong>:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server_tpch <span class="se">\</span>
+                   --server_catalog tpch
+</pre></div>
+</div>
+<p>If you want to query one particular schema you can specify it via <strong>server_schema</strong>, in other case you will need to specify it explicitly for each query.
+Be noticed that when schema is already specified in foreign server you won&#8217;t be able to specify any other schema explicitly.</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server <span class="se">\</span>
+                   --server_schema default
+</pre></div>
+</div>
+<p>If the network bandwidth is the bottleneck, data compression may increase throughput at the cost of increased CPU utilization.
+Data compression can be enabled for a particular foreign server using the <strong>compression</strong> parameter.</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server
+                   --compression &lt;compression_algorithm&gt;
+</pre></div>
+</div>
+<p><strong>LZ4</strong> and <strong>SNAPPY</strong> compression algorithms are available. Both algorithms are focused on compression and decompression speed.
+Compression ratio and compression speed may vary for different queries and data sets.</p>
+<p>Presto database credentials can be changed using the <strong>presto_user</strong> and <strong>presto_password</strong> parameters:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server
+                   --presto_user &lt;username&gt;
+                   --presto_password &lt;password&gt;
+</pre></div>
+</div>
+<p>Depending on your workflow you may want to adjust a foreign server parameter <strong>presto_writer_count</strong>.
+If your general workload consists of running large queries with low concurrency, please set it to higher value.
+However, if your workload contains running concurrent queries, you may need to lower it.
+This property controls how many threads will be used by Presto per each QueryGrid query.
+If your Presto cluster has 64 cores per machine,
+to fully utilize all of those cores with 4 concurrent queries you need to set <strong>presto_writer_count</strong> to at least 16.
+By default the number of concurrent writers is set to 8.</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server
+                   --presto_writer_count 8
+</pre></div>
+</div>
+<p>If you need to set any server options, follow the convention in the command below (note last option):</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata create_teradata_to_presto_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --presto_master_ip 192.168.205.1 <span class="se">\</span>
+                   --server_name presto_server_custom_temporary_schema <span class="se">\</span>
+                   --server_options <span class="s2">&quot;MaximumTextLength(&#39;4088&#39;)&quot;</span>
+</pre></div>
+</div>
+<p>To see full list of server configuration parameters please see <a class="reference internal" href="#configuration-parameters">Configuration parameters</a> section.</p>
+</div>
+<div class="section" id="usage-of-foreign-servers">
+<h3>Usage of foreign servers<a class="headerlink" href="#usage-of-foreign-servers" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="calling-bteq-command-on-teradata">
+<h4>Calling bteq command on teradata<a class="headerlink" href="#calling-bteq-command-on-teradata" title="Permalink to this headline">¶</a></h4>
+<p>Once you have installed the querygrid driver and created a foreign server, play around with them by running the bteq command on the teradata host (logged in as the querygrid driver user) followed by a few sql queries:</p>
+<div class="highlight-bash"><div class="highlight"><pre>bteq .logon user_login,user_password
+</pre></div>
+</div>
+<p>Bteq&#8217;s default character encoding is NOT UTF8 and Presto supports only UTF8/UTF16, so not specifying encoding will cause errors displaying/entering non ascii characters in BTEQ
+So to avoid issues with encoding, it is better to run bteq as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre>bteq -c UTF8 -e UTF8 .logon localhost/user_login,user_password
+</pre></div>
+</div>
+<p>Once you are logged on teradata data warehouse you can run the SQL examples below.</p>
+</div>
+<div class="section" id="to-see-the-list-of-schemas-databases-of-a-foreign-server">
+<h4>To see the list of schemas (databases) of a foreign server<a class="headerlink" href="#to-see-the-list-of-schemas-databases-of-a-foreign-server" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-sql"><div class="highlight"><pre><span class="n">HELP</span> <span class="k">FOREIGN</span> <span class="n">SERVER</span> <span class="n">presto_server</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="to-see-the-list-of-tables-in-schema-database">
+<h4>To see the list of tables in schema (database)<a class="headerlink" href="#to-see-the-list-of-tables-in-schema-database" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-sql"><div class="highlight"><pre><span class="n">HELP</span> <span class="k">FOREIGN</span> <span class="k">DATABASE</span> <span class="k">default</span><span class="o">@</span><span class="n">presto_server</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="to-see-the-list-of-columns-of-a-table-from-a-foreign-server">
+<h4>To see the list of columns of a table from a foreign server<a class="headerlink" href="#to-see-the-list-of-columns-of-a-table-from-a-foreign-server" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-sql"><div class="highlight"><pre><span class="n">HELP</span> <span class="k">FOREIGN</span> <span class="k">TABLE</span> <span class="n">region</span><span class="o">@</span><span class="n">presto_server</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="select-query-import-path">
+<h4>Select query (import path)<a class="headerlink" href="#select-query-import-path" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">region</span><span class="o">@</span><span class="n">presto_server</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="insert-into-query-export-path">
+<h4>Insert into query (export path)<a class="headerlink" href="#insert-into-query-export-path" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">region</span><span class="o">@</span><span class="n">presto_server</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">region_on_teradata_table</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="drop-foreign-servers">
+<h3>Drop foreign servers<a class="headerlink" href="#drop-foreign-servers" title="Permalink to this headline">¶</a></h3>
+<p>To remove foreign server you can:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata drop_server <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --server_name presto_server
+</pre></div>
+</div>
+</div>
+<div class="section" id="uninstall-driver">
+<h3>Uninstall Driver<a class="headerlink" href="#uninstall-driver" title="Permalink to this headline">¶</a></h3>
+<p>Once you dropped all foreign servers, you are able to uninstall driver:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata uninstall <span class="se">\</span>
+                   --user_logon user_login,user_password
+</pre></div>
+</div>
+<p>After the uninstall you have to restart your Teradata Database. It can be done with:</p>
+<div class="highlight-bash"><div class="highlight"><pre>tpareset <span class="s2">&quot;Querygrid driver has been uninstalled.&quot;</span>
+</pre></div>
+</div>
+<p>Or you can run <strong>uninstall</strong> task with the <strong>restart</strong> parameter:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./install-teradata uninstall <span class="se">\</span>
+                   --user_logon user_login,user_password <span class="se">\</span>
+                   --restart
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuration-parameters">
+<h3>Configuration parameters<a class="headerlink" href="#configuration-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Foreign Presto Querygrid servers can be configured (see &#8211;server-options of install-teradata script) with the following parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>MaximumTextLength</strong> - (default: 4096) an integer which determines maximum length in characters of text which could be transferred between databases (Teradata and Presto)</li>
+<li><strong>MaximumBinaryLength</strong> - (default: 4096) an integer which determines maximum length of binary data in bytes which could be transferred between databases (Teradata and Presto)</li>
+<li><strong>ReadTimeout</strong> - (default: 2h) determines the maximum amount of time waiting for query results. It is recommended to increase this value for the queries that require complex computation before returning any data.</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>SELECT *
+FROM FOREIGN TABLE<span class="o">(</span>
+  SELECT count<span class="o">(</span>*<span class="o">)</span>
+  FROM some_enormous_table
+<span class="o">)</span>@foreign_server AS table<span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li><strong>WriteTimeout</strong> - (default: 1h) determines maximum amount of time waiting for consumer to consume the results. It is recommended to increase this value for the queries that require complex computation after consuming the data.</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>SELECT fibonacci<span class="o">(</span>bigint_column<span class="o">)</span>
+FROM large_table@foreign_server<span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li><strong>QueryTimeout</strong> - (default: 1h) determines maximum amount of time waiting for the remote query to finish after data transfer is finished. It is recommended to increase this value for the INSERT INTO queries which insert the data into the slow consuming connectors.</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>INSERT INTO <span class="s2">&quot;slow_consuming_connector&quot;</span>.<span class="s2">&quot;slow_consuming_table&quot;</span>
+SELECT * FROM large_table<span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Sample timeout values: <strong>10s</strong>, <strong>5m</strong>, <strong>2h</strong>.</p>
+</div>
+</div></blockquote>
+</div></blockquote>
+<p>To see how to use above parameters see <a class="reference internal" href="#foreign-server-creation">Foreign server creation</a> section.</p>
+</div>
+</div>
+<div class="section" id="technical-specification">
+<h2>Technical specification<a class="headerlink" href="#technical-specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="type-support">
+<h3>Type support<a class="headerlink" href="#type-support" title="Permalink to this headline">¶</a></h3>
+<p>The following table refers to type handling/conversion between Presto query engine and Teradata. Type handling can differ between presto connectors or even between storage types within a connector. Please refer to a specific presto connector documentation for more details. For example presto-hive connector maps all integral types to Presto BIGINT type.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="15%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Type in Presto</th>
+<th class="head">Type in Teradata</th>
+<th class="head">Notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>BOOLEAN</td>
+<td>BYTEINT</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>BIGINT</td>
+<td>BIGINT</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>DOUBLE</td>
+<td>REAL</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>VARCHAR</td>
+<td>VARCHAR</td>
+<td>Values exceeding <strong>MaximumTextLength</strong> will be truncated</td>
+</tr>
+<tr class="row-even"><td>DATE</td>
+<td>DATE</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>TIMESTAMP</td>
+<td>TIMESTAMP</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>VARBINARY</td>
+<td>VARBYTE</td>
+<td>Error thrown on values exceeding <strong>MaximumBinaryLength</strong></td>
+</tr>
+<tr class="row-odd"><td>JSON</td>
+<td>VARCHAR</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>ARRAY</td>
+<td>VARCHAR</td>
+<td>Serialized to/from json</td>
+</tr>
+<tr class="row-odd"><td>MAP</td>
+<td>VARCHAR</td>
+<td>Serialized to/from json</td>
+</tr>
+<tr class="row-even"><td>ROW</td>
+<td>VARCHAR</td>
+<td>Serialized to json in import path. Writing ROW values to Presto is not supported</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="known-issues-limitations">
+<h2>Known issues/limitations<a class="headerlink" href="#known-issues-limitations" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li>maximum VARCHAR length is limited by default to 4096 characters (see <a class="reference internal" href="#configuration-parameters">Configuration parameters</a>)</li>
+<li>maximum VARBINARY length is limited by default to 4096 bytes (see <a class="reference internal" href="#configuration-parameters">Configuration parameters</a>)</li>
+<li>Complex Presto type&#8217;s objects are translated to JSON, and they are visible in Teradata as strings. Large complex objects can&#8217;t be selected, because their JSON string representation may exceed 64kb.</li>
+<li>Native Presto queries that have aggregations without explicitly specified aliases fail with an error: <em>Presto query failed: Column name not specified at position 1</em>.</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>SELECT *
+FROM FOREIGN TABLE<span class="o">(</span>
+   SELECT count<span class="o">(</span>*<span class="o">)</span>
+   FROM nation
+<span class="o">)</span>@presto_server AS presto_query
+</pre></div>
+</div>
+<p>We should provide alias explicitly to make it work.</p>
+<div class="highlight-bash"><div class="highlight"><pre>SELECT *
+FROM FOREIGN TABLE<span class="o">(</span>
+   SELECT count<span class="o">(</span>*<span class="o">)</span> as some_explicit_alias
+   FROM nation
+<span class="o">)</span>@presto_server AS presto_query
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li>Currently QueryGrid is limited to run 20 concurrent queries. However, if your queries are long running or taking a lot of resources (e.g. big result set) it is advised to run even less than 20 queries. Otherwise you may get an Teradata error:</li>
+</ul>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span class="o">[</span>Error 7583<span class="o">]</span> <span class="o">[</span>SQLState HY000<span class="o">]</span> The secure mode processes had a <span class="nb">set </span>up error.
+</pre></div>
+</div>
+</div></blockquote>
+<ul>
+<li><p class="first">In order to run INSERT INTO queries with the high <strong>presto_writer_count</strong> you must change <strong>*node-scheduler*</strong> settings in Presto config.properties file as well</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>node-scheduler.max-splits-per-node<span class="o">=</span>MAX_SPLITS_PER_NODE
+node-scheduler.max-pending-splits-per-node-per-task<span class="o">=</span>MAX_SPLITS_PER_TASK_PER_NODE
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="docutils">
+<dt>Where</dt>
+<dd><ul class="first last simple">
+<li><strong>*MAX_SPLITS_PER_TASK_PER_NODE*</strong> must equal or greater than <strong>presto_writer_count</strong></li>
+<li><strong>*MAX_SPLITS_PER_NODE*</strong> must be equal or greater than <strong>presto_writer_count</strong> multiplied by the number of queries that are supposed to be run concurrently</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">High <strong>presto_writer_count</strong> can cause high CPU utilization. If the Presto starts to fail with the timeout related issue try to decrease <strong>presto_writer_count</strong>.</p>
+</li>
+<li><p class="first">In case of getting the <strong>Another instance of the Querygrid driver is still running.</strong> error please restart your Teradata instance with the <strong>tpareset reason</strong> command.</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to QueryGrid&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#installation-on-teradata">Installation on Teradata</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#upload">Upload</a></li>
+<li><a class="reference internal" href="#installation-on-presto">Installation on Presto</a></li>
+<li><a class="reference internal" href="#driver-installation">Driver installation</a></li>
+<li><a class="reference internal" href="#static-driver-configuration">Static driver configuration</a></li>
+<li><a class="reference internal" href="#foreign-server-creation">Foreign server creation</a></li>
+<li><a class="reference internal" href="#usage-of-foreign-servers">Usage of foreign servers</a><ul>
+<li><a class="reference internal" href="#calling-bteq-command-on-teradata">Calling bteq command on teradata</a></li>
+<li><a class="reference internal" href="#to-see-the-list-of-schemas-databases-of-a-foreign-server">To see the list of schemas (databases) of a foreign server</a></li>
+<li><a class="reference internal" href="#to-see-the-list-of-tables-in-schema-database">To see the list of tables in schema (database)</a></li>
+<li><a class="reference internal" href="#to-see-the-list-of-columns-of-a-table-from-a-foreign-server">To see the list of columns of a table from a foreign server</a></li>
+<li><a class="reference internal" href="#select-query-import-path">Select query (import path)</a></li>
+<li><a class="reference internal" href="#insert-into-query-export-path">Insert into query (export path)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#drop-foreign-servers">Drop foreign servers</a></li>
+<li><a class="reference internal" href="#uninstall-driver">Uninstall Driver</a></li>
+<li><a class="reference internal" href="#configuration-parameters">Configuration parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#technical-specification">Technical specification</a><ul>
+<li><a class="reference internal" href="#type-support">Type support</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#known-issues-limitations">Known issues/limitations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">QueryGrid 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Grzegorz Kokosiński.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
