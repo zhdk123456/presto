@@ -18,6 +18,10 @@ Specifying ``ALL`` lists the grants for the current user on all the tables in al
 
 The command requires the current catalog to be set.
 
+.. note::
+
+    Ensure that authentication has been enabled before running any of the authorization commands.
+
 Examples
 --------
 
