@@ -492,11 +492,12 @@ public class TestLogicalPlanner
     {
         assertPlan(query, anyTree(
                 project(
-                        join(INNER, ImmutableList.of(),
-                                tableScan("orders").withSymbol("orderkey", columnMapping),
-                                node(AggregationNode.class,
-                                        node(ValuesNode.class)).withSymbol(function, functionAlias)
-                        ))));
+                        filter(filter,
+                                join(INNER, ImmutableList.of(),
+                                        tableScan("orders").withSymbol("orderkey", columnMapping),
+                                        node(AggregationNode.class,
+                                                node(ValuesNode.class)).withSymbol(function, functionAlias)
+                                )))));
     }
 
     private static final class PlanNodeExtractor
