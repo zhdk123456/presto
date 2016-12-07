@@ -83,6 +83,8 @@ public class FeaturesConfig
     private int spillerThreads = 4;
     private double spillMaxUsedSpaceThreshold = 0.9;
     private boolean parseDecimalLiteralsAsDouble;
+    private double memoryRevokingTarget = 0.5;
+    private double memoryRevokingThreshold = 0.9;
 
     public boolean isResourceGroupsEnabled()
     {
@@ -342,6 +344,30 @@ public class FeaturesConfig
     public FeaturesConfig setSpillerThreads(int spillerThreads)
     {
         this.spillerThreads = spillerThreads;
+        return this;
+    }
+
+    public double getMemoryRevokingThreshold()
+    {
+        return memoryRevokingThreshold;
+    }
+
+    @Config("experimental.memory-revoking-threshold")
+    public FeaturesConfig setMemoryRevokingThreshold(double memoryRevokingThreshold)
+    {
+        this.memoryRevokingThreshold = memoryRevokingThreshold;
+        return this;
+    }
+
+    public double getMemoryRevokingTarget()
+    {
+        return memoryRevokingTarget;
+    }
+
+    @Config("experimental.memory-revoking-target")
+    public FeaturesConfig setMemoryRevokingTarget(double memoryRevokingTarget)
+    {
+        this.memoryRevokingTarget = memoryRevokingTarget;
         return this;
     }
 

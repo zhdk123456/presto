@@ -60,7 +60,9 @@ public class TestFeaturesConfig
                 .setOptimizeMixedDistinctAggregations(false)
                 .setLegacyOrderBy(false)
                 .setParseDecimalLiteralsAsDouble(false)
-                .setSmallTableCoefficient(0.01));
+                .setSmallTableCoefficient(0.01)
+                .setMemoryRevokingThreshold(0.9)
+                .setMemoryRevokingTarget(0.5));
     }
 
     @Test
@@ -93,6 +95,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
                 .put("small-table-coefficient", "0.2")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -121,6 +125,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
                 .put("small-table-coefficient", "0.2")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -149,7 +155,9 @@ public class TestFeaturesConfig
                 .setSpillMaxUsedSpaceThreshold(0.8)
                 .setLegacyOrderBy(true)
                 .setParseDecimalLiteralsAsDouble(true)
-                .setSmallTableCoefficient(0.2);
+                .setSmallTableCoefficient(0.2)
+                .setMemoryRevokingThreshold(0.2)
+                .setMemoryRevokingTarget(0.8);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
