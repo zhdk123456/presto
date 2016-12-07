@@ -55,6 +55,7 @@ public class SpillableHashAggregationBuilder
     private Optional<MergingHashAggregationBuilder> merger = Optional.empty();
     private CompletableFuture<?> spillInProgress = CompletableFuture.completedFuture(null);
     private final LocalMemoryContext memoryContext;
+    private long emptyHashAggregationBuilderSize = 0;
 
     public SpillableHashAggregationBuilder(
             List<AccumulatorFactory> accumulatorFactories,
@@ -97,7 +98,8 @@ public class SpillableHashAggregationBuilder
     public void updateMemory()
     {
         checkState(spillInProgress.isDone());
-        memoryContext.setRevocableBytes(hashAggregationBuilder.getSizeInMemory());
+        memoryContext.setBytes(emptyHashAggregationBuilderSize);
+        memoryContext.setRevocableBytes(hashAggregationBuilder.getSizeInMemory() - emptyHashAggregationBuilderSize);
     }
 
     public long getSizeInMemory()
@@ -256,5 +258,6 @@ public class SpillableHashAggregationBuilder
                 hashChannel,
                 operatorContext,
                 DataSize.succinctBytes(0));
+        this.emptyHashAggregationBuilderSize = this.hashAggregationBuilder.getSizeInMemory();
     }
 }
