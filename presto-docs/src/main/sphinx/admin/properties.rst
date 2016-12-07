@@ -423,7 +423,7 @@ Tasks managment properties
 ^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``Integer``
- * **Default value:** ``1``
+ * **Default value:** ``16``
  * **Description:** Default local concurrency for parallel operators. Serves as the default value for the ``task_concurrency`` session property. Increasing this value is strongly recommended when any of CPU, IO or memory is not saturated on a regular basis. It will allow queries to utilize as many resources as possible. Setting this value too high will cause queries to slow down. Slow down may happen even if none of the resources is saturated as there are cases in which increasing parallelism is not possible due to algorithms limitations.
 
 ``task.info-refresh-max-wait``
@@ -596,7 +596,7 @@ Session properties
 ^^^^^^^^^^^^^^^^^^^^
 
  * **Type:** ``Integer`` (power of 2).
- * **Default value:** ``task.concurrency`` (``1``)
+ * **Default value:** ``task.concurrency`` (``16``)
  * **Description:** Default number of local parallel aggregation jobs per worker. Unlike `task.concurrency` this property must be power of two. See :ref:`task.concurrency<task-concurrency>`.
 
 
