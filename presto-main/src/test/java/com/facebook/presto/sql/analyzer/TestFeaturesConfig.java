@@ -55,7 +55,9 @@ public class TestFeaturesConfig
                 .setSpillerSpillPaths(Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills").toString())
                 .setSpillerThreads(4)
                 .setOptimizeMixedDistinctAggregations(false)
-                .setSpillMinimumFreeSpaceThreshold(0.9));
+                .setSpillMinimumFreeSpaceThreshold(0.9)
+                .setMemoryRevokingThreshold(0.1)
+                .setMemoryRevokingTarget(0.5));
     }
 
     @Test
@@ -83,6 +85,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-minimum-free-space-threshold", "0.8")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -106,6 +110,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-spill-path", "/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-minimum-free-space-threshold", "0.8")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -129,7 +135,9 @@ public class TestFeaturesConfig
                 .setOperatorMemoryLimitBeforeSpill(DataSize.valueOf("100MB"))
                 .setSpillerSpillPaths("/tmp/custom/spill/path1,/tmp/custom/spill/path2")
                 .setSpillerThreads(42)
-                .setSpillMinimumFreeSpaceThreshold(0.8);
+                .setSpillMinimumFreeSpaceThreshold(0.8)
+                .setMemoryRevokingThreshold(0.2)
+                .setMemoryRevokingTarget(0.8);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
