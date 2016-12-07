@@ -24,7 +24,7 @@ import java.io.IOException;
 import static com.facebook.presto.redis.util.EmbeddedRedis.createEmbeddedRedis;
 import static io.airlift.testing.Closeables.closeAllRuntimeException;
 
-@Test
+@Test(groups = "ci_only")
 public class TestRedisDistributed
         extends AbstractTestQueries
 {

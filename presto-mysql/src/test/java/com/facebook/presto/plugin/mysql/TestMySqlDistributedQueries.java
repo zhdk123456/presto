@@ -46,7 +46,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-@Test
+@Test(groups = "ci_only")
 public class TestMySqlDistributedQueries
         extends AbstractTestQueries
 {

@@ -302,17 +302,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- integration tests take a very long time so only run them in the CI server -->
-                    <excludes>
-                        <exclude>**/TestCassandraDistributed.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>com.ning.maven.plugins</groupId>
                 <artifactId>maven-duplicate-finder-plugin</artifactId>
                 <configuration>
@@ -354,7 +343,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <excludes combine.self="override" />
+                            <excludedGroups combine.self="override" />
                         </configuration>
                     </plugin>
                 </plugins>

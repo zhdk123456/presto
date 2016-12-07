@@ -25,7 +25,7 @@ import static org.testng.Assert.assertEquals;
 
 //Integrations tests fail when parallel, due to a bug or configuration error in the embedded
 //cassandra instance. This problem results in either a hang in Thrift calls or broken sockets.
-@Test(singleThreaded = true)
+@Test(singleThreaded = true, groups = "ci_only")
 public class TestCassandraDistributed
         extends AbstractTestDistributedQueries
 {

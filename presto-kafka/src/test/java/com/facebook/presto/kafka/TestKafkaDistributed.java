@@ -25,7 +25,7 @@ import static com.facebook.presto.kafka.KafkaQueryRunner.createKafkaQueryRunner;
 import static com.facebook.presto.kafka.util.EmbeddedKafka.createEmbeddedKafka;
 import static io.airlift.testing.Closeables.closeAllRuntimeException;
 
-@Test
+@Test(groups = "ci_only")
 public class TestKafkaDistributed
         extends AbstractTestQueries
 {

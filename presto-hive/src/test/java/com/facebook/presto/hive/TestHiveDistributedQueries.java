@@ -23,6 +23,7 @@ import static com.facebook.presto.testing.MaterializedResult.resultBuilder;
 import static io.airlift.tpch.TpchTable.getTables;
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "ci_only")
 public class TestHiveDistributedQueries
         extends AbstractTestDistributedQueries
 {

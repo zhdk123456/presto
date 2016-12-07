@@ -38,7 +38,7 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static java.lang.Double.doubleToLongBits;
 import static org.testng.Assert.assertEquals;
 
-@Test(singleThreaded = true)
+@Test(singleThreaded = true, groups = "ci_only")
 public class TestBinaryFileSpiller
 {
     private static final List<Type> TYPES = ImmutableList.of(BIGINT, VARCHAR, DOUBLE, BIGINT);

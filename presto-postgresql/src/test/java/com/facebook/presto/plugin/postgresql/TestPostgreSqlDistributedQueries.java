@@ -39,7 +39,7 @@ import static io.airlift.testing.Closeables.closeAllRuntimeException;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-@Test
+@Test(groups = "ci_only")
 public class TestPostgreSqlDistributedQueries
         extends AbstractTestQueries
 {

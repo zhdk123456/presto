@@ -17,10 +17,12 @@ import com.facebook.presto.Session;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tests.tpch.IndexedTpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
+@Test(groups = "ci_only")
 public class TestLocalQueriesIndexed
         extends AbstractTestIndexedQueries
 {

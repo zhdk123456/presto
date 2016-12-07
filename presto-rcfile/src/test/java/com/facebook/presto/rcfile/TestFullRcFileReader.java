@@ -15,7 +15,7 @@ package com.facebook.presto.rcfile;
 
 import org.testng.annotations.Test;
 
-@Test(groups = "ci")
+@Test(groups = {"ci", "ci_only"})
 public class TestFullRcFileReader
         extends AbstractTestRcFileReader
 {

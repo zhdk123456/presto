@@ -14,9 +14,11 @@
 package com.facebook.presto.tests;
 
 import com.google.common.collect.ImmutableMap;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.tests.tpch.TpchQueryRunner.createQueryRunner;
 
+@Test(groups = "ci_only")
 public class TestDistributedQueriesNoHashGeneration
         extends AbstractTestQueries
 {

@@ -15,7 +15,7 @@ package com.facebook.presto.orc;
 
 import org.testng.annotations.Test;
 
-@Test(groups = "ci")
+@Test(groups = {"ci", "ci_only"})
 public class TestFullOrcReader
         extends AbstractTestOrcReader
 {

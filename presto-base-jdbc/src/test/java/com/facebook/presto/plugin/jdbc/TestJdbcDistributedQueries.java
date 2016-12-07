@@ -15,9 +15,11 @@ package com.facebook.presto.plugin.jdbc;
 
 import com.facebook.presto.tests.AbstractTestQueries;
 import io.airlift.tpch.TpchTable;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.plugin.jdbc.JdbcQueryRunner.createJdbcQueryRunner;
 
+@Test(groups = "ci_only")
 public class TestJdbcDistributedQueries
         extends AbstractTestQueries
 {

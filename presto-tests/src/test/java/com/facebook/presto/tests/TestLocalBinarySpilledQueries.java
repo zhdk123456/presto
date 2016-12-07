@@ -20,11 +20,13 @@ import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableMap;
+import org.testng.annotations.Test;
 
 import static com.facebook.presto.testing.TestingSession.TESTING_CATALOG;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
 
+@Test(groups = "ci_only")
 public class TestLocalBinarySpilledQueries
         extends AbstractTestQueries
 {
