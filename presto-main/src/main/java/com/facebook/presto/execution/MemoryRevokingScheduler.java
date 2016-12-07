@@ -18,6 +18,7 @@ import com.facebook.presto.memory.MemoryPool;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.memory.TraversingQueryContextVisitor;
 import com.facebook.presto.operator.OperatorContext;
+import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 
@@ -32,27 +33,33 @@ public class MemoryRevokingScheduler
 {
     private static final Ordering<SqlTask> ORDER_BY_CREATE_TIME = Ordering.natural().onResultOf(task -> task.getTaskInfo().getStats().getCreateTime());
     private final MemoryPool systemMemoryPool;
+    private final double memoryRevokingThreshold;
+    private final double memoryRevokingTarget;
 
     @Inject
-    public MemoryRevokingScheduler(LocalMemoryManager localMemoryManager)
+    public MemoryRevokingScheduler(LocalMemoryManager localMemoryManager, FeaturesConfig config)
     {
-        this(requireNonNull(localMemoryManager, "localMemoryManager can not be null").getPool(LocalMemoryManager.SYSTEM_POOL));
+        this(requireNonNull(localMemoryManager, "localMemoryManager can not be null").getPool(LocalMemoryManager.SYSTEM_POOL),
+                config.getMemoryRevokingThreshold(),
+                config.getMemoryRevokingTarget());
     }
 
     @VisibleForTesting
-    MemoryRevokingScheduler(MemoryPool systemMemoryPool)
+    MemoryRevokingScheduler(MemoryPool systemMemoryPool, double memoryRevokingThreshold, double memoryRevokingTarget)
     {
         this.systemMemoryPool = requireNonNull(systemMemoryPool, "systemMemoryPool can not be null");
+        this.memoryRevokingThreshold = memoryRevokingThreshold;
+        this.memoryRevokingTarget = memoryRevokingTarget;
     }
 
     public void requestSystemMemoryRevokingIfNeeded(Collection<SqlTask> sqlTasks)
     {
         long freeBytes = systemMemoryPool.getFreeBytes();
-        if (freeBytes > 0) {
+        if (freeBytes > systemMemoryPool.getMaxBytes() * memoryRevokingThreshold) {
             return;
         }
 
-        long remainingBytesToRevoke = -freeBytes;
+        long remainingBytesToRevoke = (long) (-freeBytes + (systemMemoryPool.getMaxBytes() * memoryRevokingTarget));
         remainingBytesToRevoke -= getMemoryAlreadyBeingRevoked(sqlTasks);
         requestRevoking(remainingBytesToRevoke, sqlTasks);
     }
