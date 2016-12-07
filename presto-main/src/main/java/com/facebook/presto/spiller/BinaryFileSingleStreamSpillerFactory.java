@@ -133,6 +133,7 @@ public class BinaryFileSingleStreamSpillerFactory
 
     private boolean hasEnoughDiskSpace(Path path)
     {
-        return path.toFile().getFreeSpace() > path.toFile().getTotalSpace() * (1.0 - minimumFreeSpaceThreshold);
+        return true;
+        //return path.toFile().getFreeSpace() > path.toFile().getTotalSpace() * (1.0 - minimumFreeSpaceThreshold);
     }
 }
