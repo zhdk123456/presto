@@ -58,7 +58,9 @@ public class TestFeaturesConfig
                 .setSpillMaxUsedSpaceThreshold(0.9)
                 .setOptimizeMixedDistinctAggregations(false)
                 .setLegacyOrderBy(false)
-                .setParseDecimalLiteralsAsDouble(false));
+                .setParseDecimalLiteralsAsDouble(false)
+                .setMemoryRevokingThreshold(0.1)
+                .setMemoryRevokingTarget(0.5));
     }
 
     @Test
@@ -90,6 +92,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("experimental.resource-groups-enabled", "true")
@@ -117,6 +121,8 @@ public class TestFeaturesConfig
                 .put("experimental.spiller-threads", "42")
                 .put("experimental.spiller-max-used-space-threshold", "0.8")
                 .put("parse-decimal-literals-as-double", "true")
+                .put("experimental.memory-revoking-threshold", "0.2")
+                .put("experimental.memory-revoking-target", "0.8")
                 .build();
 
         FeaturesConfig expected = new FeaturesConfig()
@@ -144,7 +150,9 @@ public class TestFeaturesConfig
                 .setSpillerThreads(42)
                 .setSpillMaxUsedSpaceThreshold(0.8)
                 .setLegacyOrderBy(true)
-                .setParseDecimalLiteralsAsDouble(true);
+                .setParseDecimalLiteralsAsDouble(true)
+                .setMemoryRevokingThreshold(0.2)
+                .setMemoryRevokingTarget(0.8);
 
         assertFullMapping(properties, expected);
         assertDeprecatedEquivalence(FeaturesConfig.class, properties, propertiesLegacy);
