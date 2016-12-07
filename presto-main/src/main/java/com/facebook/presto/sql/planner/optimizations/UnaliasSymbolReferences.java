@@ -706,6 +706,13 @@ public class UnaliasSymbolReferences
                     orderings.build());
         }
 
+        private List<Symbol> canonicalize(List<Symbol> symbols)
+        {
+            return symbols.stream()
+                    .map(this::canonicalize)
+                    .collect(toImmutableList());
+        }
+
         private Set<Symbol> canonicalize(Set<Symbol> symbols)
         {
             return symbols.stream()
