@@ -60,6 +60,9 @@ public class SpillableHashAggregationBuilder
     private final LocalMemoryContext memoryContext;
     private final JoinCompiler joinCompiler;
 
+    // todo get rid of that and only use revocable memory
+    private long emptyHashAggregationBuilderSize = 0;
+
     private long hashCollisions;
     private double expectedHashCollisions;
 
@@ -106,7 +109,8 @@ public class SpillableHashAggregationBuilder
     public void updateMemory()
     {
         checkState(spillInProgress.isDone());
-        operatorContext.setRevocableMemoryReservation(hashAggregationBuilder.getSizeInMemory());
+        operatorContext.setMemoryReservation(emptyHashAggregationBuilderSize);
+        operatorContext.setRevocableMemoryReservation(hashAggregationBuilder.getSizeInMemory() - emptyHashAggregationBuilderSize);
     }
 
     public long getSizeInMemory()
@@ -289,5 +293,6 @@ public class SpillableHashAggregationBuilder
                 operatorContext,
                 DataSize.succinctBytes(0),
                 joinCompiler);
+        this.emptyHashAggregationBuilderSize = this.hashAggregationBuilder.getSizeInMemory();
     }
 }
