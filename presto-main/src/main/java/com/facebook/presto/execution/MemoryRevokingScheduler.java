@@ -52,7 +52,7 @@ public class MemoryRevokingScheduler
             return;
         }
 
-        long remainingBytesToRevoke = -freeBytes;
+        long remainingBytesToRevoke = (long) (-freeBytes + (systemMemoryPool.getMaxBytes() * 0.5));
         remainingBytesToRevoke -= getMemoryAlreadyBeingRevoked(sqlTasks);
         requestRevoking(remainingBytesToRevoke, sqlTasks);
     }
