@@ -23,8 +23,9 @@ import com.facebook.presto.sql.tree.CoalesceExpression;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.LongLiteral;
 import com.facebook.presto.type.TypeRegistry;
-import com.facebook.presto.util.maps.IdentityLinkedHashMap;
 import org.testng.annotations.Test;
+
+import java.util.IdentityHashMap;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.facebook.presto.metadata.FunctionKind.SCALAR;
@@ -39,7 +40,7 @@ public class TestSqlToRowExpressionTranslator
     public void testPossibleExponentialOptimizationTime()
     {
         Expression expression = new LongLiteral("1");
-        IdentityLinkedHashMap<Expression, Type> types = new IdentityLinkedHashMap<>();
+        IdentityHashMap<Expression, Type> types = new IdentityHashMap<>();
         types.put(expression, BIGINT);
         for (int i = 0; i < 100; i++) {
             expression = new CoalesceExpression(expression);

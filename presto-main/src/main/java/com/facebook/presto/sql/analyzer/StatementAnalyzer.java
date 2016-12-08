@@ -95,7 +95,6 @@ import com.facebook.presto.sql.tree.WithQuery;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
 import com.facebook.presto.type.RowType;
-import com.facebook.presto.util.maps.IdentityLinkedHashMap;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -109,6 +108,7 @@ import com.google.common.primitives.Ints;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -628,7 +628,7 @@ class StatementAnalyzer
             throw new SemanticException(NON_NUMERIC_SAMPLE_PERCENTAGE, relation.getSamplePercentage(), "Sample percentage cannot contain column references");
         }
 
-        IdentityLinkedHashMap<Expression, Type> expressionTypes = getExpressionTypes(
+        IdentityHashMap<Expression, Type> expressionTypes = getExpressionTypes(
                 session,
                 metadata,
                 sqlParser,

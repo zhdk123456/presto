@@ -89,7 +89,6 @@ import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.sql.tree.WindowFrame;
 import com.facebook.presto.type.FunctionType;
 import com.facebook.presto.type.RowType;
-import com.facebook.presto.util.maps.IdentityLinkedHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -99,6 +98,7 @@ import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -145,8 +145,8 @@ import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Sets.newIdentityHashSet;
 import static java.lang.String.format;
-import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.requireNonNull;
 
 public class ExpressionAnalyzer
@@ -157,17 +157,17 @@ public class ExpressionAnalyzer
     private final Map<Symbol, Type> symbolTypes;
     private final boolean isDescribe;
 
-    private final IdentityLinkedHashMap<FunctionCall, Signature> resolvedFunctions = new IdentityLinkedHashMap<>();
-    private final Set<SubqueryExpression> scalarSubqueries = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final Set<ExistsPredicate> existsSubqueries = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final IdentityLinkedHashMap<Expression, Type> expressionCoercions = new IdentityLinkedHashMap<>();
-    private final Set<Expression> typeOnlyCoercions = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final Set<InPredicate> subqueryInPredicates = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final Set<Expression> columnReferences = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final IdentityLinkedHashMap<Expression, Type> expressionTypes = new IdentityLinkedHashMap<>();
-    private final Set<QuantifiedComparisonExpression> quantifiedComparisons = newSetFromMap(new IdentityLinkedHashMap<>());
+    private final IdentityHashMap<FunctionCall, Signature> resolvedFunctions = new IdentityHashMap<>();
+    private final Set<SubqueryExpression> scalarSubqueries = newIdentityHashSet();
+    private final Set<ExistsPredicate> existsSubqueries = newIdentityHashSet();
+    private final IdentityHashMap<Expression, Type> expressionCoercions = new IdentityHashMap<>();
+    private final Set<Expression> typeOnlyCoercions = newIdentityHashSet();
+    private final Set<InPredicate> subqueryInPredicates = newIdentityHashSet();
+    private final Set<Expression> columnReferences = newIdentityHashSet();
+    private final IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
+    private final Set<QuantifiedComparisonExpression> quantifiedComparisons = newIdentityHashSet();
     // For lambda argument references, maps each QualifiedNameReference to the referenced LambdaArgumentDeclaration
-    private final IdentityLinkedHashMap<QualifiedNameReference, LambdaArgumentDeclaration> lambdaArgumentReferences = new IdentityLinkedHashMap<>();
+    private final IdentityHashMap<QualifiedNameReference, LambdaArgumentDeclaration> lambdaArgumentReferences = new IdentityHashMap<>();
 
     private final Session session;
     private final List<Expression> parameters;
@@ -190,17 +190,17 @@ public class ExpressionAnalyzer
         this.isDescribe = isDescribe;
     }
 
-    public IdentityLinkedHashMap<FunctionCall, Signature> getResolvedFunctions()
+    public IdentityHashMap<FunctionCall, Signature> getResolvedFunctions()
     {
         return resolvedFunctions;
     }
 
-    public IdentityLinkedHashMap<Expression, Type> getExpressionTypes()
+    public IdentityHashMap<Expression, Type> getExpressionTypes()
     {
         return expressionTypes;
     }
 
-    public IdentityLinkedHashMap<Expression, Type> getExpressionCoercions()
+    public IdentityHashMap<Expression, Type> getExpressionCoercions()
     {
         return expressionCoercions;
     }
@@ -220,7 +220,7 @@ public class ExpressionAnalyzer
         return ImmutableSet.copyOf(columnReferences);
     }
 
-    public IdentityLinkedHashMap<QualifiedNameReference, LambdaArgumentDeclaration> getLambdaArgumentReferences()
+    public IdentityHashMap<QualifiedNameReference, LambdaArgumentDeclaration> getLambdaArgumentReferences()
     {
         return lambdaArgumentReferences;
     }
@@ -1290,7 +1290,7 @@ public class ExpressionAnalyzer
         return function;
     }
 
-    public static IdentityLinkedHashMap<Expression, Type> getExpressionTypes(
+    public static IdentityHashMap<Expression, Type> getExpressionTypes(
             Session session,
             Metadata metadata,
             SqlParser sqlParser,
@@ -1301,7 +1301,7 @@ public class ExpressionAnalyzer
         return getExpressionTypes(session, metadata, sqlParser, types, expression, parameters, false);
     }
 
-    public static IdentityLinkedHashMap<Expression, Type> getExpressionTypes(
+    public static IdentityHashMap<Expression, Type> getExpressionTypes(
             Session session,
             Metadata metadata,
             SqlParser sqlParser,
@@ -1313,7 +1313,7 @@ public class ExpressionAnalyzer
         return getExpressionTypes(session, metadata, sqlParser, types, ImmutableList.of(expression), parameters, isDescribe);
     }
 
-    public static IdentityLinkedHashMap<Expression, Type> getExpressionTypes(
+    public static IdentityHashMap<Expression, Type> getExpressionTypes(
             Session session,
             Metadata metadata,
             SqlParser sqlParser,
@@ -1325,7 +1325,7 @@ public class ExpressionAnalyzer
         return analyzeExpressionsWithSymbols(session, metadata, sqlParser, types, expressions, parameters, isDescribe).getExpressionTypes();
     }
 
-    public static IdentityLinkedHashMap<Expression, Type> getExpressionTypesFromInput(
+    public static IdentityHashMap<Expression, Type> getExpressionTypesFromInput(
             Session session,
             Metadata metadata,
             SqlParser sqlParser,
@@ -1336,7 +1336,7 @@ public class ExpressionAnalyzer
         return getExpressionTypesFromInput(session, metadata, sqlParser, types, ImmutableList.of(expression), parameters);
     }
 
-    public static IdentityLinkedHashMap<Expression, Type> getExpressionTypesFromInput(
+    public static IdentityHashMap<Expression, Type> getExpressionTypesFromInput(
             Session session,
             Metadata metadata,
             SqlParser sqlParser,
@@ -1430,10 +1430,10 @@ public class ExpressionAnalyzer
         ExpressionAnalyzer analyzer = create(analysis, session, metadata, sqlParser, accessControl, ImmutableMap.of());
         analyzer.analyze(expression, scope);
 
-        IdentityLinkedHashMap<Expression, Type> expressionTypes = analyzer.getExpressionTypes();
-        IdentityLinkedHashMap<Expression, Type> expressionCoercions = analyzer.getExpressionCoercions();
+        IdentityHashMap<Expression, Type> expressionTypes = analyzer.getExpressionTypes();
+        IdentityHashMap<Expression, Type> expressionCoercions = analyzer.getExpressionCoercions();
         Set<Expression> typeOnlyCoercions = analyzer.getTypeOnlyCoercions();
-        IdentityLinkedHashMap<FunctionCall, Signature> resolvedFunctions = analyzer.getResolvedFunctions();
+        IdentityHashMap<FunctionCall, Signature> resolvedFunctions = analyzer.getResolvedFunctions();
 
         analysis.addTypes(expressionTypes);
         analysis.addCoercions(expressionCoercions, typeOnlyCoercions);
