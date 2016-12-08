@@ -181,6 +181,24 @@ public class TestLogicalPlanner
                 2);
     }
 
+    @Test
+    public void testSameQualifiedSubqueryIsAppliedOnlyOnce()
+    {
+        // same ALL query used for left, right and complex condition
+        assertEquals(
+                countOfMatchingNodes(
+                        plan("SELECT * FROM orders o1 JOIN orders o2 ON o1.orderkey <= ALL(SELECT 1) AND (o1.orderkey <= ALL(SELECT 1) OR o1.orderkey <= ALL(SELECT 1))"),
+                        AggregationNode.class::isInstance),
+                1);
+
+        // one subquery used for "1 <= ALL(SELECT 1)", one subquery used for "2 <= ALL(SELECT 1)"
+        assertEquals(
+                countOfMatchingNodes(
+                        plan("SELECT 1 <= ALL(SELECT 1), 2 <= ALL(SELECT 1) WHERE 1 <= ALL(SELECT 1)"),
+                        AggregationNode.class::isInstance),
+                2);
+    }
+
     private static int countOfMatchingNodes(Plan plan, Predicate<PlanNode> predicate)
     {
         PlanNodeExtractor planNodeExtractor = new PlanNodeExtractor(predicate);
@@ -511,9 +529,9 @@ public class TestLogicalPlanner
         assertPlan(query, anyTree(
                 join(INNER, ImmutableList.of(), Optional.of(filter),
                         tableScan("orders").withSymbol("orderkey", columnMapping),
-                                node(AggregationNode.class,
-                                        node(ValuesNode.class)).withSymbol(function, functionAlias)
-                        )));
+                        node(AggregationNode.class,
+                                node(ValuesNode.class)).withSymbol(function, functionAlias)
+                )));
     }
 
     private static final class PlanNodeExtractor
