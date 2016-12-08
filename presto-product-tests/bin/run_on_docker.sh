@@ -200,20 +200,15 @@ fi
 # catch terminate signals
 trap terminate INT TERM EXIT
 
-# start hadoop container
-environment_compose up -d hadoop-master
-
-# start external database containers
-environment_compose up -d mysql
-environment_compose up -d postgres
-
-# start ldap container
+# start external services
+EXTERNAL_SERVICES="hadoop-master mysql postgres"
 if [[ "$ENVIRONMENT" == "singlenode-ldap" ]]; then
-  environment_compose up -d ldapserver
+  EXTERNAL_SERVICES="${EXTERNAL_SERVICES} ldapserver"
 fi
+environment_compose up -d ${EXTERNAL_SERVICES}
 
-# start docker logs for hadoop container
-environment_compose logs --no-color hadoop-master &
+# start docker logs for the external services
+environment_compose logs --no-color ${EXTERNAL_SERVICES} &
 HADOOP_LOGS_PID=$!
 
 # wait until hadoop processes is started
