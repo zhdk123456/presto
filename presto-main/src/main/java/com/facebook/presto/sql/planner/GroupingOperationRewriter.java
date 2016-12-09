@@ -54,10 +54,10 @@ import com.facebook.presto.sql.tree.SubscriptExpression;
 import com.facebook.presto.sql.tree.TryExpression;
 import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.type.ListLiteralType;
+import com.facebook.presto.util.maps.IdentityLinkedHashMap;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -246,8 +246,8 @@ public class GroupingOperationRewriter
         Expression rewrittenExpression = rewriteGroupingOperationToExpression(node, queryNode);
         if (rewrittenExpression instanceof FunctionCall) {
             FunctionCall rewrittenFunctionCall = (FunctionCall) rewrittenExpression;
-            IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
-            IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap();
+            IdentityLinkedHashMap<Expression, Type> expressionTypes = new IdentityLinkedHashMap<>();
+            IdentityLinkedHashMap<FunctionCall, Signature> functionSignatures = new IdentityLinkedHashMap();
             List<TypeSignatureProvider> functionTypes = Arrays.asList(
                     new TypeSignatureProvider(BIGINT.getTypeSignature()),
                     new TypeSignatureProvider(ListLiteralType.LIST_LITERAL.getTypeSignature()),
