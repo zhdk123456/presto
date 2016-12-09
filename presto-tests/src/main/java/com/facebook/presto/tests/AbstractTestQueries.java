@@ -5830,9 +5830,9 @@ public abstract class AbstractTestQueries
                 "VALUES (2,2)");
 
         // test multiple IN subqueries with coercions
-        assertQuery("SELECT 1.0 IN (SELECT 1), 1 IN (SELECT 1)");
-        assertQuery("SELECT 1 WHERE 1 IN (SELECT 1) AND 1.0 IN (SELECT 1)");
-        assertQuery("select 1.0 in (values (1), (2), (3))", "SELECT true");
+        assertQuery("SELECT CAST(1.0 AS REAL) IN (SELECT 1), 1 IN (SELECT 1)");
+        assertQuery("SELECT 1 WHERE 1 IN (SELECT 1) AND CAST(1.0 AS REAL) IN (SELECT 1)");
+        assertQuery("select CAST(1.0 AS REAL) in (values (1), (2), (3))", "SELECT true");
 
         // test multi level IN subqueries
         assertQuery("SELECT 1 IN (SELECT 1), 2 IN (SELECT 1) WHERE 1 IN (SELECT 1)");
@@ -6178,13 +6178,13 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT custkey, (SELECT DISTINCT custkey FROM orders ORDER BY custkey LIMIT 1) FROM orders");
 
         // cast scalar sub-query
-        assertQuery("SELECT 1.0/(SELECT 1), CAST(1.0 AS REAL)/(SELECT 1), 1/(SELECT 1)");
-        assertQuery("SELECT 1.0 = (SELECT 1) AND 1 = (SELECT 1), 2.0 = (SELECT 1) WHERE 1.0 = (SELECT 1) AND 1 = (SELECT 1)");
-        assertQuery("SELECT 1.0 = (SELECT 1), 2.0 = (SELECT 1), CAST(2.0 AS REAL) = (SELECT 1) WHERE 1.0 = (SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL)/(SELECT 1), CAST(1.0 AS REAL)/(SELECT 1), 1/(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) = (SELECT 1) AND 1 = (SELECT 1), CAST(2.0 AS REAL) = (SELECT 1) WHERE CAST(1.0 AS REAL) = (SELECT 1) AND 1 = (SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) = (SELECT 1), CAST(2.0 AS REAL) = (SELECT 1), CAST(2.0 AS REAL) = (SELECT 1) WHERE CAST(1.0 AS REAL) = (SELECT 1)");
 
         // coerce correlated symbols
-        assertQuery("SELECT * FROM (VALUES 1) t(a) WHERE 1=(SELECT count(*) WHERE 1.0 = a)", "SELECT 1");
-        assertQuery("SELECT * FROM (VALUES 1.0) t(a) WHERE 1=(SELECT count(*) WHERE 1 = a)", "SELECT 1.0");
+        assertQuery("SELECT * FROM (VALUES 1) t(a) WHERE 1=(SELECT count(*) WHERE CAST(1.0 AS REAL) = a)", "SELECT 1");
+        assertQuery("SELECT * FROM (VALUES CAST(1.0 AS REAL)) t(a) WHERE 1=(SELECT count(*) WHERE 1 = a)", "SELECT 1.0");
     }
 
     @Test
@@ -7848,11 +7848,11 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT nationkey, name, regionkey FROM nation WHERE regionkey >= ALL (SELECT regionkey FROM region WHERE name IN ('ASIA', 'EUROPE'))");
 
         // subquery with coercion
-        assertQuery("SELECT 1.0 < ALL(SELECT 1), 1 < ALL(SELECT 1)");
-        assertQuery("SELECT 1.0 <= ALL(SELECT 1) WHERE 1 <= ALL(SELECT 1)");
-        assertQuery("SELECT 1.0 <= ALL(SELECT 1), 1 <= ALL(SELECT 1) WHERE 1 <= ALL(SELECT 1)");
-        assertQuery("SELECT 1.0 = ALL(SELECT 1) WHERE 1 = ALL(SELECT 1)");
-        assertQuery("SELECT 1.0 = ALL(SELECT 1), 2 = ALL(SELECT 1) WHERE 1 = ALL(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) < ALL(SELECT 1), 1 < ALL(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) <= ALL(SELECT 1) WHERE 1 <= ALL(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) <= ALL(SELECT 1), 1 <= ALL(SELECT 1) WHERE 1 <= ALL(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) = ALL(SELECT 1) WHERE 1 = ALL(SELECT 1)");
+        assertQuery("SELECT CAST(1.0 AS REAL) = ALL(SELECT 1), 2 = ALL(SELECT 1) WHERE 1 = ALL(SELECT 1)");
     }
 
     @Test
