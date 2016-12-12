@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.memory.AggregatedMemoryContext;
 import com.facebook.presto.operator.aggregation.Accumulator;
 import com.facebook.presto.operator.aggregation.AccumulatorFactory;
 import com.facebook.presto.operator.aggregation.builder.HashAggregationBuilder;
@@ -36,6 +37,7 @@ import io.airlift.units.DataSize;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.aggregation.builder.InMemoryHashAggregationBuilder.toTypes;
@@ -104,7 +106,7 @@ public class HashAggregationOperator
                     new SpillerFactory()
                     {
                         @Override
-                        public Spiller create(List<Type> types, java.util.function.Supplier<LocalSpillContext> localSpillContextSupplier)
+                        public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier, AggregatedMemoryContext memoryContext)
                         {
                             throw new UnsupportedOperationException();
                         }

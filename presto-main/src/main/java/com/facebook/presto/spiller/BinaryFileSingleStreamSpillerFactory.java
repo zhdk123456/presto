@@ -15,6 +15,7 @@
 package com.facebook.presto.spiller;
 
 import com.facebook.presto.execution.buffer.PagesSerdeFactory;
+import com.facebook.presto.memory.LocalMemoryContext;
 import com.facebook.presto.spi.block.BlockEncodingSerde;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
@@ -114,9 +115,9 @@ public class BinaryFileSingleStreamSpillerFactory
     }
 
     @Override
-    public SingleStreamSpiller create(List<Type> types, LocalSpillContext localSpillContext)
+    public SingleStreamSpiller create(List<Type> types, LocalSpillContext localSpillContext, LocalMemoryContext memoryContext)
     {
-        return new BinaryFileSingleStreamSpiller(serdeFactory.createPagesSerde(), executor, getNextSpillPath(), spillerStats, localSpillContext);
+        return new BinaryFileSingleStreamSpiller(serdeFactory.createPagesSerde(), executor, getNextSpillPath(), spillerStats, localSpillContext, memoryContext);
     }
 
     private synchronized Path getNextSpillPath()

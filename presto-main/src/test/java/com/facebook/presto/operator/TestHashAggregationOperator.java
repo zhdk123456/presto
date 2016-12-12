@@ -15,6 +15,7 @@ package com.facebook.presto.operator;
 
 import com.facebook.presto.ExceededMemoryLimitException;
 import com.facebook.presto.RowPagesBuilder;
+import com.facebook.presto.memory.AggregatedMemoryContext;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.operator.HashAggregationOperator.HashAggregationOperatorFactory;
@@ -552,7 +553,7 @@ public class TestHashAggregationOperator
             implements SpillerFactory
     {
         @Override
-        public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier)
+        public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier, AggregatedMemoryContext memoryContext)
         {
             return new Spiller()
             {
@@ -583,7 +584,7 @@ public class TestHashAggregationOperator
             implements SpillerFactory
     {
         @Override
-        public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier)
+        public Spiller create(List<Type> types, Supplier<LocalSpillContext> localSpillContextSupplier, AggregatedMemoryContext memoryContext)
         {
             return new Spiller() {
                 @Override
