@@ -15,8 +15,10 @@ package com.facebook.presto.spiller;
 
 import com.facebook.presto.execution.buffer.PagesSerde;
 import com.facebook.presto.execution.buffer.PagesSerdeUtil;
+import com.facebook.presto.memory.LocalMemoryContext;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Closer;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.concurrent.MoreFutures;
@@ -47,11 +49,15 @@ import static java.util.Objects.requireNonNull;
 public class BinaryFileSingleStreamSpiller
         implements SingleStreamSpiller
 {
+    @VisibleForTesting
+    static final int BUFFER_SIZE = 4 * 1024;
+
     private final Path targetFileName;
     private final Closer closer = Closer.create();
     private final PagesSerde serde;
     private final SpillerStats spillerStats;
     private final LocalSpillContext localSpillContext;
+    private final LocalMemoryContext memoryContext;
 
     private final ListeningExecutorService executor;
 
@@ -62,12 +68,14 @@ public class BinaryFileSingleStreamSpiller
             ListeningExecutorService executor,
             Path spillPath,
             SpillerStats spillerStats,
-            LocalSpillContext localSpillContext)
+            LocalSpillContext localSpillContext,
+            LocalMemoryContext memoryContext)
     {
         this.serde = requireNonNull(serde, "serde is null");
         this.executor = requireNonNull(executor, "executor is null");
         this.spillerStats = requireNonNull(spillerStats, "spillerStats is null");
         this.localSpillContext = requireNonNull(localSpillContext, "localSpillContext can not be null");
+        this.memoryContext = requireNonNull(memoryContext, "memoryContext can not be null");
         try {
             targetFileName = Files.createTempFile(spillPath, SPILL_FILE_PREFIX, SPILL_FILE_SUFFIX);
         }
@@ -99,7 +107,8 @@ public class BinaryFileSingleStreamSpiller
 
     private void writePages(Iterator<Page> pageIterator)
     {
-        try (SliceOutput output = new OutputStreamSliceOutput(new FileOutputStream(targetFileName.toFile(), true))) {
+        try (SliceOutput output = new OutputStreamSliceOutput(new FileOutputStream(targetFileName.toFile(), true), BUFFER_SIZE)) {
+            memoryContext.setBytes(BUFFER_SIZE);
             while (pageIterator.hasNext()) {
                 Page page = pageIterator.next();
                 long pageSize = page.getSizeInBytes();
@@ -111,14 +120,19 @@ public class BinaryFileSingleStreamSpiller
         catch (RuntimeIOException | IOException e) {
             throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to spill pages", e);
         }
+        finally {
+            memoryContext.setBytes(0);
+        }
     }
 
     private Iterator<Page> readPages()
     {
         try {
             InputStream input = new FileInputStream(targetFileName.toFile());
+            memoryContext.setBytes(BUFFER_SIZE);
             closer.register(input);
-            return PagesSerdeUtil.readPages(serde, new InputStreamSliceInput(input));
+            closer.register(() -> memoryContext.setBytes(0));
+            return PagesSerdeUtil.readPages(serde, new InputStreamSliceInput(input, BUFFER_SIZE));
         }
         catch (IOException e) {
             throw new PrestoException(GENERIC_INTERNAL_ERROR, "Failed to read spilled pages", e);
