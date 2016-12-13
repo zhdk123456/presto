@@ -55,6 +55,7 @@ public class SpillableHashAggregationBuilder
     private final long memoryLimitForMergeWithMemory;
     private Optional<Spiller> spiller = Optional.empty();
     private Optional<MergingHashAggregationBuilder> merger = Optional.empty();
+    private Optional<MergeHashSort> mergeHashSort = Optional.empty();
     private CompletableFuture<?> spillInProgress = CompletableFuture.completedFuture(null);
     private final LocalMemoryContext aggregationMemoryContext;
     private final LocalMemoryContext spillMemoryContext;
@@ -201,6 +202,9 @@ public class SpillableHashAggregationBuilder
         if (spiller.isPresent()) {
             spiller.get().close();
         }
+        if (mergeHashSort.isPresent()) {
+            mergeHashSort.get().close();
+        }
     }
 
     private CompletableFuture<?> spillToDisk()
@@ -236,8 +240,9 @@ public class SpillableHashAggregationBuilder
         checkState(spiller.isPresent());
 
         hashAggregationBuilder.setOutputPartial();
+        mergeHashSort = Optional.of(new MergeHashSort(operatorContext.getSystemMemoryContext().newAggregatedMemoryContext()));
 
-        Iterator<Page> mergedSpilledPages = MergeHashSort.merge(
+        Iterator<Page> mergedSpilledPages = mergeHashSort.get().merge(
                 groupByTypes,
                 hashAggregationBuilder.buildIntermediateTypes(),
                 ImmutableList.<Iterator<Page>>builder()
@@ -252,7 +257,9 @@ public class SpillableHashAggregationBuilder
     {
         checkState(spiller.isPresent());
 
-        Iterator<Page> mergedSpilledPages = MergeHashSort.merge(
+        mergeHashSort = Optional.of(new MergeHashSort(operatorContext.getSystemMemoryContext().newAggregatedMemoryContext()));
+
+        Iterator<Page> mergedSpilledPages = mergeHashSort.get().merge(
                 groupByTypes,
                 hashAggregationBuilder.buildIntermediateTypes(),
                 spiller.get().getSpills());
