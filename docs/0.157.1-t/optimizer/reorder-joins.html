@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>19.5. Join Reordering &mdash; Teradata Distribution of Presto 0.157.1-t.0.2 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/teradata.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.2 Documentation" href="../index.html"/>
+        <link rel="up" title="19. Query Optimizer" href="../optimizer.html"/>
+        <link rel="next" title="20. Developer Guide" href="../develop.html"/>
+        <link rel="prev" title="19.4. Repartitioned and Replicated Joins" href="join-distribution-type.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Teradata Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.157.1-t.0.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">3. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sandbox-vms.html">4. Presto Installation on a Sandbox VM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-manual.html">5. Presto Server Installation on a Cluster (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-aws-emr-manual.html">6. Presto Server Installation on an AWS EMR (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-other.html">7. Alternative Installation Methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">8. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/presto-admin/user-guide.html">9. Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">10. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">11. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../querygrid.html">12. Teradata QueryGrid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">13. Teradata Supported Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community_connector.html">14. Community Supported Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">15. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">16. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">17. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">18. Migration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../optimizer.html">19. Query Optimizer</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="logical-planner.html">19.1. Logical Planner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="statistics.html">19.2. Table Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cost-in-explain.html">19.3. Cost in EXPLAIN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="join-distribution-type.html">19.4. Repartitioned and Replicated Joins</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">19.5. Join Reordering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background">Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-join-reordering">Manual Join Reordering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cross-join-elimination">Cross Join Elimination</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">20. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">21. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">22. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Teradata Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../optimizer.html">19. Query Optimizer</a> &raquo;</li>
+      
+    <li>19.5. Join Reordering</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/optimizer/reorder-joins.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="join-reordering">
+<h1>19.5. Join Reordering</h1>
+<div class="section" id="background">
+<h2>Background</h2>
+<p>The order in which joins are executed in a query can have a significant impact
+on the query&#8217;s performance. The aspect of join ordering that has the largest
+impact on performance is the size of the data being processed and passed over
+the network. If a join is not a primary key-foreign key join, the data produced
+can be much greater than the size of either table in the join&#8211; up to
+|Table 1| x |Table 2| for a cross join. If a join that produces a lot of
+data is performed early in the execution, then subsequent stages will need to
+process large amounts of data for longer than necessary, increasing the time and
+resources needed for the query.</p>
+</div>
+<div class="section" id="manual-join-reordering">
+<h2>Manual Join Reordering</h2>
+<p>By default, Presto joins tables in the order in which they are listed in a
+query. It is the responsibility of the user to optimize the join order when
+writing queries in order to achieve better performance and handle larger joins.
+It is often a good idea to join small tables early in the plan, and leave
+larger fact tables until the end. One should also be careful of introducing
+cross joins or join conditions that produce output that is larger than the size
+of the input. Though such joins may sometimes be necessary or optimal, when
+introduced unintentionally, they can dramatically reduce the performance of the
+query.</p>
+</div>
+<div class="section" id="cross-join-elimination">
+<h2>Cross Join Elimination</h2>
+<p>When the configuration property <code class="docutils literal"><span class="pre">reorder-joins</span></code> or the session property
+<code class="docutils literal"><span class="pre">reorder_joins</span></code> is enabled, the optimizer will search for cross joins in
+the query plan and try to eliminate them by changing the join order. When
+reordering, it will try to preserve the original join order as much as
+possible. If cross joins cannot be eliminated, the original join order will be
+maintained. For this optimization, the optimizer does not use any statistics.
+It will try to eliminate any cross join it can, even if including the cross
+joins would have resulted in a more optimal query plan. For example, it may be
+optimal to perform a cross join of two small dimension tables before joining in
+the larger fact table. However, the optimizer will nevertheless reorder the
+joins to remove the cross join. Because of this limitation, this property
+should be used cautiously (note that a user can instead reorder the joins
+manually to achieve the same effect). The <code class="docutils literal"><span class="pre">reorder-joins</span></code> property is set to
+<code class="docutils literal"><span class="pre">false</span></code> by default.</p>
+<div class="section" id="examples">
+<h3>Examples</h3>
+<p>For the following query:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">part</span> <span class="n">p</span><span class="p">,</span> <span class="n">orders</span> <span class="n">o</span><span class="p">,</span> <span class="n">lineitem</span> <span class="n">l</span> <span class="k">WHERE</span> <span class="n">p</span><span class="p">.</span><span class="n">partkey</span> <span class="o">=</span> <span class="n">l</span><span class="p">.</span><span class="n">partkey</span> <span class="k">AND</span> <span class="n">l</span><span class="p">.</span><span class="n">orderkey</span> <span class="o">=</span> <span class="n">o</span><span class="p">.</span><span class="n">orderkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In the original join order <code class="docutils literal"><span class="pre">part,</span> <span class="pre">orders,</span> <span class="pre">lineitem</span></code>, Presto will first join
+the <code class="docutils literal"><span class="pre">part</span></code> table with the <code class="docutils literal"><span class="pre">orders</span></code> table, for which there is no join
+condition. When <code class="docutils literal"><span class="pre">reorder-joins=true</span></code>, the join order will be changed to
+<code class="docutils literal"><span class="pre">part,</span> <span class="pre">lineitem,</span> <span class="pre">orders</span></code> to eliminate the cross join.</p>
+<p>For the following query:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">part</span> <span class="n">p</span><span class="p">,</span> <span class="n">orders</span> <span class="n">o</span><span class="p">,</span> <span class="n">lineitem</span> <span class="n">l</span><span class="p">,</span> <span class="n">supplier</span> <span class="n">s</span><span class="p">,</span> <span class="n">nation</span> <span class="n">n</span>
+<span class="k">WHERE</span> <span class="n">p</span><span class="p">.</span><span class="n">partkey</span> <span class="o">=</span> <span class="n">l</span><span class="p">.</span><span class="n">partkey</span> <span class="k">AND</span> <span class="n">l</span><span class="p">.</span><span class="n">orderkey</span> <span class="o">=</span> <span class="n">o</span><span class="p">.</span><span class="n">orderkey</span> <span class="k">AND</span> <span class="n">l</span><span class="p">.</span><span class="n">suppkey</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">suppkey</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">nationkey</span> <span class="o">=</span> <span class="n">n</span><span class="p">.</span><span class="n">nationkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The join order will change from <code class="docutils literal"><span class="pre">part,</span> <span class="pre">orders,</span> <span class="pre">lineitem,</span> <span class="pre">supplier,</span> <span class="pre">nation</span></code> to
+<code class="docutils literal"><span class="pre">part,</span> <span class="pre">lineitem,</span> <span class="pre">orders,</span> <span class="pre">supplier,</span> <span class="pre">nation</span></code>.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../develop.html" class="btn btn-neutral float-right" title="20. Developer Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="join-distribution-type.html" class="btn btn-neutral" title="19.4. Repartitioned and Replicated Joins" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.157.1-t.0.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
