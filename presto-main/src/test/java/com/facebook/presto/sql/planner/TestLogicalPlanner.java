@@ -439,7 +439,7 @@ public class TestLogicalPlanner
     @Test
     public void testDoesNotAliasCriteriaSymbolsAfterJoinWithDifferentTypes()
     {
-        assertPlan("SELECT b.val AS val FROM (VALUES (DECIMAL '1.23')) AS a (val), (VALUES (DECIMAL '232.32')) AS b (val) WHERE a.val = b.val",
+        assertPlan("SELECT b.val AS val FROM (VALUES (DECIMAL '123456.123')) AS a (val), (VALUES (DECIMAL '232.32')) AS b (val) WHERE a.val = b.val",
                 anyTree(
                         node(JoinNode.class,
                                 anyTree(),
