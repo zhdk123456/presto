@@ -30,10 +30,13 @@ import javax.net.SocketFactory;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import static com.facebook.hive.orc.OrcConf.ConfVars.HIVE_ORC_COMPRESSION;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Math.toIntExact;
+import static com.google.common.base.Preconditions.checkState;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.COMPRESSRESULT;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_ORC_DEFAULT_COMPRESS;
@@ -72,6 +75,8 @@ public class HdfsConfigurationUpdater
     private final File s3StagingDirectory;
     private final boolean pinS3ClientToCurrentRegion;
     private final String s3UserAgentPrefix;
+    private final String maprClusterName;
+    private final Map<String, HostAndPort> maprCldbNameToUri;
 
     @Inject
     public HdfsConfigurationUpdater(HiveClientConfig hiveClientConfig, HiveS3Config s3Config)
@@ -88,7 +93,6 @@ public class HdfsConfigurationUpdater
         this.resourcePaths = hiveClientConfig.getResourceConfigFiles();
         this.compressionCodec = hiveClientConfig.getHiveCompressionCodec();
         this.fileSystemMaxCacheSize = hiveClientConfig.getFileSystemMaxCacheSize();
-
         this.s3AwsAccessKey = s3Config.getS3AwsAccessKey();
         this.s3AwsSecretKey = s3Config.getS3AwsSecretKey();
         this.s3Endpoint = s3Config.getS3Endpoint();
@@ -110,6 +114,8 @@ public class HdfsConfigurationUpdater
         this.s3StagingDirectory = s3Config.getS3StagingDirectory();
         this.pinS3ClientToCurrentRegion = s3Config.isPinS3ClientToCurrentRegion();
         this.s3UserAgentPrefix = s3Config.getS3UserAgentPrefix();
+        this.maprClusterName = hiveClientConfig.getMaprClusterName();
+        this.maprCldbNameToUri = hiveClientConfig.getMaprCldbNameToHostPort();
     }
 
     public void updateConfiguration(Configuration config)
@@ -191,6 +197,16 @@ public class HdfsConfigurationUpdater
         config.setLong(PrestoS3FileSystem.S3_MULTIPART_MIN_PART_SIZE, s3MultipartMinPartSize.toBytes());
         config.setBoolean(PrestoS3FileSystem.S3_PIN_CLIENT_TO_CURRENT_REGION, pinS3ClientToCurrentRegion);
         config.set(PrestoS3FileSystem.S3_USER_AGENT_PREFIX, s3UserAgentPrefix);
+
+        // set configs for MapR
+        if (maprClusterName != null || maprCldbNameToUri != null) {
+            checkState(maprClusterName != null && maprCldbNameToUri != null, "the hive.mapr.cluster-name and hive.mapr.cldb-name-to-host-port properties must be specified in tandem");
+            config.set("dfs.nameservices", maprClusterName);
+            for (Map.Entry<String, HostAndPort> entry : maprCldbNameToUri.entrySet()) {
+                config.set(format("dfs.ha.namenodes.%s", maprClusterName), entry.getKey());
+                config.set(format("dfs.namenode.rpc-address.%s.%s", maprClusterName, entry.getKey()), entry.getValue().toString());
+            }
+        }
     }
 
     public static void configureCompression(Configuration config, HiveCompressionCodec compressionCodec)
