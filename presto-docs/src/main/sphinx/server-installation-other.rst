@@ -7,6 +7,6 @@ The following are community supported installation methods:
 .. toctree::
     :maxdepth: 1
 
-    Manual Tarball <https://prestodb.io/docs/current/installation/deployment.html>
+    Manual Tarball <https://prestodb.io/docs/0.157/installation/deployment.html>
     Automated using Apache Ambari <https://prestodb.io/ambari-presto-service/>
     Integration with Apache YARN <https://prestodb.io/presto-yarn/index.html>
