@@ -1,0 +1,912 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Teradata QueryGrid: Presto-To-Teradata Database User Guide &mdash; Teradata QueryGrid (TM): Presto-To-Teradata Database 1.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Teradata QueryGrid (TM): Presto-To-Teradata Database 1.4 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">Teradata QueryGrid (TM): Presto-To-Teradata Database 1.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="teradata-querygrid-presto-to-teradata-database-user-guide">
+<h1>Teradata QueryGrid: Presto-To-Teradata Database User Guide<a class="headerlink" href="#teradata-querygrid-presto-to-teradata-database-user-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Teradata® QueryGrid™: Presto-To-Teradata Database (henceforth known as &#8220;P2T&#8221;) provides a SQL interface
+to query the Teradata Database from Presto. <a class="reference external" href="http://teradata.github.io/presto/docs/current/">Presto</a>
+is a SQL query engine for big data that provides access to many data sources, including Hadoop ecosystem databases
+like Hive and traditional relational databases like MySQL and PostgreSQL.</p>
+<p>You can issue queries from Presto with P2T that do the following:</p>
+<ul class="simple">
+<li>Import data from Teradata Database tables and store it in Hadoop or one of the databases that Presto has a connector for.</li>
+<li>Export data from Presto into an existing table in the Teradata Database.</li>
+<li>Select data from Teradata tables and join it with existing Hadoop or other Presto data.</li>
+</ul>
+<p>P2T additionally performs push-down of simple predicates and selects only the columns needed for the SQL
+statement, in order to reduce the amount of data that needs to be retrieved. For a list of supported pushdown,
+see <a class="reference internal" href="#predicate-pushdown">Predicate Pushdown</a>.</p>
+</div>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>P2T is compatible with versions of the Teradata database in the 15.00 and 15.10 releases.
+The minimum version for the 15.00 release is 15.00.04.02. The minimum version for the 15.10 release is 15.10.01.01.
+The Teradata database must have Java 8 installed. Additionally, there are recommended changes to the Teradata
+JVM properties that greatly improve performance, as described here: <a class="reference internal" href="#jvm-configuration">JVM Configuration</a>. Changing the JVM properties
+on the Teradata database requires a restart of the JVM in Teradata.</p>
+<p>Only Presto version 0.157-t is supported with this version of P2T.</p>
+<p>These installation instructions use the <tt class="docutils literal"><span class="pre">presto-admin</span></tt> utility, described <a class="reference external" href="http://teradata.github.io/presto/docs/current/installation/presto-admin/user-guide.html">here</a>.
+The administrator needs sudo and ssh access to all of the Presto nodes to install a new connector with <tt class="docutils literal"><span class="pre">presto-admin</span></tt>.</p>
+</div>
+<div class="section" id="compatibility-matrix">
+<h2>Compatibility Matrix<a class="headerlink" href="#compatibility-matrix" title="Permalink to this headline">¶</a></h2>
+<p>Each version of P2T works with exactly one version of Presto. See the table below for the mapping:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="28%" />
+<col width="72%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Presto version</th>
+<th class="head">Presto-to-Teradata QueryGrid version</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>127t</td>
+<td>0.2</td>
+</tr>
+<tr class="row-odd"><td>141t</td>
+<td>0.3</td>
+</tr>
+<tr class="row-even"><td>148-t</td>
+<td>1.2</td>
+</tr>
+<tr class="row-odd"><td>152-t</td>
+<td>1.3</td>
+</tr>
+<tr class="row-even"><td>157-t</td>
+<td>1.4</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>To install P2T, you must install a driver on Teradata, a P2T foreign server on Teradata, and a connector on Presto.</p>
+<p>Before starting installation, upload <tt class="docutils literal"><span class="pre">presto-to-teradata-driver.zip</span></tt> to both
+the Teradata and Presto clusters and unzip it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">unzip</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">driver</span><span class="o">.</span><span class="n">zip</span> <span class="o">-</span><span class="n">d</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">driver</span>
+<span class="n">cd</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">driver</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>The archive contains the following:</dt>
+<dd><ul class="first last simple">
+<li>the Teradata driver jar file, <tt class="docutils literal"><span class="pre">presto-to-teradata-driver.jar</span></tt></li>
+<li>the RPM file to be installed on the Presto cluster, <tt class="docutils literal"><span class="pre">presto-to-teradata-connector-*.noarch.rpm</span></tt></li>
+<li>the sample properties files to be copied to the Presto cluster, <tt class="docutils literal"><span class="pre">properties/teradata.properties</span></tt></li>
+<li>the install script for the driver on Teradata, <tt class="docutils literal"><span class="pre">install_p2t.bteq</span></tt></li>
+<li>the uninstall script for the driver on Teradata, <tt class="docutils literal"><span class="pre">uninstall_p2t.bteq</span></tt></li>
+<li>a utility script to restart the JVM on Teradata, <tt class="docutils literal"><span class="pre">restart_jvm.bteq</span></tt></li>
+<li>this documentation, in the <tt class="docutils literal"><span class="pre">docs</span></tt> directory</li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="installation-on-teradata">
+<h3>Installation on Teradata<a class="headerlink" href="#installation-on-teradata" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Usage of the <tt class="docutils literal"><span class="pre">install-teradata</span></tt> script is highly discouraged, as it may set undesirable access
+permissions for user defined functions and foreign servers in Teradata. It is also not possible
+to correctly install the QueryGrid driver in multi-user environments when using this script.
+Instead of <tt class="docutils literal"><span class="pre">install-teradata</span></tt>, use the provided <tt class="docutils literal"><span class="pre">*.bteq</span></tt> scripts.</p>
+</div>
+<div class="section" id="privileges-and-security">
+<h4>Privileges and Security<a class="headerlink" href="#privileges-and-security" title="Permalink to this headline">¶</a></h4>
+<p>P2T uses two Teradata accounts: a DBA user and a user that will run queries on the foreign server.</p>
+<p>The DBA user (henceforth known as <cite>dba_user</cite>) is usually <cite>dbc</cite> or a user with similar permissions,
+and it installs the driver in the <cite>syslib</cite> database.</p>
+<p>Grant the following permissions to <cite>dba_user</cite>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">GRANT</span> <span class="k">EXECUTE</span> <span class="k">PROCEDURE</span> <span class="k">ON</span> <span class="n">sqlj</span> <span class="k">TO</span> <span class="n">dba_user</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">CREATE</span> <span class="k">EXTERNAL</span> <span class="k">PROCEDURE</span> <span class="k">ON</span> <span class="n">syslib</span> <span class="k">TO</span> <span class="n">dba_user</span> <span class="k">WITH</span> <span class="k">GRANT</span> <span class="k">OPTION</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">CREATE</span> <span class="k">FUNCTION</span> <span class="k">ON</span> <span class="n">syslib</span> <span class="k">TO</span> <span class="n">dba_user</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">CREATE</span> <span class="n">SERVER</span> <span class="k">ON</span> <span class="n">td_server_db</span> <span class="k">TO</span> <span class="n">dba_user</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">DROP</span> <span class="n">SERVER</span> <span class="k">ON</span> <span class="n">td_server_db</span> <span class="k">TO</span> <span class="n">dba_user</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The user that will be running queries (henceforth known as <cite>presto_user</cite>) can either be an
+existing user or a new user. That user must have sufficient spool space
+for the query workload: the spool space must be at least as large as the amount of data used in the query.</p>
+<p>Grant the following permissions to <cite>presto_user</cite>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span class="k">GRANT</span> <span class="k">INSERT</span><span class="p">,</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="n">td_server_db</span> <span class="k">TO</span> <span class="n">presto_user</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Alternatively, you can grant INSERT and SELECT privileges for the particular P2T foreign server you create, rather than granting
+permission for all of the foreign server objects.</p>
+<p>P2T foreign servers should not be queried directly by Teradata users, so it is recommended to limit access to foreign servers to <tt class="docutils literal"><span class="pre">presto_user</span></tt> only.</p>
+</div>
+<div class="section" id="jvm-configuration">
+<h4>JVM Configuration<a class="headerlink" href="#jvm-configuration" title="Permalink to this headline">¶</a></h4>
+<p>P2T requires additional Java Virtual Machine (JVM) options. For best performance, it is recommended to
+use the Java G1 garbage collector and increase the JVM heap size to 30GB. Note that you need to have 30GB of memory free on the
+Teradata machine to do this; if not, you will need to set <tt class="docutils literal"><span class="pre">-Xms</span></tt> and <tt class="docutils literal"><span class="pre">-Xmx</span></tt> to a lower value.
+In order to set these JVM options, run the following commands on any Teradata node:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cufconfig</span> <span class="o">-</span><span class="n">o</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">JVMOptions</span> <span class="o">&gt;</span> <span class="n">old_jvmoptions</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">echo</span> <span class="s">&quot;JVMOptions: -Xms30g -Xmx30g -XX:+UseG1GC -XX:G1HeapRegionSize=32M -XX:+ExplicitGCInvokesConcurrent&quot;</span> <span class="o">&gt;</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">jre_config</span><span class="p">;</span>
+<span class="n">cufconfig</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">jre_config</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal"><span class="pre">cufconfig</span> <span class="pre">-f</span></tt> overwrites the existing JVM properties. To list the existing properties, run <tt class="docutils literal"><span class="pre">cufconfig</span> <span class="pre">-o</span></tt>.</p>
+</div>
+<p>For more information about available JVM options and restrictions for <tt class="docutils literal"><span class="pre">-Xms</span></tt> and <tt class="docutils literal"><span class="pre">-Xmx</span></tt> values, please refer to the <a class="reference external" href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/java.html">Java Documentation</a>.</p>
+<p>Then, restart the JVM for the Teradata Database using the <tt class="docutils literal"><span class="pre">restart_jvm.bteq</span></tt> script as <cite>dba_user</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">.</span><span class="n">run</span> <span class="nb">file</span> <span class="n">restart_jvm</span><span class="o">.</span><span class="n">bteq</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="driver-installation">
+<h4>Driver Installation<a class="headerlink" href="#driver-installation" title="Permalink to this headline">¶</a></h4>
+<p>To install the driver, execute the following commands as <cite>dba_user</cite>, also available in the installer
+package in a script called <tt class="docutils literal"><span class="pre">install_p2t.bteq</span></tt>. Replace ${DBA_USER} with the DBA user,
+${PRESTO_USER} with the user that will query from the foreign server, and ${PATH_TO_P2T_DRIVER_JAR} with
+the local path to the <tt class="docutils literal"><span class="pre">presto-to-teradata-driver.jar</span></tt> file:</p>
+<div class="highlight-python"><pre>DATABASE syslib;
+-- Execute following commands as an admin user (${DBA_USER})
+
+-- Upload driver...
+call sqlj.install_jar('CJ!${PATH_TO_P2T_DRIVER_JAR}', 'presto_teradata_driver_p2t', 0);
+
+-- Create transport functions...
+CREATE FUNCTION presto_to_teradata_import()
+    RETURNS TABLE VARYING USING FUNCTION presto_to_td_import_contract
+    LANGUAGE JAVA NO SQL
+    PARAMETER STYLE SQLTABLE
+    READS EXTERNAL DATA
+    EXTERNAL NAME 'presto_teradata_driver_p2t:com.teradata.ptl.P2TImportDriver.execute';
+
+GRANT EXECUTE FUNCTION ON syslib.presto_to_teradata_import TO ${PRESTO_USER};
+GRANT SELECT ON syslib.presto_to_teradata_import TO ${PRESTO_USER};
+
+CREATE FUNCTION presto_to_teradata_export()
+    RETURNS TABLE VARYING USING FUNCTION presto_to_td_export_contract
+    LANGUAGE JAVA NO SQL
+    PARAMETER STYLE SQLTABLE
+    MODIFIES EXTERNAL DATA
+    EXTERNAL NAME 'presto_teradata_driver_p2t:com.teradata.ptl.P2TExportDriver.execute';
+
+GRANT EXECUTE FUNCTION ON syslib.presto_to_teradata_export TO ${PRESTO_USER};
+GRANT SELECT ON syslib.presto_to_teradata_export TO ${PRESTO_USER};</pre>
+</div>
+</div>
+<div class="section" id="foreign-server-creation">
+<h4>Foreign Server Creation<a class="headerlink" href="#foreign-server-creation" title="Permalink to this headline">¶</a></h4>
+<p>After installing the driver, create one or more foreign servers as <cite>dba_user</cite>.
+The Presto connector(s) connect to the foreign server(s) on Teradata.</p>
+<p>The CREATE FOREIGN SERVER command has the following syntax:</p>
+<div class="highlight-python"><pre>CREATE FOREIGN SERVER ${FOREIGN_SERVER_NAME}
+USING
+  PARAM1('value1')
+  PARAM2('value2')
+  ...
+  PARAMN('valuen')
+DO IMPORT WITH syslib.presto_to_teradata_import,
+DO EXPORT WITH syslib.presto_to_teradata_export;</pre>
+</div>
+<p>${FOREIGN_SERVER_NAME} must be a valid object name in Teradata. PARAM1 to PARAMN
+are name value pairs (NVPs). Some NVPs are required to create a functional
+foreign server &#8211; see <a class="reference internal" href="#required-name-value-pairs">Required Name Value Pairs</a> &#8211; while others are necessary for connecting
+to particular Presto servers &#8211; see <a class="reference internal" href="#optional-name-value-pairs">Optional Name Value Pairs</a>.  Other NVPs can be used
+to tune P2T performance given your expected workload &#8211; see the <a class="reference internal" href="#configuration">Configuration</a> section.</p>
+<p>See the sections below for more information on the required and optional configuration parameters.</p>
+<div class="section" id="required-name-value-pairs">
+<h5>Required Name Value Pairs<a class="headerlink" href="#required-name-value-pairs" title="Permalink to this headline">¶</a></h5>
+<p>The following required name value pairs (NVPs) must be added to the USING clause. NVPs are
+specified with the form NVP_NAME(&#8216;value&#8217;) &#8211; e.g. HOSTTYPE(&#8216;NVP&#8217;).</p>
+<dl class="docutils">
+<dt><strong>HOSTTYPE</strong></dt>
+<dd>For P2T, this is the string &#8216;NVP&#8217;.</dd>
+<dt><strong>TRANSPORT_COORDINATOR_IP</strong></dt>
+<dd>The IP address or hostname of the data exchange coordinator, accessible from the Teradata hosts.
+This value must match the host provided in the <tt class="docutils literal"><span class="pre">data-exchange.coordinator.host-and-port</span></tt>
+property in the Presto configuration in <em class="xref std std-ref">connector_installation</em>, and usually is the same
+as the Presto coordinator.</dd>
+</dl>
+</div>
+<div class="section" id="optional-name-value-pairs">
+<h5>Optional Name Value Pairs<a class="headerlink" href="#optional-name-value-pairs" title="Permalink to this headline">¶</a></h5>
+<p>Additional name value pairs (NVPs) may be needed to connect the Teradata and Presto servers.
+These NVPs can be specified after the required NVPs with the form NVP_NAME(&#8216;value&#8217;)
+&#8211; e.g. TRANSPORT_COORDINATOR_PORT(&#8216;21313&#8217;).</p>
+<dl class="docutils">
+<dt><strong>TRANSPORT_COORDINATOR_PORT</strong></dt>
+<dd>The port used by P2T to transfer data. This value must match the port number provided in
+the <tt class="docutils literal"><span class="pre">data-exchange.server.port</span></tt> property in the Presto configuration in <em class="xref std std-ref">connector_installation</em>.
+If not specified, the default is 21338.</dd>
+</dl>
+</div>
+<div class="section" id="example">
+<h5>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h5>
+<p>When connecting to Presto located on host 192.0.2.3 with the default TRANSPORT_COORDINATOR_PORT, a minimal foreign server definition is:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">CREATE</span> <span class="n">FOREIGN</span> <span class="n">SERVER</span> <span class="n">p2t</span>
+<span class="n">USING</span>
+  <span class="n">HOSTTYPE</span><span class="p">(</span><span class="s">&#39;NVP&#39;</span><span class="p">)</span>
+  <span class="n">TRANSPORT_COORDINATOR_IP</span><span class="p">(</span><span class="s">&#39;192.0.2.3&#39;</span><span class="p">)</span>
+<span class="n">DO</span> <span class="n">IMPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_import</span><span class="p">,</span>
+<span class="n">DO</span> <span class="n">EXPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_export</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="drop-foreign-servers">
+<h4>Drop foreign servers<a class="headerlink" href="#drop-foreign-servers" title="Permalink to this headline">¶</a></h4>
+<p>To remove a foreign server, execute the following command as <cite>dba_user</cite>, or some user with DROP FOREIGN SERVER privileges on the
+server:</p>
+<div class="highlight-python"><pre>DROP FOREIGN SERVER ${FOREIGN_SERVER_NAME};</pre>
+</div>
+</div>
+<div class="section" id="uninstall-driver">
+<h4>Uninstall Driver<a class="headerlink" href="#uninstall-driver" title="Permalink to this headline">¶</a></h4>
+<p>The driver can be uninstalled only after dropping all of the foreign servers. To uninstall the driver, execute the following command as <cite>dba_user</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">DATABASE</span> <span class="n">syslib</span><span class="p">;</span>
+
+<span class="n">DROP</span> <span class="n">FUNCTION</span> <span class="n">presto_to_teradata_import</span><span class="p">;</span>
+<span class="n">DROP</span> <span class="n">FUNCTION</span> <span class="n">presto_to_teradata_export</span><span class="p">;</span>
+
+<span class="n">CALL</span> <span class="n">sqlj</span><span class="o">.</span><span class="n">remove_jar</span><span class="p">(</span><span class="s">&#39;presto_teradata_driver_p2t&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>In the installer package there is a script called <tt class="docutils literal"><span class="pre">uninstall_p2t.bteq</span></tt> that contains these commands.</p>
+<p>After uninstalling P2T, run the provided <tt class="docutils literal"><span class="pre">restart_jvm.bteq</span></tt> script to restart the JVM in Teradata to clean up resources allocated by the driver as <cite>dba_user</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">.</span><span class="n">run</span> <span class="nb">file</span> <span class="n">restart_jvm</span><span class="o">.</span><span class="n">bteq</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="installation-on-presto">
+<h3>Installation on Presto<a class="headerlink" href="#installation-on-presto" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id1">
+<h4>Privileges and Security<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>All users of Presto have access to the P2T connector. The connector respects the privileges in Teradata for
+the tables that it reads from and writes to. If the <tt class="docutils literal"><span class="pre">teradata.connection.user</span></tt> property is set
+in Presto to <cite>presto_user</cite>, <tt class="docutils literal"><span class="pre">SHOW</span> <span class="pre">SCHEMAS</span></tt>, <tt class="docutils literal"><span class="pre">SHOW</span> <span class="pre">TABLES</span></tt>, and <tt class="docutils literal"><span class="pre">DESCRIBE</span> <span class="pre">&lt;TABLE&gt;</span></tt>
+will show schemas, tables, and columns for which <cite>presto_user</cite> has INSERT and/or SELECT privileges.
+To issue an <tt class="docutils literal"><span class="pre">INSERT</span> <span class="pre">INTO</span></tt> or <tt class="docutils literal"><span class="pre">SELECT</span></tt> query on a table, the user needs INSERT or SELECT
+privileges respectively. On Teradata, the user needs SELECT privileges for
+the <tt class="docutils literal"><span class="pre">dbc</span></tt> system tables.</p>
+</div>
+<div class="section" id="connector-installation">
+<h4>Connector Installation<a class="headerlink" href="#connector-installation" title="Permalink to this headline">¶</a></h4>
+<p>To install P2T on Presto:</p>
+<ol class="arabic">
+<li><p class="first">Install the presto-to-teradata-connector RPM:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">package</span> <span class="n">install</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">connector</span><span class="o">-*.</span><span class="n">noarch</span><span class="o">.</span><span class="n">rpm</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<ol class="arabic" start="2">
+<li><p class="first">Copy <tt class="docutils literal"><span class="pre">properties/teradata.properties</span></tt> from the package zip file to <tt class="docutils literal"><span class="pre">/etc/opt/prestoadmin/connectors</span></tt>.
+Your <tt class="docutils literal"><span class="pre">/etc/opt/prestoadmin/connectors/teradata.properties</span></tt> file will be as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">connector</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">teradata</span>
+<span class="n">data</span><span class="o">-</span><span class="n">exchange</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">port</span><span class="o">=</span><span class="mi">21338</span>
+<span class="n">data</span><span class="o">-</span><span class="n">exchange</span><span class="o">.</span><span class="n">coordinator</span><span class="o">.</span><span class="n">host</span><span class="o">-</span><span class="ow">and</span><span class="o">-</span><span class="n">port</span><span class="o">=&lt;</span><span class="n">PRESTO</span><span class="o">-</span><span class="n">HOST</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">21338</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">url</span><span class="o">=</span><span class="n">jdbc</span><span class="p">:</span><span class="n">teradata</span><span class="p">:</span><span class="o">//&lt;</span><span class="n">TERADATA</span><span class="o">-</span><span class="n">HOST</span><span class="o">&gt;</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">foreign</span><span class="o">-</span><span class="n">server</span><span class="o">-</span><span class="n">name</span><span class="o">=</span><span class="n">p2t</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">user</span><span class="o">=&lt;</span><span class="n">USERNAME_ON_TERADATA</span><span class="o">&gt;</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">password</span><span class="o">=&lt;</span><span class="n">PASSWORD_FOR_ABOVE_USER</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<blockquote>
+<div><p>Replace <strong>&lt;PRESTO-HOST&gt;</strong> with the actual Presto coordinator hostname or IP reachable by
+Teradata. If bynet is configured, make sure to use the bynet IP or a hostname that resolves to the
+bynet IP so that network traffic uses the fastest possible connection.</p>
+<p>Replace <strong>&lt;TERADATA-HOST&gt;</strong> with the hostname or IP of Teradata reachable by
+Presto.</p>
+<p>If the foreign server created above in <a class="reference internal" href="#foreign-server-creation">Foreign Server Creation</a> is not named <cite>p2t</cite>,
+replace <cite>p2t</cite> with that foreign server name in <tt class="docutils literal"><span class="pre">teradata.foreign-server-name</span></tt>.</p>
+<p>Replace <strong>&lt;USERNAME_ON_TERADATA&gt;</strong> and <strong>&lt;PASSWORD_FOR_ABOVE_USER&gt;</strong> with a user that has SELECT and INSERT
+privileges for the foreign server.</p>
+<p>Additional configuration properties may be found in the <a class="reference internal" href="#configuration">Configuration</a> section.</p>
+</div></blockquote>
+<ol class="arabic" start="3">
+<li><p class="first">Deploy the P2T connector configuration using presto-admin:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">connector</span> <span class="n">add</span> <span class="n">teradata</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Restart Presto:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">server</span> <span class="n">restart</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Use the <a class="reference external" href="http://teradata.github.io/presto/docs/current/installation/cli.html">Presto CLI</a> to ensure that the P2T connector is installed:</p>
+</li>
+</ol>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre><span class="o">./</span><span class="n">presto</span> <span class="o">--</span><span class="n">server</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">8080</span> <span class="o">--</span><span class="n">catalog</span> <span class="n">system</span> <span class="o">--</span><span class="n">schema</span> <span class="n">default</span>
+<span class="n">presto</span><span class="p">:</span><span class="n">default</span><span class="o">&gt;</span> <span class="n">show</span> <span class="n">catalogs</span><span class="p">;</span>
+  <span class="n">Catalog</span>
+<span class="o">-----------</span>
+ <span class="o">...</span>
+ <span class="n">teradata</span>
+ <span class="o">...</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If running the CLI on any node but the Presto coordinator, substitute the Presto coordinator hostname/IP for &#8220;localhost&#8221; in the above command.</p>
+</div>
+<p>It is possible to add multiple Teradata connectors with different properties by having a different name.
+For example, you can add a connector specified in <tt class="docutils literal"><span class="pre">other_teradata.properties</span></tt> which connects to a
+different Teradata Database, for which the connector name will be <cite>other_teradata</cite>.
+When adding another Teradata connector, it is necessary to use a different port value for <strong>data-exchange.server.port</strong>.</p>
+<p>Additional configuration is necessary in order to run P2T with Kerberos authentication.
+For a detailed description of how to configure Kerberos, see <a class="reference internal" href="#kerberos-support">Kerberos Support</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="querying-teradata-with-p2t">
+<h2>Querying Teradata with P2T<a class="headerlink" href="#querying-teradata-with-p2t" title="Permalink to this headline">¶</a></h2>
+<p>In Presto, <a class="reference external" href="http://teradata.github.io/presto/docs/current/connector.html">connectors</a> allow access to different data sources.
+P2T uses a Teradata connector in Presto. The connector is configured via a configuration file placed in Presto&#8217;s catalog directory (see <a class="reference internal" href="#installation-on-presto">Installation on Presto</a>).
+For example, a connector specified in <tt class="docutils literal"><span class="pre">teradata.properties</span></tt> can be queried via the following syntax:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SELECT</span> <span class="o">*</span> <span class="n">FROM</span> <span class="n">teradata</span><span class="o">.&lt;</span><span class="n">schema</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;.&lt;</span><span class="n">table</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="n">INSERT</span> <span class="n">INTO</span> <span class="n">teradata</span><span class="o">.&lt;</span><span class="n">schema</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;.&lt;</span><span class="n">table</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">SELECT</span> <span class="o">*</span> <span class="n">FROM</span> <span class="n">hive</span><span class="o">.</span><span class="n">default</span><span class="o">.</span><span class="n">nation</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To show the schemas in Teradata:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SHOW</span> <span class="n">SCHEMAS</span> <span class="n">IN</span> <span class="n">teradata</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To show tables in Teradata:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SHOW</span> <span class="n">TABLES</span> <span class="n">IN</span> <span class="n">teradata</span><span class="o">.&lt;</span><span class="n">schema</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To show table metadata for a given Teradata table:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">presto</span><span class="p">:</span><span class="n">test_presto_user</span><span class="o">&gt;</span> <span class="n">describe</span> <span class="n">teradata</span><span class="o">.</span><span class="n">test_presto_user</span><span class="o">.</span><span class="n">nation</span><span class="p">;</span>
+   <span class="n">Column</span>    <span class="o">|</span>  <span class="n">Type</span>   <span class="o">|</span> <span class="n">Null</span> <span class="o">|</span> <span class="n">Partition</span> <span class="n">Key</span> <span class="o">|</span> <span class="n">Comment</span>
+<span class="o">-------------+---------+------+---------------+---------</span>
+ <span class="n">n_nationkey</span> <span class="o">|</span> <span class="n">bigint</span>  <span class="o">|</span> <span class="n">true</span> <span class="o">|</span> <span class="n">false</span>         <span class="o">|</span>
+ <span class="n">n_name</span>      <span class="o">|</span> <span class="n">varchar</span> <span class="o">|</span> <span class="n">true</span> <span class="o">|</span> <span class="n">false</span>         <span class="o">|</span>
+ <span class="n">n_regionkey</span> <span class="o">|</span> <span class="n">bigint</span>  <span class="o">|</span> <span class="n">true</span> <span class="o">|</span> <span class="n">false</span>         <span class="o">|</span>
+ <span class="n">n_comment</span>   <span class="o">|</span> <span class="n">varchar</span> <span class="o">|</span> <span class="n">true</span> <span class="o">|</span> <span class="n">false</span>         <span class="o">|</span>
+<span class="p">(</span><span class="mi">4</span> <span class="n">rows</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For extensive documentation of the syntax available in Presto, see the <a class="reference external" href="http://teradata.github.io/presto/docs/current/index.html">Presto documentation</a>.</p>
+</div>
+<div class="section" id="upgrading-p2t">
+<h2>Upgrading P2T<a class="headerlink" href="#upgrading-p2t" title="Permalink to this headline">¶</a></h2>
+<p>In order to upgrade P2T, you will need to update both the Presto connector and the Teradata driver.
+Each release of P2T works with exactly one version of Presto, so upgrading Presto necessitates
+upgrading P2T, and vice versa. P2T works with both Teradata 15.00 and 15.10; there is no need
+to upgrade Teradata.</p>
+<div class="section" id="upgrading-presto">
+<h3>Upgrading Presto<a class="headerlink" href="#upgrading-presto" title="Permalink to this headline">¶</a></h3>
+<p>In order to upgrade the Presto connector:</p>
+<ol class="arabic">
+<li><p class="first">Uninstall the Teradata connector on Presto:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">package</span> <span class="n">uninstall</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">connector</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Upgrade Presto to the version specified in the <a class="reference internal" href="#compatibility-matrix">Compatibility Matrix</a>. See the Presto documentation
+for the Presto upgrade itself.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Install the new Teradata connector on Presto and restart Presto:</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">package</span> <span class="n">install</span> <span class="n">presto</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">teradata</span><span class="o">-</span><span class="n">connector</span>
+<span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">server</span> <span class="n">restart</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>The configuration files from the previous version of the Teradata connector
+will remain. You can edit them via <tt class="docutils literal"><span class="pre">./presto-admin</span> <span class="pre">connector</span> <span class="pre">add</span></tt>.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="upgrading-teradata">
+<h3>Upgrading Teradata<a class="headerlink" href="#upgrading-teradata" title="Permalink to this headline">¶</a></h3>
+<p>In order to upgrade the Teradata driver:</p>
+<ol class="arabic">
+<li><p class="first">Drop all existing foreign servers that use the old version of P2T. In order to see all existing
+foreign servers, you can issue the following query as <cite>dba_user</cite>:</p>
+<div class="highlight-python"><pre>select * from dbc.serverv;</pre>
+</div>
+<p>Before dropping foreign servers, you may want to save the foreign server text:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SHOW</span> <span class="n">FOREIGN</span> <span class="n">SERVER</span> <span class="p">[</span><span class="n">foreign</span><span class="o">-</span><span class="n">server</span><span class="o">-</span><span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Uninstall the old version of P2T, using the instructions in <a class="reference internal" href="#uninstall-driver">Uninstall Driver</a>. Make sure to use
+<tt class="docutils literal"><span class="pre">uninstall_p2t.bteq</span></tt> from the old version of the driver.</p>
+</li>
+<li><p class="first">Restart the JVM for the Teradata Database using the <tt class="docutils literal"><span class="pre">restart_jvm.bteq</span></tt> script as <cite>dba_user</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">.</span><span class="n">run</span> <span class="nb">file</span> <span class="n">restart_jvm</span><span class="o">.</span><span class="n">bteq</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install the new version, using the instructions in <a class="reference internal" href="#driver-installation">Driver Installation</a>. Make sure to use <tt class="docutils literal"><span class="pre">install_p2t.bteq</span></tt>
+from the new version of the driver.</p>
+</li>
+<li><p class="first">Re-create the foreign servers. The release notes will mention any changes to the
+foreign server DDL, otherwise the old foreign server DDL can be used.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="presto-performance-tuning">
+<h3>Presto Performance Tuning<a class="headerlink" href="#presto-performance-tuning" title="Permalink to this headline">¶</a></h3>
+<p>There are several Presto configuration variables that should be modified for QueryGrid to work with
+better performance. Add the following properties to the <tt class="docutils literal"><span class="pre">/etc/opt/prestoadmin/workers/config.properties</span></tt>
+and <tt class="docutils literal"><span class="pre">/etc/opt/prestoadmin/coordinator/config.properties</span></tt> files for Presto:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">redistribute</span><span class="o">-</span><span class="n">writes</span><span class="o">=</span><span class="n">false</span>
+<span class="n">task</span><span class="o">.</span><span class="n">writer</span><span class="o">-</span><span class="n">count</span><span class="o">=</span><span class="n">X</span>
+</pre></div>
+</div>
+<p>Where X is an integer around (CORES_COUNT / EXPECTED_CONCURRENT_QUERIES_COUNT) and must be a power of 2.</p>
+</div>
+<div class="section" id="data-exchange-configuration">
+<h3>Data exchange configuration<a class="headerlink" href="#data-exchange-configuration" title="Permalink to this headline">¶</a></h3>
+<p>The following properties control the data exchange. They can be set for both Presto and Teradata:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>data-exchange.server.buffer-size</strong> - query results write buffer size. This buffer is shared between all
+the queries that are in progress. When set on Presto, this property sets the buffer size when exporting
+data from Presto to Teradata (e.g. <tt class="docutils literal"><span class="pre">INSERT</span> <span class="pre">INTO</span> <span class="pre">teradata...</span></tt>). When set on Teradata, it indicates
+the import buffer size (e.g.  <tt class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span> <span class="pre">FROM</span> <span class="pre">teradata..</span></tt>). If not specified, the default is 2GB.</li>
+<li><strong>data-exchange.server.port</strong> - data exchange server port. If not specified, the default is 21338.</li>
+<li><strong>data-exchange.client.buffer-size</strong> - query results read buffer size. This buffer is shared between all
+the queries that are in progress. When set on Presto, this property sets the buffer size when importing
+data from Teradata to Presto (e.g. <tt class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span> <span class="pre">FROM</span> <span class="pre">teradata..</span></tt>). When set on Teradata, it indicates the
+export buffer size (e.g. <tt class="docutils literal"><span class="pre">INSERT</span> <span class="pre">INTO</span> <span class="pre">teradata...</span></tt>). If not specified, the default is 2GB.</li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Buffer sizes must be specified in human readable data size notation: 100MB, 1GB, 1TB</p>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">data-exchange.server.buffer-size</span></tt> and <tt class="docutils literal"><span class="pre">data-exchange.client.buffer-size</span></tt> properties may need to be changed if latency in the system
+causes the buffers to fill up. This will cause increased memory usage by P2T.</p>
+<p>The <tt class="docutils literal"><span class="pre">data-exchange.server-port</span></tt> property
+must be changed if the port 21338 is not free. If the port on Presto is changed, <strong>TRANSPORT_COORDINATOR_PORT</strong> in the foreign
+server definition, as described in <a class="reference internal" href="#optional-name-value-pairs">Optional Name Value Pairs</a>, must also be changed to match.</p>
+<p>To change a property for Presto, edit the P2T connector configuration file (<tt class="docutils literal"><span class="pre">/etc/opt/prestoadmin/connectors/teradata.properties</span></tt>).
+To apply your changes, distribute the new properties file to all Presto nodes and restart the Presto server::</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">connector</span> <span class="n">add</span> <span class="n">teradata</span>
+<span class="n">sudo</span> <span class="o">./</span><span class="n">presto</span><span class="o">-</span><span class="n">admin</span> <span class="n">server</span> <span class="n">restart</span>
+</pre></div>
+</div>
+<p>For Teradata, the data exchange properties are shared across all P2T foreign servers. In order to change a static property
+for Teradata, you must set a JVM system property in the following format: <tt class="docutils literal"><span class="pre">-Dp2t.property.name=value</span></tt>.
+Properties for the Teradata JVM can be set using the <strong>cufconfig</strong> utility. To apply your changes, you must
+restart the Teradata database using the <strong>tpareset</strong> command.</p>
+</div>
+<div class="section" id="compression">
+<h3>Compression<a class="headerlink" href="#compression" title="Permalink to this headline">¶</a></h3>
+<p>If the network bandwidth is the bottleneck, data compression may increase throughput at the cost of increased CPU utilization.
+Data compression can be enabled for a particular foreign server/Presto connector pair using the <strong>teradata.compression</strong> property.
+If it is not specified, the data is not compressed.</p>
+<p>On Presto, add the property to <tt class="docutils literal"><span class="pre">teradata.properties</span></tt>, and then restart the server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">teradata</span><span class="o">.</span><span class="n">compression</span><span class="o">=&lt;</span><span class="n">compression_algorithm</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The two options for compression_algorithm are <strong>LZ4</strong> and <strong>SNAPPY</strong>. Both algorithms are focused on compression and decompression speed.
+Compression ratio and compression speed may vary for different queries and data sets.</p>
+</div>
+<div class="section" id="query-timeouts">
+<h3>Query Timeouts<a class="headerlink" href="#query-timeouts" title="Permalink to this headline">¶</a></h3>
+<p>P2T contains several query timeout mechanisms.</p>
+<div class="section" id="read-timeout">
+<h4>Read Timeout<a class="headerlink" href="#read-timeout" title="Permalink to this headline">¶</a></h4>
+<p>The read timeout (default: 2h) determines the maximum amount of time waiting for query results.
+It is recommended to increase this value for queries that require complex computation before returning any data.</p>
+<div class="highlight-python"><pre>INSERT INTO teradata.schema.table SELECT count(*) from some_huge_table;</pre>
+</div>
+<p>To create an appropriate foreign server with a read timeout of 3 days:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">CREATE</span> <span class="n">FOREIGN</span> <span class="n">SERVER</span> <span class="n">p2t_read_timeout</span>
+<span class="n">USING</span>
+  <span class="n">HOSTTYPE</span><span class="p">(</span><span class="s">&#39;NVP&#39;</span><span class="p">)</span>
+  <span class="n">TRANSPORT_COORDINATOR_IP</span><span class="p">(</span><span class="s">&#39;192.0.2.3&#39;</span><span class="p">)</span>
+  <span class="n">ReadTimeout</span><span class="p">(</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">DO</span> <span class="n">IMPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_import</span><span class="p">,</span>
+<span class="n">DO</span> <span class="n">EXPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_export</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Optionally, additional name value pairs like <strong>TRANSPORT_COORDINATOR_PORT</strong> or <strong>WriteTimeout</strong> may be specified.</p>
+<p>Set the read timeout on Presto to 3 days as well, by adding the following properties to <tt class="docutils literal"><span class="pre">teradata.properties</span></tt>,
+and then restarting the server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">teradata</span><span class="o">.</span><span class="n">read_timeout</span><span class="o">=</span><span class="mi">3</span><span class="n">d</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">foreign</span><span class="o">-</span><span class="n">server</span><span class="o">-</span><span class="n">name</span><span class="o">=&lt;</span><span class="n">presto_server</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Timeouts must have both a number and a unit: for example, 10s, 5m, or 2h.</p>
+</div>
+<div class="section" id="write-timeout">
+<h4>Write Timeout<a class="headerlink" href="#write-timeout" title="Permalink to this headline">¶</a></h4>
+<p>The write timeout (default: 1h) determines maximum amount of time waiting for consumer to consume the results.
+It can be updated by adding a P2T name value pair <strong>WriteTimeout</strong> (see below) and
+setting the Presto session variable <strong>teradata.write_timeout</strong>.
+It is recommended to increase this value for queries for which Presto will have to wait a long time for Teradata to
+consume the data, e.g. queries that require complex computation after consuming the data or pass a lot of data.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">INSERT</span> <span class="n">INTO</span> <span class="n">teradata</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">table</span> <span class="n">SELECT</span> <span class="o">*</span> <span class="n">FROM</span> <span class="n">some_large_table</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To create an appropriate foreign server with a write timeout of 3 days:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">CREATE</span> <span class="n">FOREIGN</span> <span class="n">SERVER</span> <span class="n">p2t_write_timeout</span>
+<span class="n">USING</span>
+  <span class="n">HOSTTYPE</span><span class="p">(</span><span class="s">&#39;NVP&#39;</span><span class="p">)</span>
+  <span class="n">TRANSPORT_COORDINATOR_IP</span><span class="p">(</span><span class="s">&#39;192.0.2.3&#39;</span><span class="p">)</span>
+  <span class="n">WriteTimeout</span><span class="p">(</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">DO</span> <span class="n">IMPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_import</span><span class="p">,</span>
+<span class="n">DO</span> <span class="n">EXPORT</span> <span class="n">WITH</span> <span class="n">syslib</span><span class="o">.</span><span class="n">presto_to_teradata_export</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Optionally, additional name value pairs like <strong>TRANSPORT_COORDINATOR_PORT</strong> or <strong>ReadTimeout</strong> may be specified.</p>
+<p>Set the write timeout on Presto to 3 days as well, by adding the following properties to <tt class="docutils literal"><span class="pre">teradata.properties</span></tt>,
+and then restarting the server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">teradata</span><span class="o">.</span><span class="n">write_timeout</span><span class="o">=</span><span class="mi">3</span><span class="n">d</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">foreign</span><span class="o">-</span><span class="n">server</span><span class="o">-</span><span class="n">name</span><span class="o">=&lt;</span><span class="n">presto_server</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Timeouts must have both a number and a unit: for example, 10s, 5m, or 2h.</p>
+</div>
+</div>
+<div class="section" id="logging-on-teradata">
+<h3>Logging on Teradata<a class="headerlink" href="#logging-on-teradata" title="Permalink to this headline">¶</a></h3>
+<p>In order to turn on diagnostics/debug logging on Teradata, add the following property to <tt class="docutils literal"><span class="pre">teradata.properties</span></tt> and restart the Presto server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">teradata</span><span class="o">.</span><span class="n">debug</span><span class="o">-</span><span class="n">enabled</span><span class="o">=</span><span class="n">true</span>
+</pre></div>
+</div>
+<p>When enabled, the logs are in <tt class="docutils literal"><span class="pre">/tmp/jlog-CURRENT_DATE.txt</span></tt> on the Teradata node.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">There is a large amount of output, so in most cases debugging should not be enabled.</p>
+</div>
+</div>
+<div class="section" id="logging-on-presto">
+<h3>Logging on Presto<a class="headerlink" href="#logging-on-presto" title="Permalink to this headline">¶</a></h3>
+<p>To adjust the log debug levels on Presto, follow the instructions about adjusting the log level
+in the Presto <a class="reference external" href="http://teradata.github.io/presto/docs/current/configuration/configuration.html#log-levels">documentation</a>.</p>
+</div>
+<div class="section" id="jvm-configuration-in-presto">
+<h3>JVM Configuration in Presto<a class="headerlink" href="#jvm-configuration-in-presto" title="Permalink to this headline">¶</a></h3>
+<p>In Presto you can change JVM properties by editing the <tt class="docutils literal"><span class="pre">jvm.config</span></tt> file. In particular, if you face frequent out-of-memory
+errors on the Presto workers, you should consider adding additional memory to Presto (by increasing <tt class="docutils literal"><span class="pre">-Xmx</span></tt>).
+<tt class="docutils literal"><span class="pre">jvm.config</span></tt>   can be easily distributed across the cluster using the <tt class="docutils literal"><span class="pre">presto-admin</span></tt> utility.
+Please refer to the <tt class="docutils literal"><span class="pre">presto-admin</span></tt> <a class="reference external" href="http://teradata.github.io/presto/docs/current/installation/presto-admin/user-guide.html">documentation</a> for more details.</p>
+</div>
+</div>
+<div class="section" id="kerberos-support">
+<h2>Kerberos Support<a class="headerlink" href="#kerberos-support" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to connect to Teradata via Kerberos. Before doing so, you need to set up Teradata
+to authenticate via Kerberos. To do that, see the documentation for Teradata <a class="reference external" href="http://www.info.teradata.com/HTMLPubs/DB_TTU_15_00/index.html#page/Database_Management/B035_1100_015K/Defining_UM_Strategy.102.14.html">15.00</a>
+or <a class="reference external" href="http://www.info.teradata.com/htmlpubs/DB_TTU_15_10/index.html#page/Database_Management/B035_1100_151K/Defining_UM_Strategy.101.14.html">15.10</a>.</p>
+<p>In order to connect to Teradata via Kerberos:</p>
+<ol class="arabic">
+<li><p class="first">Create a Kerberos principal with a password that you will use to connect to Teradata. All queries from Presto to
+Teradata will be run via this principal.</p>
+</li>
+<li><p class="first">Create a Teradata user with the same name as the above Kerberos principal. That user needs to be granted WITH NULL
+PASSWORD permissions. For example, given a Kerberos principal <cite>Test_User</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">CREATE</span> <span class="n">USER</span> <span class="n">Test_User</span> <span class="n">AS</span> <span class="n">PERMANENT</span><span class="o">=&lt;</span><span class="n">permsize</span><span class="o">&gt;</span> <span class="n">SPOOL</span><span class="o">=&lt;</span><span class="n">spoolsize</span><span class="o">&gt;</span> <span class="n">TEMPORARY</span><span class="o">=&lt;</span><span class="n">tempsize</span><span class="o">&gt;</span> <span class="n">PASSWORD</span><span class="o">=</span><span class="s">&quot;&lt;password&gt;&quot;</span><span class="p">;</span>
+<span class="n">GRANT</span> <span class="n">LOGON</span> <span class="n">ON</span> <span class="n">ALL</span> <span class="n">TO</span> <span class="n">Test_User</span> <span class="n">WITH</span> <span class="n">NULL</span> <span class="n">PASSWORD</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Grant INSERT access to the P2T foreign server, if the foreign server was created with a different user than the Kerberos principal:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">GRANT</span> <span class="n">INSERT</span> <span class="n">ON</span> <span class="n">TD_SERVER_DB</span><span class="o">.</span><span class="n">p2t</span> <span class="n">TO</span> <span class="o">&lt;</span><span class="n">principal</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Ensure that the <tt class="docutils literal"><span class="pre">/etc/krb5.conf</span></tt> file specifies a restricted keyset. The following lines must be included in <tt class="docutils literal"><span class="pre">/etc/krb5.conf</span></tt>
+on both the Presto cluster and the Teradata cluster:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">default_tgs_enctypes</span> <span class="o">=</span> <span class="n">arcfour</span><span class="o">-</span><span class="n">hmac</span> <span class="n">des3</span><span class="o">-</span><span class="n">cbc</span><span class="o">-</span><span class="n">sha1</span> <span class="n">des</span><span class="o">-</span><span class="n">cbc</span><span class="o">-</span><span class="n">md5</span>
+<span class="n">default_tkt_enctypes</span> <span class="o">=</span> <span class="n">arcfour</span><span class="o">-</span><span class="n">hmac</span> <span class="n">des3</span><span class="o">-</span><span class="n">cbc</span><span class="o">-</span><span class="n">sha1</span> <span class="n">des</span><span class="o">-</span><span class="n">cbc</span><span class="o">-</span><span class="n">md5</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">On Presto, add the following additional configuration properties to <tt class="docutils literal"><span class="pre">teradata.properties</span></tt>, using the principal
+created above as the user and the Kerberos password as the password, and restart the Presto server:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">teradata</span><span class="o">.</span><span class="n">authentication</span><span class="o">.</span><span class="n">type</span><span class="o">=</span><span class="n">KERBEROS</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">user</span><span class="o">=&lt;</span><span class="n">principal</span><span class="o">&gt;</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">password</span><span class="o">=&lt;</span><span class="n">password</span><span class="o">&gt;</span>
+<span class="n">teradata</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">kerberos</span><span class="o">.</span><span class="n">realm</span><span class="o">=&lt;</span><span class="n">realm</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please note that though usernames in the Teradata database are not case sensitive, all Kerberos entities,
+including principals and realms, are case sensitive. Thus, using the above example, the principal must be
+<cite>Test_User</cite>.</p>
+</div>
+<ol class="arabic" start="6">
+<li><p class="first">Add the following property to the <tt class="docutils literal"><span class="pre">jvm.config</span></tt> for both the coordinator and the workers:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">-</span><span class="n">Djava</span><span class="o">.</span><span class="n">security</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">login</span><span class="o">.</span><span class="n">config</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">presto</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">plugin</span><span class="o">/</span><span class="n">teradata</span><span class="o">/</span><span class="n">TeraJDBC</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">jvm.config</span></tt> can be easily distributed across the cluster using the <tt class="docutils literal"><span class="pre">presto-admin</span></tt> utility.
+Please refer to the <tt class="docutils literal"><span class="pre">presto-admin</span></tt> <a class="reference external" href="https://prestodb.io/presto-admin/presto-admin-commands.html#configuration-deploy">documentation</a> for more details.</div></blockquote>
+</div>
+<div class="section" id="technical-specification">
+<h2>Technical specification<a class="headerlink" href="#technical-specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="type-support">
+<h3>Type support<a class="headerlink" href="#type-support" title="Permalink to this headline">¶</a></h3>
+<p>The following table refers to type handling/conversion between Teradata and Presto.
+Type handling can differ between Presto connectors or even between storage types
+within a connector. Please refer to the documentation for specific Presto connectors
+for more details.</p>
+<p>Type conversions from Teradata to Presto:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="14%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Type in Teradata</th>
+<th class="head">Type in Presto</th>
+<th class="head">Notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>BYTEINT</td>
+<td>TINYINT</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>SMALLINT</td>
+<td>SMALLINT</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>INTEGER</td>
+<td>INTEGER</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>BIGINT</td>
+<td>BIGINT</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>REAL</td>
+<td>DOUBLE</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>DECIMAL(X,Y)</td>
+<td>DECIMAL(X,Y)</td>
+<td>Max precision in both Presto and Teradata is 38; scale &lt;= precision</td>
+</tr>
+<tr class="row-even"><td>CHAR(X)</td>
+<td>CHAR(X)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>VARCHAR(X)</td>
+<td>VARCHAR(X)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>DATE</td>
+<td>DATE</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>TIMESTAMP</td>
+<td>TIMESTAMP</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>BYTE</td>
+<td>VARBINARY</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>VARBYTE</td>
+<td>VARBINARY</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>JSON</td>
+<td>VARCHAR</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Presto&#8217;s TIMESTAMP type is not SQL standard. When given a timestamp literal like TIMESTAMP &#8216;1988-04-08 00:00:00&#8217;,
+Presto interprets and stores it in the user time zone, rather than without a time zone as is the SQL standard. Teradata
+follows the SQL standard. Thus, in order to ensure that the TIMESTAMP values are interpreted properly, it is best to
+run the Presto server in UTC (by either setting the JVM time zone or setting the time zone via the JDBC driver).</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For DECIMAL, Presto does not perform any implicit conversions on INSERT INTO, so the values being inserted
+must match the type of the column exactly, including precision and scale. Constant decimal values have a
+precision of the number of digits in the number and scale of the number of fractional digits, so they
+may need a cast. e.g. <tt class="docutils literal"><span class="pre">INSERT</span> <span class="pre">INTO</span> <span class="pre">decimal_8_2</span> <span class="pre">VALUES</span> <span class="pre">(CAST(1.0</span> <span class="pre">AS</span> <span class="pre">DECIMAL(8,</span> <span class="pre">2)))</span></tt></p>
+</div>
+</div>
+</div>
+<div class="section" id="predicate-pushdown">
+<h2>Predicate Pushdown<a class="headerlink" href="#predicate-pushdown" title="Permalink to this headline">¶</a></h2>
+<p>P2T can push all projections and some predicates down to Teradata, to limit data transfer. The supported predicates are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">IS</span> <span class="pre">NULL</span></tt> and <tt class="docutils literal"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">NULL</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">IN</span></tt> and <tt class="docutils literal"><span class="pre">NOT</span> <span class="pre">IN</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>, <tt class="docutils literal"><span class="pre">&gt;=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt>, <tt class="docutils literal"><span class="pre">&gt;</span></tt>, <tt class="docutils literal"><span class="pre">BETWEEN...AND</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">OR</span></tt> and <tt class="docutils literal"><span class="pre">AND</span></tt> of the above predicates (though <tt class="docutils literal"><span class="pre">OR</span></tt> predicates must be on the same column)</li>
+</ul>
+</div>
+<div class="section" id="known-issues-limitations">
+<h2>Known issues/limitations<a class="headerlink" href="#known-issues-limitations" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>The maximum VARCHAR size is 31232B, rather than the Teradata limit of 64K</li>
+<li>Currently the maximum number of concurrent queries is 20. However, if your queries are long running or take a lot of resources (e.g. if they have a large result set), it is advised to run less than 20 queries.</li>
+<li>If you get an error message stating &#8220;Another instance of the Querygrid driver is still running.&#8221;, please restart the JVM of your Teradata instance with the <tt class="docutils literal"><span class="pre">restart_jvm.bteq</span></tt> script.</li>
+<li>TIMESTAMP WITH TIME ZONE and DATE WITH TIME ZONE are not currently supported.</li>
+<li>It is not possible to access the dbc system tables via P2T, even if the user has proper permissions.</li>
+<li>When installing more than one Teradata Presto connector, it is necessary to use different port values for <strong>data-exchange.server.port</strong>.</li>
+<li>If a Teradata table contains columns of types not supported by Presto, an <tt class="docutils literal"><span class="pre">INSERT</span> <span class="pre">INTO</span></tt> query will fail with the message &#8220;The positional assignment list has too few values.&#8221;</li>
+<li><tt class="docutils literal"><span class="pre">SELECT</span></tt> queries will return only the columns of supported Presto types (unless there are no columns with Presto supported types, in which case the <tt class="docutils literal"><span class="pre">SELECT</span></tt> will fail).</li>
+<li>Since Teradata does not have a BOOLEAN type, in order to insert a Presto BOOLEAN column into Teradata you must cast that column to BIGINT.</li>
+</ul>
+</div>
+<div class="section" id="release-notes-version-1-2">
+<h2>Release Notes Version 1.2<a class="headerlink" href="#release-notes-version-1-2" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Add support for data types INTEGER, TINYINT, SMALLINT, FLOAT, CHAR, and parameterized VARCHAR.</li>
+<li>Add support for accessing Teradata views.</li>
+<li>Fix bug in handling DECIMAL of precision 18.</li>
+<li>Add support for multi-byte UTF-16 characters.</li>
+<li>Improved performance by implementing low latency connection mechanisms</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Teradata QueryGrid: Presto-To-Teradata Database User Guide</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#compatibility-matrix">Compatibility Matrix</a></li>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
+<li><a class="reference internal" href="#installation-on-teradata">Installation on Teradata</a><ul>
+<li><a class="reference internal" href="#privileges-and-security">Privileges and Security</a></li>
+<li><a class="reference internal" href="#jvm-configuration">JVM Configuration</a></li>
+<li><a class="reference internal" href="#driver-installation">Driver Installation</a></li>
+<li><a class="reference internal" href="#foreign-server-creation">Foreign Server Creation</a><ul>
+<li><a class="reference internal" href="#required-name-value-pairs">Required Name Value Pairs</a></li>
+<li><a class="reference internal" href="#optional-name-value-pairs">Optional Name Value Pairs</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#drop-foreign-servers">Drop foreign servers</a></li>
+<li><a class="reference internal" href="#uninstall-driver">Uninstall Driver</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installation-on-presto">Installation on Presto</a><ul>
+<li><a class="reference internal" href="#id1">Privileges and Security</a></li>
+<li><a class="reference internal" href="#connector-installation">Connector Installation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#querying-teradata-with-p2t">Querying Teradata with P2T</a></li>
+<li><a class="reference internal" href="#upgrading-p2t">Upgrading P2T</a><ul>
+<li><a class="reference internal" href="#upgrading-presto">Upgrading Presto</a></li>
+<li><a class="reference internal" href="#upgrading-teradata">Upgrading Teradata</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#presto-performance-tuning">Presto Performance Tuning</a></li>
+<li><a class="reference internal" href="#data-exchange-configuration">Data exchange configuration</a></li>
+<li><a class="reference internal" href="#compression">Compression</a></li>
+<li><a class="reference internal" href="#query-timeouts">Query Timeouts</a><ul>
+<li><a class="reference internal" href="#read-timeout">Read Timeout</a></li>
+<li><a class="reference internal" href="#write-timeout">Write Timeout</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#logging-on-teradata">Logging on Teradata</a></li>
+<li><a class="reference internal" href="#logging-on-presto">Logging on Presto</a></li>
+<li><a class="reference internal" href="#jvm-configuration-in-presto">JVM Configuration in Presto</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#kerberos-support">Kerberos Support</a></li>
+<li><a class="reference internal" href="#technical-specification">Technical specification</a><ul>
+<li><a class="reference internal" href="#type-support">Type support</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#predicate-pushdown">Predicate Pushdown</a></li>
+<li><a class="reference internal" href="#known-issues-limitations">Known issues/limitations</a></li>
+<li><a class="reference internal" href="#release-notes-version-1-2">Release Notes Version 1.2</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">Teradata QueryGrid (TM): Presto-To-Teradata Database 1.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, Teradata Corporation.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
