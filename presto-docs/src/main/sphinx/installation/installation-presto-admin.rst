@@ -17,7 +17,7 @@ cluster. It provides easy-to-use commands to:
 
 Use Presto Admin and the following procedures to install Presto on one or more nodes.
 This is an alternative to the installation steps described at 
-`prestodb.io <https://prestodb.io/docs/current/installation.html>`_. Using the 
+`prestodb.io <https://prestodb.io/docs/0.157/installation.html>`_. Using the 
 Presto Admin tool is the simplest and preferred method for installing and managing 
 a Presto cluster.
 
