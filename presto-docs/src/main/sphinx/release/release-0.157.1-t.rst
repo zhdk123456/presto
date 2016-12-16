@@ -17,6 +17,7 @@ Data Types
 
 Security
 --------
+* Secured cluster communication over HTTPS
 * LDAP Authentication
 
     LDAP Authentication functionality in 0.157.1-t is same as 0.152.1-t, but the server properties have been renamed. The new properties and the only ones supported now are:
@@ -65,6 +66,14 @@ Beta - Spilling to disk for aggregations and avoid the memory limits within Pres
 Teradata JDBC Driver
 --------------------
 The Teradata JDBC driver does not support batch queries.
+
+Connectors
+----------
+Teradata has added official support for the Cassandra connector.
+
+Presto Admin
+------------
+Removed Sudo requirement for Presto Admin. See Presto Admin upgrade documentation.
 
 Documentation
 -------------
