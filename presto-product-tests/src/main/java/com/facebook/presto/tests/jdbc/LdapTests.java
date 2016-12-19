@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.tests.jdbc;
 
-import com.facebook.presto.tests.ImmutableTpchTablesRequirements.ImmutableNationTable;
+import com.teradata.tempto.fulfillment.table.hive.tpch.ImmutableTpchTablesRequirements.ImmutableNationTable;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.teradata.tempto.BeforeTestWithContext;
