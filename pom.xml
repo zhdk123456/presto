@@ -853,6 +853,12 @@
                 <artifactId>cassandra-driver-core</artifactId>
                 <version>3.0.5</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.skife</groupId>
+                <artifactId>clocked-executor</artifactId>
+                <version>0.0.3</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
