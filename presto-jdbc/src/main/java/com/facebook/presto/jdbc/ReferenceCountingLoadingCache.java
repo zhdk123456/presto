@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.jdbc;
 
-import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -108,16 +107,22 @@ class ReferenceCountingLoadingCache<K, V>
     private final LoadingCache<K, Holder<V>> backingCache;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    // TODO: This is probably on the long side. Maybe change to 30 seconds?
-    private static final long retentionPeriod = 2;
-    private static final TimeUnit retentionUnit = TimeUnit.MINUTES;
+    private final long retentionPeriod;
+    private final TimeUnit retentionUnit;
 
-    private ReferenceCountingLoadingCache(CacheLoader<K, V> loader, Consumer<V> disposer, Ticker ticker)
+    protected ReferenceCountingLoadingCache(
+            CacheLoader<K, V> loader,
+            Consumer<V> disposer,
+            long retentionPeriod,
+            TimeUnit retentionUnit,
+            ScheduledExecutorService valueCleanupService)
     {
         requireNonNull(loader, "loader is null");
         requireNonNull(disposer, "disposer is null");
+        this.retentionPeriod = retentionPeriod;
+        this.retentionUnit = requireNonNull(retentionUnit, "retentionUnit is null");
 
-        this.valueCleanupService = new ScheduledThreadPoolExecutor(1, daemonThreadsNamed("cache-cleanup-%s"));
+        this.valueCleanupService = requireNonNull(valueCleanupService, "valueCleanupService is null");
         this.backingCache = CacheBuilder.newBuilder()
                 .removalListener(new RemovalListener<K, Holder<V>>() {
                     @Override
@@ -131,12 +136,20 @@ class ReferenceCountingLoadingCache<K, V>
                          * this shouldn't apply.
                          */
                         requireNonNull(holder, format("holder is null while removing key %s", notification.getKey()));
-                        checkState(holder.getRefcount() == 0, "Non-zero refcount disposing %s", notification.getKey());
-                        checkState(holder.getCleanerCount() == 0, "Non-zero refcount disposing %s", notification.getKey());
+
+                        if (closed.get()) {
+                            // Caller goofed.
+                            checkState(holder.getRefcount() == 0, "Unreleased key %s on close", notification.getKey());
+                        }
+                        else {
+                            // We goofed.
+                            checkState(holder.getRefcount() == 0, "Non-zero refcount disposing %s", notification.getKey());
+                            checkState(holder.getCleanerCount() == 0, "Non-zero cleaner count disposing %s", notification.getKey());
+                        }
+
                         disposer.accept(holder.get());
                     }
                 })
-                .ticker(ticker)
                 .build(new CacheLoader<K, Holder<V>>() {
                     @Override
                     public Holder<V> load(K key)
@@ -149,17 +162,28 @@ class ReferenceCountingLoadingCache<K, V>
 
     public static class Builder<K, V>
     {
-        Ticker ticker = Ticker.systemTicker();
+        private ScheduledExecutorService valueCleanupService = new ScheduledThreadPoolExecutor(1, daemonThreadsNamed("cache-cleanup"));
 
-        public Builder<K, V> ticker(Ticker ticker)
+        // TODO: This is probably on the long side. Maybe change to 30 seconds?
+        private long retentionPeriod = 2;
+        private TimeUnit retentionUnit = TimeUnit.MINUTES;
+
+        public Builder<K, V> withRetentionTime(long retentionPeriod, TimeUnit retentionUnit)
         {
-            this.ticker = requireNonNull(ticker, "ticker is null");
+            this.retentionPeriod = retentionPeriod;
+            this.retentionUnit = requireNonNull(retentionUnit, "retentionUnit is null");
+            return this;
+        }
+
+        public Builder<K, V> withCleanupService(ScheduledExecutorService valueCleanupService)
+        {
+            this.valueCleanupService = requireNonNull(valueCleanupService, "valueCleanupService is null");
             return this;
         }
 
         public ReferenceCountingLoadingCache<K, V> build(CacheLoader<K, V> loader, Consumer<V> disposer)
         {
-            return new ReferenceCountingLoadingCache<K, V>(loader, disposer, ticker);
+            return new ReferenceCountingLoadingCache<K, V>(loader, disposer, retentionPeriod, retentionUnit, valueCleanupService);
         }
     }
 
@@ -178,6 +202,7 @@ class ReferenceCountingLoadingCache<K, V>
 
     public V acquire(K key)
     {
+        checkState(!closed.get(), "Can't acquire from closed cache.");
         synchronized (this) {
             Holder<V> holder = backingCache.getUnchecked(key);
             holder.reference();
@@ -187,6 +212,7 @@ class ReferenceCountingLoadingCache<K, V>
 
     public void release(K key)
     {
+        checkState(!closed.get(), "Can't release to closed cache.");
         /*
          * Access through the Map interface to avoid creating a Holder and immediately
          * scheduling it for cleanup.
@@ -210,5 +236,15 @@ class ReferenceCountingLoadingCache<K, V>
                 holder.scheduleCleanup(valueCleanupService, deferredRelease, retentionPeriod, retentionUnit);
             }
         }
+    }
+
+    public long getRetentionPeriod()
+    {
+        return retentionPeriod;
+    }
+
+    public TimeUnit getRetentionUnit()
+    {
+        return retentionUnit;
     }
 }
