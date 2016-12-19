@@ -833,6 +833,12 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>org.skife</groupId>
+                <artifactId>clocked-executor</artifactId>
+                <version>0.0.3</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
