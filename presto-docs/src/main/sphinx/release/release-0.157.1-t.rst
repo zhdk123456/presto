@@ -69,7 +69,8 @@ The Teradata JDBC driver does not support batch queries.
 
 Connectors
 ----------
-Teradata has added official support for the Cassandra connector.
+* TPC-DS connector was added
+* Teradata has added official support for the Cassandra connector.
 
 Presto Admin
 ------------
@@ -233,3 +234,12 @@ The following has been added to 0.157.1-t.0.1:
 * Fix wrong results for nested except
 * Fix principal error in Hive Kerberos Authentication
 
+
+=====================
+Release 0.157.1-t.0.3
+=====================
+
+The following has been added to 0.157.1-t.0.3:
+
+* Fix incorrect result that may result as part of Decimal data type coercion
+* Additional documentation
