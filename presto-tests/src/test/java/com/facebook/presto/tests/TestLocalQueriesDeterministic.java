@@ -76,7 +76,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected MaterializedResult computeActual(Session session, @Language("SQL") String sql)
     {
-        determinismChecker.checkPlanIsDeterministic(sql);
+        determinismChecker.checkPlanIsDeterministic(session, sql);
         return super.computeActual(session, sql);
     }
 
@@ -89,7 +89,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertQuery(Session session, @Language("SQL") String sql)
     {
-        determinismChecker.checkPlanIsDeterministic(sql);
+        determinismChecker.checkPlanIsDeterministic(session, sql);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertQuery(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
     {
-        determinismChecker.checkPlanIsDeterministic(actual);
+        determinismChecker.checkPlanIsDeterministic(session, actual);
     }
 
     @Override
@@ -119,7 +119,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertQueryOrdered(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
     {
-        determinismChecker.checkPlanIsDeterministic(actual);
+        determinismChecker.checkPlanIsDeterministic(session, actual);
     }
 
     @Override
@@ -131,7 +131,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertUpdate(Session session, @Language("SQL") String actual, @Language("SQL") String expected)
     {
-        determinismChecker.checkPlanIsDeterministic(actual);
+        determinismChecker.checkPlanIsDeterministic(session, actual);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertUpdate(Session session, @Language("SQL") String sql)
     {
-        determinismChecker.checkPlanIsDeterministic(sql);
+        determinismChecker.checkPlanIsDeterministic(session, sql);
    }
 
     @Override
@@ -155,7 +155,7 @@ public class TestLocalQueriesDeterministic
     @Override
     protected void assertUpdate(Session session, @Language("SQL") String sql, long count)
     {
-        determinismChecker.checkPlanIsDeterministic(sql);
+        determinismChecker.checkPlanIsDeterministic(session, sql);
     }
 
     @Override
@@ -200,82 +200,5 @@ public class TestLocalQueriesDeterministic
     {
         determinismChecker.checkPlanIsDeterministic(sql);
         return super.computeExpected(sql, resultTypes);
-    }
-
-    //Ignore queries that can't be used for plan determinism checking:
-
-    @Override
-    public void testDescribeInput()
-    {
-    }
-
-    @Override
-    public void testDescribeInputNoParameters()
-    {
-    }
-
-    @Override
-    public void testDescribeInputWithAggregation()
-    {
-    }
-
-    @Override
-    public void testDescribeOutput()
-    {
-    }
-
-    @Override
-    public void testDescribeOutputNamedAndUnnamed()
-    {
-    }
-
-    @Override
-    public void testDescribeOutputShowTables()
-    {
-    }
-
-    @Override
-    public void testDescribeOutputOnAliasedColumnsAndExpressions()
-    {
-    }
-
-    @Override
-    public void testExecute()
-    {
-    }
-
-    @Override
-    public void testExecuteUsing()
-    {
-    }
-
-    @Override
-    public void testExecuteUsingWithSubquery()
-    {
-    }
-
-    @Override
-    public void testExecuteUsingWithSubqueryInJoin()
-    {
-    }
-
-    @Override
-    public void testExecuteWithParametersInGroupBy()
-    {
-    }
-
-    @Override
-    public void testExplainExecute()
-    {
-    }
-
-    @Override
-    public void testExplainExecuteWithUsing()
-    {
-    }
-
-    @Override
-    public void testExplainSetSessionWithUsing()
-    {
     }
 }
