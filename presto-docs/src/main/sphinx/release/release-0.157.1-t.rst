@@ -243,3 +243,24 @@ The following has been added to 0.157.1-t.0.3:
 
 * Fix incorrect result that may result as part of Decimal data type coercion
 * Additional documentation
+
+  
+=====================
+Release 0.157.1-t.0.4
+=====================
+
+The following has been added to 0.157.1-t.0.4:
+
+* Renamed the "experimental.*" spill related properties to ".beta". "experimental" was the historic name and "beta" more accurately reflects this first phase of spill to disk.
+* Updated Sandbox VM documentation for Presto Admin 2.0
+
+
+=====================
+Release 0.157.1-t.0.5
+=====================
+
+The following has been added to 0.157.1-t.0.5:
+
+* Fix incorrect results for UNION ALL queries with duplicate column names.
+  `https://github.com/prestodb/presto/issues/6935 <https://github.com/facebook/presto/issues/6935>`_
+
