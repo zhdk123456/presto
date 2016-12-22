@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.3. Installing a Presto VM Sandbox for HDP &mdash; Teradata Distribution of Presto 0.157.1-t.0.2 Documentation</title>
+  <title>4.3. Installing a Presto VM Sandbox for HDP &mdash; Teradata Distribution of Presto 0.157.1-t.0.5 Documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.2 Documentation" href="../index.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.5 Documentation" href="../index.html"/>
         <link rel="up" title="4. Presto Installation on a Sandbox VM" href="../sandbox-vms.html"/>
         <link rel="next" title="5. Presto Server Installation on a Cluster (Presto Admin and RPMs)" href="../server-installation-cluster-manual.html"/>
         <link rel="prev" title="4.2. Installing a Presto VM Sandbox for CDH" href="presto-sandbox-cdh.html"/> 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.157.1-t.0.2
+                0.157.1-t.0.5
               </div>
             
           
@@ -94,7 +94,6 @@
 <li class="toctree-l2"><a class="reference internal" href="system-requirements-sandboxes.html">4.1. System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="presto-sandbox-cdh.html">4.2. Installing a Presto VM Sandbox for CDH</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">4.3. Installing a Presto VM Sandbox for HDP</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#jdbc-driver">JDBC Driver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#hadoop-services-startup">Hadoop Services Startup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#vm-networking">VM Networking</a></li>
 </ul>
@@ -167,11 +166,7 @@
             
   <div class="section" id="installing-a-presto-vm-sandbox-for-hdp">
 <h1>4.3. Installing a Presto VM Sandbox for HDP</h1>
-<p>The following link is to a VirtualBox sandbox image that can be used to experiment with the Presto distribution.</p>
-<div class="line-block">
-<div class="line">Download <strong>presto-0.141t-demo-hdp.ova</strong> from <a class="reference external" href="https://www.teradata.com/presto">https://www.teradata.com/presto</a></div>
-<div class="line"><br /></div>
-</div>
+<p>Download the VirtualBox sandbox image from <a class="reference external" href="https://www.teradata.com/presto">https://www.teradata.com/presto</a></p>
 <p>The credentials for the VM are:</p>
 <blockquote>
 <div><div class="line-block">
@@ -182,19 +177,28 @@
 <p>The image is based on CentOS 6.7 and contains the following components:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Presto is installed in <code class="docutils literal"><span class="pre">/usr/lib/presto</span></code>. It is set up with Hive, TPCH and JMX connectors. Logs are located in <code class="docutils literal"><span class="pre">/var/log/presto</span></code>.</li>
-<li><code class="docutils literal"><span class="pre">presto-admin</span></code> is installed in <code class="docutils literal"><span class="pre">/opt/prestoadmin</span></code>. You can run presto-admin by executing: <code class="docutils literal"><span class="pre">/opt/prestoadmin/presto-admin</span></code>.</li>
+<li>Presto is installed in <code class="docutils literal"><span class="pre">/usr/lib/presto</span></code>.</li>
+<li>Logs are located in <code class="docutils literal"><span class="pre">/var/log/presto</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">presto-admin</span></code> is installed in <code class="docutils literal"><span class="pre">/home/presto/prestoadmin</span></code>.</li>
 <li>For documentation of the Presto release embedded in the VM see: <a class="reference internal" href="../index.html"><span class="doc">Presto Documentation</span></a>.</li>
 </ul>
 </div></blockquote>
 <p>In addition, the image contains:</p>
 <blockquote>
 <div><ul class="simple">
-<li>The Hortonworks Hadoop distribution, version 2.3, running in pseudo distributed mode.</li>
+<li>The Hortonworks Hadoop distribution, version 2.3, running in pseudo-distributed mode.</li>
 <li>Hive (set up to use YARN).</li>
 <li>Hive Metastore.</li>
 <li>Zookeeper (used by Hive).</li>
 <li>MySQL (used by Hive Metastore).</li>
+</ul>
+</div></blockquote>
+<p>The following Presto connectors are configured in the VM:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Hive Connector</li>
+<li>TPCH Connector</li>
+<li>TPCDS Connector</li>
 </ul>
 </div></blockquote>
 <p>The following sample tables are loaded to HDFS and are visible from Hive:</p>
@@ -204,10 +208,10 @@
 <li>TPC-H region table.</li>
 </ul>
 </div></blockquote>
-<p>The <code class="docutils literal"><span class="pre">presto-cli</span></code> executable JAR can be found in <code class="docutils literal"><span class="pre">/home/presto</span></code> and should be used to execute Presto queries.
+<p>The <code class="docutils literal"><span class="pre">presto-cli</span></code> executable JAR can be found in <code class="docutils literal"><span class="pre">/home/presto/bin</span></code> and should be used to execute Presto queries.
 Please wait a few moments after the image boots for the Presto service to start.</p>
 <p>Usage example:</p>
-<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">presto</span><span class="o">@</span><span class="n">presto</span><span class="o">-</span><span class="n">demo</span><span class="o">-</span><span class="n">hdp</span> <span class="o">~</span><span class="p">]</span><span class="o">#</span> <span class="n">java</span> <span class="o">-</span><span class="n">jar</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">presto</span><span class="o">/</span><span class="n">presto</span><span class="o">-</span><span class="n">cli</span><span class="p">.</span><span class="n">jar</span> <span class="c1">--catalog hive --schema default</span>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">presto</span><span class="o">@</span><span class="n">presto</span><span class="o">-</span><span class="n">demo</span><span class="o">-</span><span class="n">hdp</span> <span class="o">~</span><span class="p">]</span><span class="o">#</span> <span class="n">presto</span><span class="o">-</span><span class="n">cli</span> <span class="c1">--catalog hive --schema default</span>
 <span class="k">show</span> <span class="n">tables</span><span class="p">;</span>
  <span class="k">Table</span>
 <span class="c1">--------</span>
@@ -218,11 +222,6 @@ Please wait a few moments after the image boots for the Presto service to start.
 <span class="n">presto</span><span class="p">:</span><span class="k">default</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">nation</span><span class="p">;</span>
 <span class="p">...</span>
 </pre></div>
-</div>
-<div class="section" id="jdbc-driver">
-<h2>JDBC Driver</h2>
-<p>You can also find the Presto JDBC JAR on the VM (<code class="docutils literal"><span class="pre">/home/presto/presto-jdbc.jar</span></code>). It can be used
-to connect to the Presto server running in the VM from your Java application.</p>
 </div>
 <div class="section" id="hadoop-services-startup">
 <h2>Hadoop Services Startup</h2>
@@ -282,7 +281,7 @@ For example, 127.0.0.1:50070 -&gt; 10.0.2.15:50070 will enable access to the had
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.157.1-t.0.2',
+            VERSION:'0.157.1-t.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

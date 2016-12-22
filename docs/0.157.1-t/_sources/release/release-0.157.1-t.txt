@@ -17,6 +17,7 @@ Data Types
 
 Security
 --------
+* Secured cluster communication over HTTPS
 * LDAP Authentication
 
     LDAP Authentication functionality in 0.157.1-t is same as 0.152.1-t, but the server properties have been renamed. The new properties and the only ones supported now are:
@@ -59,12 +60,21 @@ Performance
 
 Scale
 -----
-Beta - Spilling to disk for aggregations and avoid the memory limits within Presto. Must have ``experimental.spill-enabled`` set to ``true``.
+Beta - Spilling to disk for aggregations and avoid the memory limits within Presto. Must have ``beta.spill-enabled`` set to ``true``.
   
 
 Teradata JDBC Driver
 --------------------
 The Teradata JDBC driver does not support batch queries.
+
+Connectors
+----------
+* TPC-DS connector was added
+* Teradata has added official support for the Cassandra connector.
+
+Presto Admin
+------------
+Removed Sudo requirement for Presto Admin. See Presto Admin upgrade documentation.
 
 Documentation
 -------------
@@ -223,4 +233,34 @@ The following has been added to 0.157.1-t.0.1:
 * Documentation improvements
 * Fix wrong results for nested except
 * Fix principal error in Hive Kerberos Authentication
+
+
+=====================
+Release 0.157.1-t.0.3
+=====================
+
+The following has been added to 0.157.1-t.0.3:
+
+* Fix incorrect result that may result as part of Decimal data type coercion
+* Additional documentation
+
+  
+=====================
+Release 0.157.1-t.0.4
+=====================
+
+The following has been added to 0.157.1-t.0.4:
+
+* Renamed the "experimental.*" spill related properties to ".beta". "experimental" was the historic name and "beta" more accurately reflects this first phase of spill to disk.
+* Updated Sandbox VM documentation for Presto Admin 2.0
+
+
+=====================
+Release 0.157.1-t.0.5
+=====================
+
+The following has been added to 0.157.1-t.0.5:
+
+* Fix incorrect results for UNION ALL queries with duplicate column names.
+  `https://github.com/prestodb/presto/issues/6935 <https://github.com/facebook/presto/issues/6935>`_
 

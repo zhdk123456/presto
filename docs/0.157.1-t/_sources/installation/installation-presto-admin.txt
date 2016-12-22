@@ -17,7 +17,7 @@ cluster. It provides easy-to-use commands to:
 
 Use Presto Admin and the following procedures to install Presto on one or more nodes.
 This is an alternative to the installation steps described at 
-`prestodb.io <https://prestodb.io/docs/current/installation.html>`_. Using the 
+`prestodb.io <https://prestodb.io/docs/0.157/installation.html>`_. Using the 
 Presto Admin tool is the simplest and preferred method for installing and managing 
 a Presto cluster.
 
@@ -33,7 +33,7 @@ Comprehensive Presto Admin User Guide <presto-admin/user-guide.rst>
     Installing Java 8 <presto-admin/installation/java-installation.rst>
     Installing the Presto Server <presto-admin/installation/presto-server-installation.rst>
     Installing the Presto CLI <presto-admin/installation/presto-cli-installation.rst>
-    Adding a Connector <presto-admin/installation/presto-catalog-installation.rst>
+    Adding a Catalog <presto-admin/installation/presto-catalog-installation.rst>
     Configuring Presto <presto-admin/installation/presto-configuration.rst>
     Troubleshooting <presto-admin/installation/troubleshooting-installation.rst>
 

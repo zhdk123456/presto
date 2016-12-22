@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>11.3. Presto properties &mdash; Teradata Distribution of Presto 0.157.1-t.0.2 Documentation</title>
+  <title>11.3. Presto properties &mdash; Teradata Distribution of Presto 0.157.1-t.0.5 Documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.2 Documentation" href="../index.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.5 Documentation" href="../index.html"/>
         <link rel="up" title="11. Administration" href="../admin.html"/>
         <link rel="next" title="11.4. Queue Configuration" href="queue.html"/>
         <link rel="prev" title="11.2. Tuning Presto" href="tuning.html"/> 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.157.1-t.0.2
+                0.157.1-t.0.5
               </div>
             
           
@@ -113,12 +113,12 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#properties-controlling-spilling">Properties controlling spilling</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-spill-enabled"><code class="docutils literal"><span class="pre">experimental.spill-enabled</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-spiller-spill-path"><code class="docutils literal"><span class="pre">experimental.spiller-spill-path</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-spiller-minimum-free-space-threshold"><code class="docutils literal"><span class="pre">experimental.spiller-minimum-free-space-threshold</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-spiller-threads"><code class="docutils literal"><span class="pre">experimental.spiller-threads</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-max-spill-per-node"><code class="docutils literal"><span class="pre">experimental.max-spill-per-node</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#experimental-query-max-spill-per-node"><code class="docutils literal"><span class="pre">experimental.query-max-spill-per-node</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-spill-enabled"><code class="docutils literal"><span class="pre">beta.spill-enabled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-spiller-spill-path"><code class="docutils literal"><span class="pre">beta.spiller-spill-path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-spiller-minimum-free-space-threshold"><code class="docutils literal"><span class="pre">beta.spiller-minimum-free-space-threshold</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-spiller-threads"><code class="docutils literal"><span class="pre">beta.spiller-threads</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-max-spill-per-node"><code class="docutils literal"><span class="pre">beta.max-spill-per-node</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beta-query-max-spill-per-node"><code class="docutils literal"><span class="pre">beta.query-max-spill-per-node</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#exchange-properties">Exchange properties</a><ul>
@@ -362,8 +362,8 @@ should be.</li>
 </div>
 <div class="section" id="properties-controlling-spilling">
 <span id="tuning-spilling"></span><h2>Properties controlling spilling</h2>
-<div class="section" id="experimental-spill-enabled">
-<h3><code class="docutils literal"><span class="pre">experimental.spill-enabled</span></code></h3>
+<div class="section" id="beta-spill-enabled">
+<h3><code class="docutils literal"><span class="pre">beta.spill-enabled</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">Boolean</span></code></li>
@@ -372,8 +372,8 @@ should be.</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="experimental-spiller-spill-path">
-<h3><code class="docutils literal"><span class="pre">experimental.spiller-spill-path</span></code></h3>
+<div class="section" id="beta-spiller-spill-path">
+<h3><code class="docutils literal"><span class="pre">beta.spiller-spill-path</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">String</span></code></li>
@@ -382,8 +382,8 @@ should be.</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="experimental-spiller-minimum-free-space-threshold">
-<h3><code class="docutils literal"><span class="pre">experimental.spiller-minimum-free-space-threshold</span></code></h3>
+<div class="section" id="beta-spiller-minimum-free-space-threshold">
+<h3><code class="docutils literal"><span class="pre">beta.spiller-minimum-free-space-threshold</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">Double</span></code></li>
@@ -392,8 +392,8 @@ should be.</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="experimental-spiller-threads">
-<h3><code class="docutils literal"><span class="pre">experimental.spiller-threads</span></code></h3>
+<div class="section" id="beta-spiller-threads">
+<h3><code class="docutils literal"><span class="pre">beta.spiller-threads</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">Integer</span></code></li>
@@ -402,8 +402,8 @@ should be.</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="experimental-max-spill-per-node">
-<h3><code class="docutils literal"><span class="pre">experimental.max-spill-per-node</span></code></h3>
+<div class="section" id="beta-max-spill-per-node">
+<h3><code class="docutils literal"><span class="pre">beta.max-spill-per-node</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">String</span></code> (data size)</li>
@@ -412,8 +412,8 @@ should be.</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="experimental-query-max-spill-per-node">
-<h3><code class="docutils literal"><span class="pre">experimental.query-max-spill-per-node</span></code></h3>
+<div class="section" id="beta-query-max-spill-per-node">
+<h3><code class="docutils literal"><span class="pre">beta.query-max-spill-per-node</span></code></h3>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">String</span></code> (data size)</li>
@@ -1023,7 +1023,7 @@ should be.</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.157.1-t.0.2',
+            VERSION:'0.157.1-t.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

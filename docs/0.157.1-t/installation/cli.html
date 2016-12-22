@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>8.1. Command Line Interface &mdash; Teradata Distribution of Presto 0.157.1-t.0.2 Documentation</title>
+  <title>8.1. Command Line Interface &mdash; Teradata Distribution of Presto 0.157.1-t.0.5 Documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.2 Documentation" href="../index.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.157.1-t.0.5 Documentation" href="../index.html"/>
         <link rel="up" title="8. Presto Client Software" href="../client.html"/>
         <link rel="next" title="8.2. JDBC Driver" href="jdbc.html"/>
         <link rel="prev" title="8. Presto Client Software" href="../client.html"/> 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.157.1-t.0.2
+                0.157.1-t.0.5
               </div>
             
           
@@ -171,7 +171,93 @@ make it executable with <code class="docutils literal"><span class="pre">chmod</
 <div class="highlight-none"><div class="highlight"><pre><span></span>./presto --server localhost:8080 --catalog hive --schema default
 </pre></div>
 </div>
-<p>Run the CLI with the <code class="docutils literal"><span class="pre">--help</span></code> option to see the available options.</p>
+<p>The available options for the CLI are:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>--catalog &lt;catalog&gt;
+    Default catalog to connect to
+
+--client-request-timeout &lt;client request timeout&gt;
+    Client request timeout (default: 2m)
+
+--debug
+    Enable debug information
+
+--enable-authentication
+    Enable client authentication
+
+--execute &lt;execute&gt;
+    Execute specified statements and exit
+
+-f &lt;file&gt;, --file &lt;file&gt;
+    Execute statements from file and exit
+
+-h, --help
+    Display help information
+
+--keystore-password &lt;keystore password&gt;
+    The password for the keystore. This must match the password
+    specified when creating the keystore
+
+--keystore-path &lt;keystore path&gt;
+    The location of the Java Keystore file that will be used to
+    secure TLS
+
+--krb5-config-path &lt;krb5 config path&gt;
+    Kerberos config file path (default: /etc/krb5.conf)
+
+--krb5-credential-cache-path &lt;krb5 credential cache path&gt;
+    Kerberos credential cache path
+
+--krb5-disable-remote-service-hostname-canonicalization
+    Disable service hostname canonicalization using the DNS reverse
+    lookup
+
+--krb5-keytab-path &lt;krb5 keytab path&gt;
+    Kerberos key table path (default: /etc/krb5.keytab)
+
+--krb5-principal &lt;krb5 principal&gt;
+    Kerberos principal to be used
+
+--krb5-remote-service-name &lt;krb5 remote service name&gt;
+    Remote peer&#39;s kerberos service name
+
+--log-levels-file &lt;log levels file&gt;
+    Configure log levels for debugging using this file
+
+--output-format &lt;output-format&gt;
+    Output format for batch mode [ALIGNED, VERTICAL, CSV, TSV,
+    CSV_HEADER, TSV_HEADER, NULL] (default: CSV)
+
+--schema &lt;schema&gt;
+    Default schema
+
+--server &lt;server&gt;
+    Presto server location (default: localhost:8080)
+
+--session &lt;session&gt;
+    Session property (property can be used multiple times; format is
+    key=value; use &#39;SHOW SESSION&#39; to see available properties)
+
+--socks-proxy &lt;socks-proxy&gt;
+    SOCKS proxy to use for server connections
+
+--source &lt;source&gt;
+    Name of source invoking the query (default: presto-cli)
+
+--truststore-password &lt;truststore password&gt;
+    The password for the truststore. This must match the password you
+    specified when creating the truststore
+
+--truststore-path &lt;truststore path&gt;
+    The location of the Java Truststore file that will be used to
+    secure TLS
+
+--user &lt;user&gt;
+    Username
+
+--version
+    Version of the CLI
+</pre></div>
+</div>
 <p>By default, the results of queries are paginated using the <code class="docutils literal"><span class="pre">less</span></code> program
 which is configured with a carefully selected set of options. This behavior
 can be overridden by setting the environment variable <code class="docutils literal"><span class="pre">PRESTO_PAGER</span></code> to the
@@ -218,7 +304,7 @@ to completely disable pagination.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.157.1-t.0.2',
+            VERSION:'0.157.1-t.0.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
