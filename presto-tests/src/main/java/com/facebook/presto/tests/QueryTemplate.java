@@ -17,14 +17,17 @@ package com.facebook.presto.tests;
 import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 public class QueryTemplate
@@ -73,6 +76,14 @@ public class QueryTemplate
     {
         requireNonNull(queryConsumer, "queryConsumer is null");
         replaceAll(queryTemplate, queryConsumer, ImmutableList.copyOf(parametersLists));
+    }
+
+    @SafeVarargs
+    public final Stream<String> replaceAll(List<Parameter>... parametersLists)
+    {
+        List<String> queries = new ArrayList<>();
+        replaceAll(queryTemplate, queries::add, asList(parametersLists));
+        return queries.stream();
     }
 
     private void replaceAll(String queryTemplate, Consumer<String> queryConsumer, List<List<Parameter>> parametersLists)
