@@ -20,6 +20,7 @@ import com.facebook.presto.spi.session.PropertyMetadata;
 import com.facebook.presto.spi.type.Decimals;
 import com.facebook.presto.spi.type.TimeZoneKey;
 import com.facebook.presto.sql.analyzer.SemanticException;
+import com.facebook.presto.testing.Arguments;
 import com.facebook.presto.testing.MaterializedResult;
 import com.facebook.presto.testing.MaterializedRow;
 import com.facebook.presto.testing.QueryRunner;
@@ -40,6 +41,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.intellij.lang.annotations.Language;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.sql.Date;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.facebook.presto.connector.informationSchema.InformationSchemaMetadata.INFORMATION_SCHEMA;
 import static com.facebook.presto.operator.scalar.ApplyFunction.APPLY_FUNCTION;
@@ -67,6 +70,7 @@ import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MISSING_SCHEMA;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATE_OR_GROUP_BY;
 import static com.facebook.presto.sql.tree.ExplainType.Type.DISTRIBUTED;
 import static com.facebook.presto.sql.tree.ExplainType.Type.LOGICAL;
+import static com.facebook.presto.testing.Arguments.toArgumentsArrays;
 import static com.facebook.presto.testing.MaterializedResult.resultBuilder;
 import static com.facebook.presto.testing.TestingAccessControlManager.TestingPrivilegeType.CREATE_TABLE;
 import static com.facebook.presto.testing.TestingAccessControlManager.TestingPrivilegeType.DELETE_TABLE;
@@ -7857,6 +7861,26 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT cast(1 as decimal(3,2)) = ANY(SELECT cast(1 as decimal(3,1)))", "SELECT true");
         assertQuery("SELECT cast(1 as decimal(3,2)) <> ALL(SELECT cast(1 as decimal(3,1)))");
         assertQuery("SELECT cast(1 as decimal(3,2)) <> ANY(SELECT cast(1 as decimal(3,1)))");
+    }
+
+    @Test(dataProvider = "quantified_comparisons_corner_cases")
+    public void testQuantifiedComparisonCornerCases(String query) {
+        assertQuery(query);
+    }
+
+    @DataProvider(name = "quantified_comparisons_corner_cases")
+    public Object[][] qualifiedComparisonsCornerCases() {
+        List<QueryTemplate.Parameter> subquery = new QueryTemplate.Parameter("subquery").of(
+                "SELECT * FROM (SELECT 1 WHERE false) as empty_table",
+                "SELECT CAST(NULL AS INTEGER) AS null_singleton",
+                "SELECT * FROM (VALUES (1), (NULL)) AS mixed_values"
+        );
+        List<QueryTemplate.Parameter> quantifier = new QueryTemplate.Parameter("quantifier").of("ALL", "ANY");
+        List<QueryTemplate.Parameter> lhs = new QueryTemplate.Parameter("lhs").of("1", "NULL");
+        List<QueryTemplate.Parameter> relation = new QueryTemplate.Parameter("relation").of("=", "!=", "<", ">", "<=", ">=");
+        QueryTemplate query = new QueryTemplate("SELECT %lhs% %relation% %quantifier% (%subquery%)");
+        Stream<Object[]> queries = query.replaceAll(subquery, quantifier, lhs, relation).map((String q) -> new Object[] { q });
+        return toArgumentsArrays(queries.map(Arguments::of));
     }
 
     @Test
