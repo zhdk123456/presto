@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -7864,12 +7865,14 @@ public abstract class AbstractTestQueries
     }
 
     @Test(dataProvider = "quantified_comparisons_corner_cases")
-    public void testQuantifiedComparisonCornerCases(String query) {
+    public void testQuantifiedComparisonCornerCases(String query)
+    {
         assertQuery(query);
     }
 
     @DataProvider(name = "quantified_comparisons_corner_cases")
-    public Object[][] qualifiedComparisonsCornerCases() {
+    public Object[][] qualifiedComparisonsCornerCases()
+    {
         List<QueryTemplate.Parameter> subquery = new QueryTemplate.Parameter("subquery").of(
                 "SELECT * FROM (SELECT 1 WHERE false) as empty_table",
                 "SELECT CAST(NULL AS INTEGER) AS null_singleton",
@@ -7878,8 +7881,15 @@ public abstract class AbstractTestQueries
         List<QueryTemplate.Parameter> quantifier = new QueryTemplate.Parameter("quantifier").of("ALL", "ANY");
         List<QueryTemplate.Parameter> lhs = new QueryTemplate.Parameter("lhs").of("1", "NULL");
         List<QueryTemplate.Parameter> relation = new QueryTemplate.Parameter("relation").of("=", "!=", "<", ">", "<=", ">=");
-        QueryTemplate query = new QueryTemplate("SELECT %lhs% %relation% %quantifier% (%subquery%)");
-        Stream<Object[]> queries = query.replaceAll(subquery, quantifier, lhs, relation).map((String q) -> new Object[] { q });
+        QueryTemplate queryTemplate = new QueryTemplate("SELECT %lhs% %relation% %quantifier% (%subquery%)");
+        ImmutableList<String> excludedInPredicateQueries = ImmutableList.of(
+                "SELECT NULL != ALL (SELECT * FROM (SELECT 1 WHERE false) as empty_table)",
+                "SELECT NULL = ANY (SELECT * FROM (SELECT 1 WHERE false) as empty_table)"
+        );
+        Predicate<String> isExcluded = excludedInPredicateQueries::contains;
+        Stream<String> queries = queryTemplate
+                .replaceAll(subquery, quantifier, lhs, relation)
+                .filter(isExcluded.negate());
         return toArgumentsArrays(queries.map(Arguments::of));
     }
 
