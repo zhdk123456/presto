@@ -4795,6 +4795,17 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT x FROM (values DATE '1970-01-01', DATE '1970-01-03') t(x) WHERE x IN (DATE '1970-01-01')", "values DATE '1970-01-01'");
         assertQuery("SELECT x FROM (values TIMESTAMP '1970-01-01 00:01:00+00:00', TIMESTAMP '1970-01-01 08:01:00+08:00', TIMESTAMP '1970-01-01 00:01:00+08:00') t(x) WHERE x IN (TIMESTAMP '1970-01-01 00:01:00+00:00')", "values TIMESTAMP '1970-01-01 00:01:00+00:00', TIMESTAMP '1970-01-01 08:01:00+08:00'");
         assertQuery("SELECT COUNT(*) FROM (values 1) t(x) WHERE x IN (null, 0)", "SELECT 0");
+
+        // test "null IN" subqueries
+        assertQuery("SELECT null IN (SELECT cast(NULL AS BIGINT))");
+        assertQuery("SELECT null IN (SELECT null where false)");
+//          assertQuery("SELECT null IN (SELECT 1)");
+        assertQuery("SELECT null IN (SELECT 1 where false)");
+        assertQuery("select null in ((select 1) union all (select null))");
+        assertQuery("select x in (select true) from (select * from (values cast(null as boolean)) t(x) where (x or null) is null)", "select null");
+        assertQuery("select x in (select 1) from (select * from (values cast(null as integer)) t(x) where (x + 10 is null) or x = 2)", "select null");
+        assertQuery("select x in (select 1) from (select * from (values cast(null as integer)) t(x) where (x + 10 is null) or x = 1)", "select null");
+        assertQuery("select x in (select true) from (select * from (values cast(null as boolean)) t(x) where x is null)", "select null");
     }
 
     @Test(dataProvider = "InPredicate_corner_cases")
@@ -4810,6 +4821,7 @@ public abstract class AbstractTestQueries
         List<QueryTemplate.Parameter> subquery = new QueryTemplate.Parameter("subquery").of(
                 "SELECT * FROM (SELECT 1 WHERE false) as empty_table",
                 "SELECT CAST(NULL AS INTEGER) AS null_singleton",
+                "SELECT 1 AS nonnull_singleton",
                 "SELECT * FROM (VALUES (1), (NULL)) AS mixed_values"
         );
         List<QueryTemplate.Parameter> predicate = new QueryTemplate.Parameter("predicate").of("IN", "NOT IN");
