@@ -51,7 +51,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -4798,6 +4797,27 @@ public abstract class AbstractTestQueries
         assertQuery("SELECT COUNT(*) FROM (values 1) t(x) WHERE x IN (null, 0)", "SELECT 0");
     }
 
+    @Test(dataProvider = "InPredicate_corner_cases")
+    public void testInPredicateCornerCases(String query)
+    {
+        assertQuery(query);
+    }
+
+    @DataProvider(name = "InPredicate_corner_cases")
+    public Object[][] inPredicateCornerCases()
+    {
+        List<QueryTemplate.Parameter> lhs = new QueryTemplate.Parameter("lhs").of("NULL", "1");
+        List<QueryTemplate.Parameter> subquery = new QueryTemplate.Parameter("subquery").of(
+                "SELECT * FROM (SELECT 1 WHERE false) as empty_table",
+                "SELECT CAST(NULL AS INTEGER) AS null_singleton",
+                "SELECT * FROM (VALUES (1), (NULL)) AS mixed_values"
+        );
+        List<QueryTemplate.Parameter> predicate = new QueryTemplate.Parameter("predicate").of("IN", "NOT IN");
+        QueryTemplate queryTemplate = new QueryTemplate("SELECT %lhs% %predicate% (%subquery%)");
+        Stream<String> queries = queryTemplate.replaceAll(lhs, subquery, predicate);
+        return toArgumentsArrays(queries.map(Arguments::of));
+    }
+
     @Test
     public void testLargeIn()
     {
@@ -7882,14 +7902,7 @@ public abstract class AbstractTestQueries
         List<QueryTemplate.Parameter> lhs = new QueryTemplate.Parameter("lhs").of("1", "NULL");
         List<QueryTemplate.Parameter> relation = new QueryTemplate.Parameter("relation").of("=", "!=", "<", ">", "<=", ">=");
         QueryTemplate queryTemplate = new QueryTemplate("SELECT %lhs% %relation% %quantifier% (%subquery%)");
-        ImmutableList<String> excludedInPredicateQueries = ImmutableList.of(
-                "SELECT NULL != ALL (SELECT * FROM (SELECT 1 WHERE false) as empty_table)",
-                "SELECT NULL = ANY (SELECT * FROM (SELECT 1 WHERE false) as empty_table)"
-        );
-        Predicate<String> isExcluded = excludedInPredicateQueries::contains;
-        Stream<String> queries = queryTemplate
-                .replaceAll(subquery, quantifier, lhs, relation)
-                .filter(isExcluded.negate());
+        Stream<String> queries = queryTemplate.replaceAll(subquery, quantifier, lhs, relation);
         return toArgumentsArrays(queries.map(Arguments::of));
     }
 
