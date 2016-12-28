@@ -98,4 +98,9 @@ public final class JoinHash
     {
         pagesHash.appendTo(Ints.checkedCast(position), pageBuilder, outputChannelOffset);
     }
+
+    @Override
+    public void close()
+    {
+    }
 }
