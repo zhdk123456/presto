@@ -24,14 +24,19 @@ import static com.facebook.presto.tests.TestGroups.AUTHORIZATION;
 import static com.facebook.presto.tests.TestGroups.HIVE_CONNECTOR;
 import static com.facebook.presto.tests.TestGroups.PROFILE_SPECIFIC_TESTS;
 import static com.facebook.presto.tests.utils.QueryExecutors.connectToPresto;
+import static com.teradata.tempto.assertions.QueryAssert.Row;
 import static com.teradata.tempto.assertions.QueryAssert.Row.row;
 import static com.teradata.tempto.assertions.QueryAssert.assertThat;
+import static com.teradata.tempto.context.ContextDsl.executeWith;
+import static com.teradata.tempto.context.ThreadLocalTestContextHolder.testContext;
+import static com.teradata.tempto.sql.SqlContexts.createViewAs;
 import static java.lang.String.format;
 
 public class TestGrantRevoke
     extends ProductTest
 {
     private String tableName;
+    private String viewName;
     private QueryExecutor aliceExecutor;
     private QueryExecutor bobExecutor;
 
@@ -49,6 +54,7 @@ public class TestGrantRevoke
     public void setup()
     {
         tableName = "alice_owned_table";
+        viewName = "alice_view";
         aliceExecutor = connectToPresto("alice@presto");
         bobExecutor = connectToPresto("bob@presto");
 
@@ -117,6 +123,36 @@ public class TestGrantRevoke
         assertThat(() -> bobExecutor.executeQuery(format("SELECT * FROM %s", tableName))).
                 failsWithMessage(format("Access Denied: Cannot select from table default.%s", tableName));
         assertThat(aliceExecutor.executeQuery(format("SELECT * FROM %s", tableName))).hasNoRows();
+    }
+
+    @Test(groups = {AUTHORIZATION, HIVE_CONNECTOR, PROFILE_SPECIFIC_TESTS})
+    public void testTableOwnerPrivileges()
+    {
+        onHive().executeQuery("set role admin;");
+        assertThat(onHive().executeQuery(format("SHOW GRANT USER alice ON TABLE %s", tableName)).
+                project(7, 8)). // Project only two relevant columns of SHOW GRANT: Privilege and Grant Option
+                containsOnly(ownerGrants());
+    }
+
+    @Test(groups = {AUTHORIZATION, HIVE_CONNECTOR, PROFILE_SPECIFIC_TESTS})
+    public void testViewOwnerPrivileges()
+    {
+        onHive().executeQuery("set role admin;");
+        executeWith(createViewAs(viewName, format("SELECT * FROM %s", tableName), aliceExecutor), view -> {
+            assertThat(onHive().executeQuery(format("SHOW GRANT USER alice ON %s", viewName)).
+                    project(7, 8)). // Project only two relevant columns of SHOW GRANT: Privilege and Grant Option
+                    containsOnly(ownerGrants());
+        });
+    }
+
+    private ImmutableList<Row> ownerGrants()
+    {
+        return ImmutableList.of(row("SELECT", Boolean.TRUE), row("INSERT", Boolean.TRUE), row("UPDATE", Boolean.TRUE), row("DELETE", Boolean.TRUE));
+    }
+
+    public static QueryExecutor onHive()
+    {
+        return testContext().getDependency(QueryExecutor.class, "hive");
     }
 
     private static void assertAccessDeniedOnAllOperationsOnTable(QueryExecutor queryExecutor, String tableName)
