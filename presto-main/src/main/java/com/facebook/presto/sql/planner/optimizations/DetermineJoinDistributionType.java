@@ -29,6 +29,7 @@ import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Map;
@@ -255,13 +256,18 @@ public class DetermineJoinDistributionType
 
         private JoinNode flipJoin(JoinNode node)
         {
+            ImmutableList.Builder<Symbol> outputSymbolsBuilder = ImmutableList.builder();
+            outputSymbolsBuilder.addAll(node.getRight().getOutputSymbols());
+            outputSymbolsBuilder.addAll(node.getLeft().getOutputSymbols());
+
+            List<Symbol> outputSymbols = outputSymbolsBuilder.build().stream().filter(symbol -> node.getOutputSymbols().contains(symbol)).collect(toImmutableList());
             return new JoinNode(
                     node.getId(),
                     flipJoinType(node.getType()),
                     node.getRight(),
                     node.getLeft(),
                     flipJoinCriteria(node.getCriteria()),
-                    node.getOutputSymbols(),
+                    outputSymbols,
                     node.getFilter(),
                     node.getRightHashSymbol(),
                     node.getLeftHashSymbol(),
