@@ -29,6 +29,7 @@ import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
+import com.google.common.collect.Lists;
 
 import java.util.List;
 import java.util.Map;
@@ -261,7 +262,7 @@ public class DetermineJoinDistributionType
                     node.getRight(),
                     node.getLeft(),
                     flipJoinCriteria(node.getCriteria()),
-                    node.getOutputSymbols(),
+                    Lists.reverse(node.getOutputSymbols()),
                     node.getFilter(),
                     node.getRightHashSymbol(),
                     node.getLeftHashSymbol(),
