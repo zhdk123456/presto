@@ -66,11 +66,11 @@ public class MemoryRevokingScheduler
     private void requestMemoryRevokingIfNeeded(Collection<SqlTask> sqlTasks, MemoryPool memoryPool)
     {
         long freeBytes = memoryPool.getFreeBytes();
-        if (freeBytes > memoryPool.getMaxBytes() * memoryRevokingThreshold) {
+        if (freeBytes > memoryPool.getMaxBytes() * (1.0 - memoryRevokingThreshold)) {
             return;
         }
 
-        long remainingBytesToRevoke = (long) (-freeBytes + (memoryPool.getMaxBytes() * memoryRevokingTarget));
+        long remainingBytesToRevoke = (long) (-freeBytes + (memoryPool.getMaxBytes() * (1.0 - memoryRevokingTarget)));
         remainingBytesToRevoke -= getMemoryAlreadyBeingRevoked(sqlTasks);
         requestRevoking(remainingBytesToRevoke, sqlTasks, memoryPool);
     }

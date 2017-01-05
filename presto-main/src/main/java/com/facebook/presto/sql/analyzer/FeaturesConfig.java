@@ -70,7 +70,7 @@ public class FeaturesConfig
     private int spillerThreads = 4;
     private double spillMinimumFreeSpaceThreshold = 0.9;
     private double memoryRevokingTarget = 0.5;
-    private double memoryRevokingThreshold = 0.1;
+    private double memoryRevokingThreshold = 0.9;
 
     public boolean isResourceGroupsEnabled()
     {

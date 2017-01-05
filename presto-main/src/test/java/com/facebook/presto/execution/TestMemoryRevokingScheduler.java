@@ -88,7 +88,7 @@ public class TestMemoryRevokingScheduler
             throws Exception
     {
         // todo test for different threshold/target
-        MemoryRevokingScheduler scheduler = new MemoryRevokingScheduler(memoryPool, 0, 0);
+        MemoryRevokingScheduler scheduler = new MemoryRevokingScheduler(memoryPool, 1.0, 1.0);
 
         SqlTask sqlTask1 = newSqlTask();
         SqlTask sqlTask2 = newSqlTask();
