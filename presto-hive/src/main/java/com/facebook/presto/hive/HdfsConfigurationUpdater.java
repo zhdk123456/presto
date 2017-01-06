@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.hive;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import io.airlift.units.DataSize;
@@ -29,8 +30,10 @@ import javax.inject.Inject;
 import javax.net.SocketFactory;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.facebook.hive.orc.OrcConf.ConfVars.HIVE_ORC_COMPRESSION;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -76,7 +79,7 @@ public class HdfsConfigurationUpdater
     private final boolean pinS3ClientToCurrentRegion;
     private final String s3UserAgentPrefix;
     private final String maprClusterName;
-    private final Map<String, HostAndPort> maprCldbNameToUri;
+    private final String maprCldbNameHostPort;
 
     @Inject
     public HdfsConfigurationUpdater(HiveClientConfig hiveClientConfig, HiveS3Config s3Config)
@@ -115,7 +118,7 @@ public class HdfsConfigurationUpdater
         this.pinS3ClientToCurrentRegion = s3Config.isPinS3ClientToCurrentRegion();
         this.s3UserAgentPrefix = s3Config.getS3UserAgentPrefix();
         this.maprClusterName = hiveClientConfig.getMaprClusterName();
-        this.maprCldbNameToUri = hiveClientConfig.getMaprCldbNameToHostPort();
+        this.maprCldbNameHostPort = hiveClientConfig.getMaprCldbNameHostPort();
     }
 
     public void updateConfiguration(Configuration config)
@@ -198,15 +201,35 @@ public class HdfsConfigurationUpdater
         config.setBoolean(PrestoS3FileSystem.S3_PIN_CLIENT_TO_CURRENT_REGION, pinS3ClientToCurrentRegion);
         config.set(PrestoS3FileSystem.S3_USER_AGENT_PREFIX, s3UserAgentPrefix);
 
-        // set configs for MapR
-        if (maprClusterName != null || maprCldbNameToUri != null) {
-            checkState(maprClusterName != null && maprCldbNameToUri != null, "the hive.mapr.cluster-name and hive.mapr.cldb-name-to-host-port properties must be specified in tandem");
+        if (maprClusterName != null || maprCldbNameHostPort != null) {
+            checkState(maprClusterName != null && maprCldbNameHostPort != null, "the hive.mapr.cluster-name and hive.mapr.cldb-name-to-host-port properties must be specified in tandem");
+
             config.set("dfs.nameservices", maprClusterName);
-            for (Map.Entry<String, HostAndPort> entry : maprCldbNameToUri.entrySet()) {
-                config.set(format("dfs.ha.namenodes.%s", maprClusterName), entry.getKey());
-                config.set(format("dfs.namenode.rpc-address.%s.%s", maprClusterName, entry.getKey()), entry.getValue().toString());
+
+            Map<String, HostAndPort> maprCldbNameToHostAndPort = getCldbNameToHostAndPort(maprCldbNameHostPort);
+            config.set(format("dfs.ha.namenodes.%s", maprClusterName), maprCldbNameToHostAndPort.keySet()
+                    .stream().collect(Collectors.joining(",")));
+            for (Map.Entry<String, HostAndPort> entry : maprCldbNameToHostAndPort.entrySet()) {
+                config.set(format("dfs.namenode.rpc-address.%s.%s", maprClusterName, entry.getKey()),
+                        entry.getValue().toString());
             }
         }
+    }
+
+    private static Map<String, HostAndPort> getCldbNameToHostAndPort(String maprCldbNameHostPort) {
+        Splitter commaSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
+        List<String> elements = ImmutableList.copyOf(commaSplitter.split(maprCldbNameHostPort));
+
+        Map<String, HostAndPort> cldbNameToHostAndPort = new HashMap<>();
+        Splitter colonSplitter = Splitter.on(':').trimResults().omitEmptyStrings();
+        for (String element : elements) {
+            List<String> cldbIdentifiers = ImmutableList.copyOf(colonSplitter.split(element));
+            checkState(cldbIdentifiers.size() == 3, format("The following CLDB entry does not follow the correct format: %s. Expected format is cldb1:<ip-address>:<port-number>", element));
+
+            HostAndPort hostAndPort = HostAndPort.fromParts(cldbIdentifiers.get(1), Integer.parseInt(cldbIdentifiers.get(2)));
+            cldbNameToHostAndPort.put(cldbIdentifiers.get(0), hostAndPort);
+        }
+        return cldbNameToHostAndPort;
     }
 
     public static void configureCompression(Configuration config, HiveCompressionCodec compressionCodec)

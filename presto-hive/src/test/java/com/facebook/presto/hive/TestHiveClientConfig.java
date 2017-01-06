@@ -88,7 +88,9 @@ public class TestHiveClientConfig
                 .setSkipDeletionForAlter(false)
                 .setBucketExecutionEnabled(true)
                 .setBucketWritingEnabled(true)
-                .setFileSystemMaxCacheSize(1000));
+                .setFileSystemMaxCacheSize(1000)
+                .setMaprClusterName(null)
+                .setMaprCldbNameHostPort(null));
     }
 
     @Test
@@ -150,6 +152,8 @@ public class TestHiveClientConfig
                 .put("hive.bucket-execution", "false")
                 .put("hive.bucket-writing", "false")
                 .put("hive.fs.cache.max-size", "1010")
+                .put("hive.mapr.cluster-name", "mapr-cluster-name")
+                .put("hive.mapr.cldb-name-host-port", "cldb1:ip1:7222,cldb2:ip2:7222")
                 .build();
 
         HiveClientConfig expected = new HiveClientConfig()
@@ -207,7 +211,9 @@ public class TestHiveClientConfig
                 .setSkipDeletionForAlter(true)
                 .setBucketExecutionEnabled(false)
                 .setBucketWritingEnabled(false)
-                .setFileSystemMaxCacheSize(1010);
+                .setFileSystemMaxCacheSize(1010)
+                .setMaprClusterName("mapr-cluster-name")
+                .setMaprCldbNameHostPort("cldb1:ip1:7222,cldb2:ip2:7222");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

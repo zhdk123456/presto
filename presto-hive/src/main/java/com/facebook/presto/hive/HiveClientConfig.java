@@ -28,15 +28,11 @@ import org.joda.time.DateTimeZone;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
-import static java.lang.String.format;
 
 @DefunctConfig({
         "hive.file-system-cache-ttl",
@@ -120,7 +116,7 @@ public class HiveClientConfig
     private int fileSystemMaxCacheSize = 1000;
 
     private String maprClusterName;
-    private Map<String, HostAndPort> maprCldbNameToHostPort;
+    private String maprCldbNameHostPort;
 
     public int getMaxInitialSplits()
     {
@@ -877,31 +873,16 @@ public class HiveClientConfig
         return maprClusterName;
     }
 
-    @Config("hive.mapr.cldb-name-to-host-port")
-    @ConfigDescription("Mapping from a CLDB name to its URI. For multiple CLDBs separate each with a comma: cldb1:192.168.1.1:7222,cldb2:192.168.1.2:7222")
-    public HiveClientConfig setMaprCldbNameToHostPort(String maprCldbNameToHostPort)
+    @Config("hive.mapr.cldb-name-host-port")
+    @ConfigDescription("MapR CLDB name with its host and port number. For multiple CLDBs separate each with a comma: cldb1:<ip-address-1>:<port-number>,cldb2:<ip-address-2>:<port-number>")
+    public HiveClientConfig setMaprCldbNameHostPort(String maprCldbNameHostPort)
     {
-        if (maprCldbNameToHostPort == null) {
-            throw new IllegalArgumentException("At least one CLBD name to URI mapping must be specified.");
-        }
-
-        Splitter commaSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
-        List<String> elements = ImmutableList.copyOf(commaSplitter.split(maprCldbNameToHostPort));
-
-        this.maprCldbNameToHostPort = new HashMap<>();
-        Splitter colonSplitter = Splitter.on(':').trimResults().omitEmptyStrings();
-        for (String element : elements) {
-            List<String> cldbNameToUri = ImmutableList.copyOf(colonSplitter.split(element));
-            checkState(cldbNameToUri.size() == 3, format("The following CLDB entry does not follow the correct format: %s. Expected format is cldb1:192.168.1.1:7222", element));
-
-            HostAndPort hostAndPort = HostAndPort.fromParts(cldbNameToUri.get(1), Integer.parseInt(cldbNameToUri.get(2)));
-            this.maprCldbNameToHostPort.put(cldbNameToUri.get(0), hostAndPort);
-        }
+        this.maprCldbNameHostPort = maprCldbNameHostPort;
         return this;
     }
 
-    public Map<String, HostAndPort> getMaprCldbNameToHostPort()
+    public String getMaprCldbNameHostPort()
     {
-        return maprCldbNameToHostPort;
+        return maprCldbNameHostPort;
     }
 }
