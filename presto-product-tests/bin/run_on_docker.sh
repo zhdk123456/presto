@@ -200,8 +200,13 @@ fi
 # catch terminate signals
 trap terminate INT TERM EXIT
 
+if [[ "$ENVIRONMENT" == "singlenode-sqlserver" ]]; then
+  EXTERNAL_SERVICES="hadoop-master sqlserver"
+else
+  EXTERNAL_SERVICES="hadoop-master mysql postgres"
+fi
+
 # start external services
-EXTERNAL_SERVICES="hadoop-master mysql postgres"
 if [[ "$ENVIRONMENT" == "singlenode-ldap" ]]; then
   EXTERNAL_SERVICES="${EXTERNAL_SERVICES} ldapserver"
 fi
