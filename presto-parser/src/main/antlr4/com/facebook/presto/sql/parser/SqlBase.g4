@@ -60,7 +60,7 @@ statement
         (privilege (',' privilege)* | ALL PRIVILEGES)
         ON TABLE? qualifiedName FROM grantee=identifier                #revoke
     | SHOW GRANTS
-        ON (TABLE? qualifiedName | ALL)                                #showGrants
+        ON (ALL | TABLE? qualifiedName)                                #showGrants
     | EXPLAIN ANALYZE?
         ('(' explainOption (',' explainOption)* ')')? statement        #explain
     | SHOW CREATE TABLE qualifiedName                                  #showCreateTable
