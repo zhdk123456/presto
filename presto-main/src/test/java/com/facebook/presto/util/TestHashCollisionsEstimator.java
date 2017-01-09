@@ -51,10 +51,7 @@ public class TestHashCollisionsEstimator
         for (int exponent : ImmutableList.of(1, 3, 4)) {
             int scale = (int) pow(10, exponent);
             double scaledEstimate = estimateNumberOfHashCollisions(numberOfValues * scale, hashTableSize * scale);
-            double simulatedEstimate = simulate(numberOfValues * scale, hashTableSize * scale, 1);
-
             assertEquals(unscaledEstimate * scale, scaledEstimate, EPSILON);
-            assertEquals(scaledEstimate, simulatedEstimate, simulatedEstimate * SIMULATION_ACCURACY);
         }
     }
 
