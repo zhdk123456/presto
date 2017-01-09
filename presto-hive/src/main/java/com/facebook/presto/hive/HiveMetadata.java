@@ -355,7 +355,7 @@ public class HiveMetadata
             // todo - return statistics matching empty table instead
             return TableStatistics.EMPTY_STATISTICS;
         }
-        HiveTableLayoutHandle layout = checkType(tableLayouts.get(0), HiveTableLayoutHandle.class, "layoutHandle");
+        HiveTableLayoutHandle layout = checkType(tableLayouts.get(0).getTableLayout().getHandle(), HiveTableLayoutHandle.class, "layoutHandle");
 
         List<HivePartition> hivePartitions = getOrComputePartitions(layout, session, tableHandle);
         Map<String, ColumnHandle> tableColumns = getTableColumnNamesToHandlesMap(hivePartitions, session);
