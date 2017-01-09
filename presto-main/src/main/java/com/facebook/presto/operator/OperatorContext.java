@@ -321,7 +321,7 @@ public class OperatorContext
         systemMemoryContext.close();
     }
 
-    public AbstractOperatorSpillContext getSpillContext()
+    public OperatorSpillContext getSpillContext()
     {
         return spillContext;
     }
