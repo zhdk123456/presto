@@ -125,6 +125,7 @@ import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.http.client.BasicAuthRequestFilter;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.spnego.KerberosConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.slice.Slice;
 import io.airlift.stats.PauseMeter;
@@ -132,6 +133,7 @@ import io.airlift.units.Duration;
 
 import javax.inject.Singleton;
 
+import java.io.File;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -196,10 +198,35 @@ public class ServerMainModule
         });
 
         String ldapUser = internalCommunicationConfig.getLdapUser();
+        checkState(ldapUser == null || (!internalCommunicationConfig.isKerberosEnabled()), "Set either LDAP or Kerberos authentication for secured communication between nodes");
+
         if (ldapUser != null) {
             String ldapPassword = internalCommunicationConfig.getLdapPassword();
             checkArgument(ldapPassword != null, "ldap password must be set");
             httpClientBinder(binder).bindGlobalFilter(new BasicAuthRequestFilter(ldapUser, ldapPassword));
+        }
+
+        if (internalCommunicationConfig.isKerberosEnabled()) {
+            File kerberosConfig = internalCommunicationConfig.getKerberosConfig();
+            File kerberosKeytab = internalCommunicationConfig.getKerberosKeytab();
+            String kerberosPrincipal = internalCommunicationConfig.getKerberosPrincipal();
+            String kerberosServiceName = internalCommunicationConfig.getKerberosServiceName();
+            checkArgument(kerberosConfig != null, "kerberos config must be set");
+            checkArgument(kerberosKeytab != null, "kerberos keytab must be set");
+            checkArgument(kerberosPrincipal != null, "kerberos principal must be set");
+            checkArgument(kerberosServiceName != null, "kerberos service name must be set");
+
+            configBinder(binder).bindConfigGlobalDefaults(KerberosConfig.class, config -> {
+                config.setConfig(kerberosConfig);
+                config.setKeytab(kerberosKeytab);
+                config.setUseCanonicalHostname(internalCommunicationConfig.isKerberosUseCanonicalHostname());
+                config.setCredentialCache(internalCommunicationConfig.getKerberosCredentialCache());
+            });
+            configBinder(binder).bindConfigGlobalDefaults(HttpClientConfig.class, config -> {
+                config.setAuthenticationEnabled(true);
+                config.setKerberosPrincipal(kerberosPrincipal);
+                config.setKerberosRemoteServiceName(kerberosServiceName);
+            });
         }
 
         configBinder(binder).bindConfig(FeaturesConfig.class);
