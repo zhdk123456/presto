@@ -93,6 +93,8 @@ public class HivePrivilegeInfo
                 return INSERT;
             case DELETE:
                 return DELETE;
+            case UPDATE:
+                return UPDATE;
         }
         return null;
     }
