@@ -504,7 +504,7 @@ public class OperatorContext
         }
     }
 
-    private class OperatorSpillContext
+    public class OperatorSpillContext
         extends AbstractOperatorSpillContext
     {
         private final DriverContext driverContext;
