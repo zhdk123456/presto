@@ -215,7 +215,7 @@ public abstract class AbstractTestQueries
     @Test
     public void testLambdaWithAggregation()
     {
-        assertQueryFails("SELECT transform(ARRAY[1], x -> max(x))", ".* Lambda expression cannot contain aggregations or window functions: .*");
+        assertQueryFails("SELECT transform(ARRAY[1], x -> max(x))", ".* Lambda expression cannot contain aggregations, window functions or grouping operations: .*");
     }
 
     @Test
