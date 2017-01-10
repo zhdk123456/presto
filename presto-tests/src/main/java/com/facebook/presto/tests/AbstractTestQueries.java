@@ -6653,6 +6653,12 @@ public abstract class AbstractTestQueries
                 " FROM nation n3 " +
                 " WHERE n3.nationkey = n1.nationkey)" +
                 "FROM nation n1");
+
+        //count in subquery
+        assertQuery("SELECT * " +
+                "FROM (VALUES (0),( 1), (2), (7)) as v1(c1) " +
+                "WHERE v1.c1 > (SELECT count(c1) from (VALUES (0),( 1), (2)) as v2(c1) WHERE v1.c1 = v2.c1)",
+                "VALUES (2), (7)");
     }
 
     @Test
@@ -6757,6 +6763,12 @@ public abstract class AbstractTestQueries
         assertQuery(
                 "SELECT count(*) FROM orders o WHERE (SELECT * FROM (SELECT EXISTS(SELECT 1 WHERE o.orderkey = 0)))",
                 "SELECT count(*) FROM orders o WHERE o.orderkey = 0");
+
+        // not exists
+        assertQuery(
+                "SELECT count(*) FROM customer WHERE NOT EXISTS(SELECT * FROM orders WHERE orders.custkey=customer.custkey)",
+                "VALUES 500"
+        );
     }
 
     @Test
@@ -8290,5 +8302,50 @@ public abstract class AbstractTestQueries
         assertEquals(doubleColumnResult.getRowCount(), 1);
         assertEquals(doubleColumnResult.getTypes().get(0), DOUBLE);
         assertEquals(doubleColumnResult.getMaterializedRows().get(0).getField(0), 1.0);
+    }
+
+    @Test
+    public void testAggregationPushedBelowOuterJoin()
+    {
+        assertQuery(
+                "SELECT * " +
+                        "FROM nation n1 " +
+                        "WHERE (n1.nationkey > ( " +
+                        "SELECT avg(nationkey) " +
+                        "FROM nation n2 " +
+                        "WHERE n1.regionkey=n2.regionkey))"
+        );
+        assertQuery(
+                "SELECT max(name), min(name), count(nationkey) + 1 " +
+                        "FROM (SELECT DISTINCT regionkey FROM region) as r1 " +
+                        "LEFT JOIN " +
+                        "nation " +
+                        "ON r1.regionkey = nation.regionkey " +
+                        "GROUP BY r1.regionkey " +
+                        "HAVING sum(nationkey) < 20");
+
+        assertQuery(
+                "SELECT DISTINCT r1.regionkey " +
+                        "FROM (SELECT regionkey FROM region INTERSECT SELECT regionkey FROM region where regionkey < 4) as r1 " +
+                        "LEFT JOIN " +
+                        "nation " +
+                        "ON r1.regionkey = nation.regionkey");
+
+        assertQuery(
+                "SELECT max(nationkey) " +
+                        "FROM (SELECT regionkey FROM region EXCEPT SELECT regionkey FROM region where regionkey < 4) as r1 " +
+                        "LEFT JOIN " +
+                        "nation " +
+                        "ON r1.regionkey = nation.regionkey " +
+                        "GROUP BY r1.regionkey");
+
+        assertQuery(
+                "SELECT max(nationkey) " +
+                        "FROM (VALUES 1) v1(col1) " +
+                        "LEFT JOIN " +
+                        "nation " +
+                        "ON v1.col1 = nation.regionkey " +
+                        "GROUP BY v1.col1",
+                "VALUES 24");
     }
 }
