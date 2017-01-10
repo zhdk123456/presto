@@ -216,7 +216,8 @@ public class HdfsConfigurationUpdater
         }
     }
 
-    private static Map<String, HostAndPort> getCldbNameToHostAndPort(String maprCldbNameHostPort) {
+    private static Map<String, HostAndPort> getCldbNameToHostAndPort(String maprCldbNameHostPort)
+    {
         Splitter commaSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
         List<String> elements = ImmutableList.copyOf(commaSplitter.split(maprCldbNameHostPort));
 
