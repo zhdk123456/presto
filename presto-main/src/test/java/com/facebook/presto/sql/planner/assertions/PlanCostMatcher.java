@@ -17,9 +17,7 @@ import com.facebook.presto.Session;
 import com.facebook.presto.cost.PlanNodeCost;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.planner.plan.PlanNode;
-import com.google.common.base.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class PlanCostMatcher
