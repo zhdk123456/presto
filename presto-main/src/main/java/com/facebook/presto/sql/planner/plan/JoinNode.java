@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 @Immutable
@@ -74,6 +75,13 @@ public class JoinNode
         this.leftHashSymbol = leftHashSymbol;
         this.rightHashSymbol = rightHashSymbol;
         this.distributionType = distributionType;
+
+        List<Symbol> inputSymbols = ImmutableList.<Symbol>builder()
+                .addAll(left.getOutputSymbols())
+                .addAll(right.getOutputSymbols())
+                .build();
+        checkArgument(inputSymbols.containsAll(outputSymbols), "Left and right join inputs do not contain all output symbols");
+        checkArgument(!isNestedLoopJoin() || inputSymbols.equals(outputSymbols), "Cross join does not support output symbols selection");
     }
 
     public JoinNode(PlanNodeId id,
