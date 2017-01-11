@@ -63,7 +63,7 @@ public class TestQuerySpillLimits
     {
         try (QueryRunner queryRunner = createLocalQueryRunner(
                 new NodeSpillConfig().setMaxSpillPerNode(DataSize.succinctBytes(10)))) {
-            queryRunner.execute(SESSION, "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
+            queryRunner.execute(queryRunner.getDefaultSession(), "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
         }
     }
 
@@ -73,7 +73,7 @@ public class TestQuerySpillLimits
     {
         try (QueryRunner queryRunner = createLocalQueryRunner(
                 new NodeSpillConfig().setQueryMaxSpillPerNode(DataSize.succinctBytes(10)))) {
-            queryRunner.execute(SESSION, "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
+            queryRunner.execute(queryRunner.getDefaultSession(), "SELECT COUNT(DISTINCT clerk) as count, orderdate FROM orders GROUP BY orderdate ORDER BY count, orderdate");
         }
     }
 
