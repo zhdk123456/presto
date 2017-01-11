@@ -36,6 +36,7 @@ import com.facebook.presto.execution.QueryPerformanceFetcherProvider;
 import com.facebook.presto.execution.SqlTaskManager;
 import com.facebook.presto.execution.TaskExecutor;
 import com.facebook.presto.execution.TaskInfo;
+import com.facebook.presto.execution.TaskManagementExecutor;
 import com.facebook.presto.execution.TaskManager;
 import com.facebook.presto.execution.TaskManagerConfig;
 import com.facebook.presto.execution.TaskStatus;
@@ -262,6 +263,7 @@ public class ServerMainModule
         // task execution
         jaxrsBinder(binder).bind(TaskResource.class);
         newExporter(binder).export(TaskResource.class).withGeneratedName();
+        binder.bind(TaskManagementExecutor.class).in(Scopes.SINGLETON);
         binder.bind(TaskManager.class).to(SqlTaskManager.class).in(Scopes.SINGLETON);
         binder.bind(GlobalProperties.class).in(Scopes.SINGLETON);
 
