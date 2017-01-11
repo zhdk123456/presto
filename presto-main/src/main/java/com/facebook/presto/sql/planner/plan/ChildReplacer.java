@@ -13,10 +13,13 @@
  */
 package com.facebook.presto.sql.planner.plan;
 
+import com.facebook.presto.sql.planner.Symbol;
 import com.google.common.collect.Iterables;
 
 import java.util.List;
+import java.util.stream.Stream;
 
+import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ChildReplacer
@@ -134,7 +137,23 @@ public class ChildReplacer
     public PlanNode visitJoin(JoinNode node, List<PlanNode> newChildren)
     {
         checkArgument(newChildren.size() == 2, "expected newChildren to contain 2 nodes");
-        return new JoinNode(node.getId(), node.getType(), newChildren.get(0), newChildren.get(1), node.getCriteria(), node.getOutputSymbols(), node.getFilter(), node.getLeftHashSymbol(), node.getRightHashSymbol(), node.getDistributionType());
+        PlanNode newLeft = newChildren.get(0);
+        PlanNode newRight = newChildren.get(1);
+        // Reshuffle join output symbols (for cross joins) since order of symbols in child nodes might have changed
+        List<Symbol> newOutputSymbols = Stream.concat(newLeft.getOutputSymbols().stream(), newRight.getOutputSymbols().stream())
+                .filter(symbol -> node.getOutputSymbols().contains(symbol))
+                .collect(toImmutableList());
+        return new JoinNode(
+                node.getId(),
+                node.getType(),
+                newLeft,
+                newRight,
+                node.getCriteria(),
+                newOutputSymbols,
+                node.getFilter(),
+                node.getLeftHashSymbol(),
+                node.getRightHashSymbol(),
+                node.getDistributionType());
     }
 
     @Override
