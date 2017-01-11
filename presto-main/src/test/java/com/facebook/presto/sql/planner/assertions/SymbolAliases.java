@@ -18,6 +18,7 @@ import com.facebook.presto.sql.planner.plan.Assignments;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -175,6 +176,27 @@ public final class SymbolAliases
         return new SymbolAliases(getUpdatedAssignments(assignments));
     }
 
+    public SymbolAliases replaceUpdatedSymbols(Multimap<Symbol, Symbol> symbolMultimap)
+    {
+        return new SymbolAliases(getUpdatedSymbolMapping(symbolMultimap));
+    }
+
+    private Map<String, SymbolReference> getUpdatedSymbolMapping(Multimap<Symbol, Symbol> symbolMultimap)
+    {
+        ImmutableMap.Builder<String, SymbolReference> mapUpdate = ImmutableMap.builder();
+        for (Symbol key : symbolMultimap.keySet()) {
+            for (Symbol value : symbolMultimap.get(key)) {
+                for (Map.Entry<String, SymbolReference> existingAlias : map.entrySet()) {
+                    if (value.toSymbolReference().equals(existingAlias.getValue())) {
+                        // Simple symbol rename
+                        mapUpdate.put(existingAlias.getKey(), key.toSymbolReference());
+                    }
+                }
+            }
+        }
+        return mapUpdate.build();
+    }
+
     public static class Builder
     {
         Map<String, SymbolReference> bindings;
@@ -202,7 +224,6 @@ public final class SymbolAliases
             }
 
             checkState(!bindings.containsKey(alias), "Alias '%s' already bound to expression '%s'. Tried to rebind to '%s'", alias, bindings.get(alias), symbolReference);
-            checkState(!bindings.values().contains(symbolReference), "Expression '%s' is already bound in %s. Tried to rebind as '%s'.", symbolReference, bindings, alias);
             bindings.put(alias, symbolReference);
             return this;
         }

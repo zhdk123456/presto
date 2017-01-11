@@ -18,10 +18,13 @@ import com.facebook.presto.cost.PlanNodeCost;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.Assignments;
+import com.facebook.presto.sql.planner.plan.ExceptNode;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
+import com.facebook.presto.sql.planner.plan.IntersectNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.UnionNode;
 
 import java.util.List;
 import java.util.Map;
@@ -80,6 +83,42 @@ final class PlanMatchingVisitor
         }
 
         return match(result.getAliases().replaceAssignments(node.getAssignments()));
+    }
+
+    @Override
+    public MatchResult visitIntersect(IntersectNode node, PlanMatchPattern pattern)
+    {
+        MatchResult result = super.visitIntersect(node, pattern);
+
+        if (!result.isMatch()) {
+            return result;
+        }
+
+        return match(result.getAliases().replaceUpdatedSymbols(node.getSymbolMapping()));
+    }
+
+    @Override
+    public MatchResult visitExcept(ExceptNode node, PlanMatchPattern pattern)
+    {
+        MatchResult result = super.visitExcept(node, pattern);
+
+        if (!result.isMatch()) {
+            return result;
+        }
+
+        return match(result.getAliases().replaceUpdatedSymbols(node.getSymbolMapping()));
+    }
+
+    @Override
+    public MatchResult visitUnion(UnionNode node, PlanMatchPattern pattern)
+    {
+        MatchResult result = super.visitUnion(node, pattern);
+
+        if (!result.isMatch()) {
+            return result;
+        }
+
+        return match(result.getAliases().replaceUpdatedSymbols(node.getSymbolMapping()));
     }
 
     @Override
