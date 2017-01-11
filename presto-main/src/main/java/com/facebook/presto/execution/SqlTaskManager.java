@@ -86,7 +86,6 @@ public class SqlTaskManager
 
     private final LocalMemoryManager localMemoryManager;
     private final LocalSpillManager localSpillManager;
-    private final MemoryRevokingScheduler memoryRevokingScheduler;
     private final LoadingCache<QueryId, QueryContext> queryContexts;
     private final LoadingCache<TaskId, SqlTask> tasks;
 
@@ -132,8 +131,6 @@ public class SqlTaskManager
 
         this.localSpillManager = requireNonNull(localSpillManager, "localSpillManager is null");
         DataSize maxQuerySpillPerNode = nodeSpillConfig.getQueryMaxSpillPerNode();
-
-        this.memoryRevokingScheduler = requireNonNull(memoryRevokingScheduler, "memoryRevokingScheduler can not be null");
 
         queryContexts = CacheBuilder.newBuilder().weakValues().build(new CacheLoader<QueryId, QueryContext>()
         {
