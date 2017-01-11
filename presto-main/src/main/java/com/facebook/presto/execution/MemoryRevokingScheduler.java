@@ -65,13 +65,13 @@ public class MemoryRevokingScheduler
     @Inject
     public MemoryRevokingScheduler(
             LocalMemoryManager localMemoryManager,
-            SqlTaskManager sqlTaskManager,
+            TaskManager sqlTaskManager,
             TaskManagementExecutor taskManagementExecutor,
             FeaturesConfig config)
     {
         requireNonNull(localMemoryManager, "localMemoryManager can not be null");
         this.memoryPools = ImmutableList.of(localMemoryManager.getPool(LocalMemoryManager.GENERAL_POOL), localMemoryManager.getPool(LocalMemoryManager.RESERVED_POOL));
-        this.currentTasksSupplier = requireNonNull(sqlTaskManager, "sqlTaskManager cannot be null")::getAllTasks;
+        this.currentTasksSupplier = requireNonNull((SqlTaskManager) sqlTaskManager, "sqlTaskManager cannot be null")::getAllTasks;
         this.taskManagementExecutor = requireNonNull(taskManagementExecutor, "taskManagementExecutor cannot be null").getExecutor();
         this.memoryRevokingThreshold = config.getMemoryRevokingThreshold();
         this.memoryRevokingTarget = config.getMemoryRevokingTarget();
