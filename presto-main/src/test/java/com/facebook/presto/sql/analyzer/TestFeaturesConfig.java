@@ -59,7 +59,7 @@ public class TestFeaturesConfig
                 .setOptimizeMixedDistinctAggregations(false)
                 .setLegacyOrderBy(false)
                 .setParseDecimalLiteralsAsDouble(false)
-                .setMemoryRevokingThreshold(0.1)
+                .setMemoryRevokingThreshold(0.9)
                 .setMemoryRevokingTarget(0.5));
     }
 
