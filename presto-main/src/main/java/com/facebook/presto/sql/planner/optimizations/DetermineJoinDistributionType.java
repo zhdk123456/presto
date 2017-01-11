@@ -259,7 +259,6 @@ public class DetermineJoinDistributionType
                     node.getRight(),
                     node.getLeft(),
                     flipJoinCriteria(node.getCriteria()),
-                    node.getOutputSymbols(),
                     node.getFilter(),
                     node.getRightHashSymbol(),
                     node.getLeftHashSymbol(),
