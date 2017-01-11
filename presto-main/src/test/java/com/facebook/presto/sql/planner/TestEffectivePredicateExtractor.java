@@ -451,10 +451,6 @@ public class TestEffectivePredicateExtractor
                                 equals(DE, EE),
                                 lessThan(FE, bigintLiteral(100)))),
                 criteria,
-                ImmutableList.<Symbol>builder()
-                    .addAll(leftScan.getOutputSymbols())
-                    .addAll(rightScan.getOutputSymbols())
-                    .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -515,10 +511,6 @@ public class TestEffectivePredicateExtractor
                                 equals(DE, EE),
                                 lessThan(FE, bigintLiteral(100)))),
                 criteria,
-                ImmutableList.<Symbol>builder()
-                        .addAll(leftScan.getOutputSymbols())
-                        .addAll(rightScan.getOutputSymbols())
-                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -573,10 +565,6 @@ public class TestEffectivePredicateExtractor
                                 equals(GE, bigintLiteral(10)))),
                 filter(rightScan, FALSE_LITERAL),
                 criteria,
-                ImmutableList.<Symbol>builder()
-                        .addAll(leftScan.getOutputSymbols())
-                        .addAll(rightScan.getOutputSymbols())
-                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -634,10 +622,6 @@ public class TestEffectivePredicateExtractor
                                 equals(DE, EE),
                                 lessThan(FE, bigintLiteral(100)))),
                 criteria,
-                ImmutableList.<Symbol>builder()
-                        .addAll(leftScan.getOutputSymbols())
-                        .addAll(rightScan.getOutputSymbols())
-                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -691,10 +675,6 @@ public class TestEffectivePredicateExtractor
                                 equals(DE, EE),
                                 lessThan(FE, bigintLiteral(100)))),
                 criteria,
-                ImmutableList.<Symbol>builder()
-                        .addAll(leftScan.getOutputSymbols())
-                        .addAll(rightScan.getOutputSymbols())
-                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),

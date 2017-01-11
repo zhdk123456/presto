@@ -76,6 +76,31 @@ public class JoinNode
         this.distributionType = distributionType;
     }
 
+    public JoinNode(PlanNodeId id,
+            Type type,
+            PlanNode left,
+            PlanNode right,
+            List<EquiJoinClause> criteria,
+            Optional<Expression> filter,
+            Optional<Symbol> leftHashSymbol,
+            Optional<Symbol> rightHashSymbol,
+            Optional<DistributionType> distributionType)
+    {
+        this(id,
+                type,
+                left,
+                right,
+                criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
+                filter,
+                leftHashSymbol,
+                rightHashSymbol,
+                distributionType);
+    }
+
     public enum DistributionType
     {
         PARTITIONED,

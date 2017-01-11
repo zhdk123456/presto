@@ -804,10 +804,6 @@ public class AddExchanges
                     left.getNode(),
                     right.getNode(),
                     node.getCriteria(),
-                    ImmutableList.<Symbol>builder()
-                            .addAll(left.getNode().getOutputSymbols())
-                            .addAll(right.getNode().getOutputSymbols())
-                            .build(),
                     node.getFilter(),
                     node.getLeftHashSymbol(),
                     node.getRightHashSymbol(),
