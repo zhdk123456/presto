@@ -25,7 +25,6 @@ import org.fusesource.jansi.Ansi;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.facebook.presto.cli.ConsolePrinter.REAL_TERMINAL;
@@ -67,17 +66,6 @@ public class ErrorMessages
         return builder.toString();
     }
 
-    private static String getStackTraceString(Throwable throwable)
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.append(Arrays.stream(throwable.getStackTrace()).map(x -> x.toString()).reduce("", (x, y) -> x + y + "\n"));
-        if (throwable.getCause() != null) {
-            builder.append("caused by:\n");
-            builder.append(getStackTraceString(throwable.getCause()));
-        }
-        return builder.toString();
-    }
-
     private static void technicalDetailsRuntimeExceptionErrorMessage(StringBuilder builder, Throwable throwable, ClientSession session)
     {
         builder.append(TECHNICAL_DETAILS_HEADER);
@@ -97,9 +85,7 @@ public class ErrorMessages
 
         builder.append(String.format("Query %s failed: %s%n", client.finalResults().getId(), error.getMessage()));
         if (client.isDebug() && (error.getFailureInfo() != null)) {
-            StringWriter errors = new StringWriter();
-            error.getFailureInfo().toException().printStackTrace(new PrintWriter(errors));
-            builder.append(errors.toString());
+            technicalDetailsRuntimeExceptionErrorMessage(builder, error.getFailureInfo().toException(), client.getSession());
         }
         if (error.getErrorLocation() != null) {
             errorLocationMessage(builder, client.getQuery(), error.getErrorLocation());
@@ -152,5 +138,12 @@ public class ErrorMessages
         QueryError error = results.getError();
         checkState(error != null);
         return error;
+    }
+
+    private static String getStackTraceString(Throwable throwable)
+    {
+        StringWriter errors = new StringWriter();
+        throwable.printStackTrace(new PrintWriter(errors));
+        return errors.toString();
     }
 }
