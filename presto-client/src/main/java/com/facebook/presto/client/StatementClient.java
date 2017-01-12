@@ -78,7 +78,6 @@ public class StatementClient
 
     private final HttpClient httpClient;
     private final FullJsonResponseHandler<QueryResults> responseHandler;
-    private final boolean debug;
     private final String query;
     private final AtomicReference<QueryResults> currentResults = new AtomicReference<>();
     private final Map<String, String> setSessionProperties = new ConcurrentHashMap<>();
@@ -90,7 +89,6 @@ public class StatementClient
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean gone = new AtomicBoolean();
     private final AtomicBoolean valid = new AtomicBoolean(true);
-    private final String timeZoneId;
     private final long requestTimeoutNanos;
 
     private final ClientSession session;
@@ -111,8 +109,6 @@ public class StatementClient
 
         this.httpClient = httpClient;
         this.responseHandler = createFullJsonResponseHandler(queryResultsCodec);
-        this.debug = session.isDebug();
-        this.timeZoneId = session.getTimeZoneId();
         this.query = query;
         this.requestTimeoutNanos = session.getClientRequestTimeout().roundTo(NANOSECONDS);
 
@@ -169,12 +165,17 @@ public class StatementClient
 
     public String getTimeZoneId()
     {
-        return timeZoneId;
+        return session.getTimeZoneId();
     }
 
     public boolean isDebug()
     {
-        return debug;
+        return session.isDebug();
+    }
+
+    public ClientSession getSession()
+    {
+        return session;
     }
 
     public boolean isClosed()
