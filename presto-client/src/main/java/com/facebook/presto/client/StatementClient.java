@@ -80,7 +80,6 @@ public class StatementClient
 
     private final HttpClient httpClient;
     private final FullJsonResponseHandler<QueryResults> responseHandler;
-    private final boolean debug;
     private final String query;
     private final AtomicReference<QueryResults> currentResults = new AtomicReference<>();
     private final Map<String, String> setSessionProperties = new ConcurrentHashMap<>();
@@ -92,9 +91,9 @@ public class StatementClient
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean gone = new AtomicBoolean();
     private final AtomicBoolean valid = new AtomicBoolean(true);
-    private final String timeZoneId;
     private final long requestTimeoutNanos;
-    private final String user;
+
+    private final ClientSession session;
 
     public StatementClient(HttpClient httpClient, JsonCodec<QueryResults> queryResultsCodec, ClientSession session, String query)
     {
@@ -105,11 +104,9 @@ public class StatementClient
 
         this.httpClient = httpClient;
         this.responseHandler = createFullJsonResponseHandler(queryResultsCodec);
-        this.debug = session.isDebug();
-        this.timeZoneId = session.getTimeZoneId();
         this.query = query;
         this.requestTimeoutNanos = session.getClientRequestTimeout().roundTo(NANOSECONDS);
-        this.user = session.getUser();
+        this.session = session;
 
         Request request = buildQueryRequest(session, query);
         JsonResponse<QueryResults> response = httpClient.execute(request, responseHandler);
@@ -165,12 +162,17 @@ public class StatementClient
 
     public String getTimeZoneId()
     {
-        return timeZoneId;
+        return session.getTimeZoneId();
     }
 
     public boolean isDebug()
     {
-        return debug;
+        return session.isDebug();
+    }
+
+    public ClientSession getSession()
+    {
+        return session;
     }
 
     public boolean isClosed()
@@ -242,7 +244,7 @@ public class StatementClient
 
     private Request.Builder prepareRequest(Request.Builder builder, URI nextUri)
     {
-        builder.setHeader(PrestoHeaders.PRESTO_USER, user);
+        builder.setHeader(PrestoHeaders.PRESTO_USER, session.getUser());
         builder.setHeader(USER_AGENT, USER_AGENT_VALUE)
                 .setUri(nextUri);
 
