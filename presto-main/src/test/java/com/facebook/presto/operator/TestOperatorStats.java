@@ -182,7 +182,7 @@ public class TestOperatorStats
         assertEquals(actual.getRevocableMemoryReservation(), new DataSize(3 * 21, BYTE));
         assertEquals(actual.getSystemMemoryReservation(), new DataSize(3 * 22, BYTE));
         assertEquals(actual.getInfo(), null);
-        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 23, BYTE));
+        assertEquals(actual.getSpilledDataSize(), new DataSize(3 * 24, BYTE));
     }
 
     @Test
