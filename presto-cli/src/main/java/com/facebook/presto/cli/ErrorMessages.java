@@ -259,6 +259,7 @@ public class ErrorMessages
         builder.append(TECHNICAL_DETAILS_END);
     }
 
+    //region Standard QueryError format
     private static void standardQueryErrorMessage(StringBuilder builder, StatementClient client)
     {
         QueryError error = extractQueryError(client);
@@ -302,7 +303,9 @@ public class ErrorMessages
             builder.append(padding + "^");
         }
     }
+    //endregion
 
+    //region Helpers
     private static QueryError extractQueryError(StatementClient client)
     {
         QueryResults results = client.finalResults();
@@ -317,4 +320,5 @@ public class ErrorMessages
         throwable.printStackTrace(new PrintWriter(errors));
         return errors.toString();
     }
+    //endregion
 }
