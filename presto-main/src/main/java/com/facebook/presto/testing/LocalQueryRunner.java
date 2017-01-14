@@ -688,6 +688,11 @@ public class LocalQueryRunner
 
     public Plan createPlan(Session session, @Language("SQL") String sql, LogicalPlanner.Stage stage)
     {
+        return createPlan(session, sql, stage, true);
+    }
+
+    public Plan createPlan(Session session, @Language("SQL") String sql, LogicalPlanner.Stage stage, boolean forceSingleNode)
+    {
         Statement statement = unwrapExecuteStatement(sqlParser.createStatement(sql), sqlParser, session);
 
         assertFormattedSql(sqlParser, statement);
@@ -703,7 +708,7 @@ public class LocalQueryRunner
                 costCalculator,
                 new GlobalProperties(),
                 nodeManager.getNodes(NodeState.ACTIVE).size(),
-                true);
+                forceSingleNode);
         return createPlan(session, sql, planOptimizers.get(), stage);
     }
 
