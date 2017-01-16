@@ -78,4 +78,27 @@ public class TestLocalQueries
 
         assertEquals(result, expectedStatistics);
     }
+
+    @Test
+    public void testInequalityJoinWithDate()
+            throws Exception
+    {
+        assertQuery(
+                "select o.orderkey, o.orderdate, l.shipdate from orders o, lineitem l where l.orderkey=o.orderkey and l.shipdate < o.orderdate + INTERVAL '10' DAY",
+                "select o.orderkey, o.orderdate, l.shipdate from orders o, lineitem l where l.orderkey=o.orderkey and l.shipdate < DATEADD('DAY', 10, o.orderdate)");
+    }
+
+    @Test
+    public void testInequalityJoin()
+            throws Exception
+    {
+        assertQuery("select l.suppkey, n.nationkey, l.partkey, n.regionkey from nation n, lineitem l where l.suppkey=n.nationkey and l.partkey < n.regionkey");
+    }
+
+    @Test
+    public void testReversedInequalityJoin()
+            throws Exception
+    {
+        assertQuery("select l.suppkey, n.nationkey, l.partkey, n.regionkey from nation n, lineitem l where l.suppkey=n.nationkey and l.partkey > n.regionkey");
+    }
 }
