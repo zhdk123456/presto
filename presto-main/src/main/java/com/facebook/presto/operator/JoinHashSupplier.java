@@ -18,9 +18,12 @@ import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler.JoinFilterFunctionFactory;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import static com.facebook.presto.operator.SyntheticAddress.decodePosition;
+import static com.facebook.presto.operator.SyntheticAddress.decodeSliceIndex;
 import static java.util.Objects.requireNonNull;
 
 public class JoinHashSupplier
@@ -31,6 +34,7 @@ public class JoinHashSupplier
     private final LongArrayList addresses;
     private final List<List<Block>> channels;
     private final Optional<JoinFilterFunctionFactory> filterFunctionFactory;
+    private final PositionLinks.Builder positionLinks;
 
     public JoinHashSupplier(
             ConnectorSession session,
@@ -45,8 +49,20 @@ public class JoinHashSupplier
         requireNonNull(channels, "channels is null");
         requireNonNull(filterFunctionFactory, "filterFunctionFactory is null");
 
+        if (filterFunctionFactory.isPresent() && filterFunctionFactory.get().getSortChannel().isPresent()) {
+            this.positionLinks = SortedPositionLinks.builder(
+                    addresses.size(),
+                    new PositionComparator(
+                            pagesHashStrategy,
+                            addresses,
+                            filterFunctionFactory.get().getSortChannel().get().isDescending()));
+        }
+        else {
+            this.positionLinks = PositionLinksList.builder(addresses.size());
+        }
+
         this.session = session;
-        this.pagesHash = new PagesHash(addresses, pagesHashStrategy);
+        this.pagesHash = new PagesHash(addresses, pagesHashStrategy, positionLinks);
         this.addresses = addresses;
         this.channels = channels;
         this.filterFunctionFactory = filterFunctionFactory;
@@ -68,6 +84,43 @@ public class JoinHashSupplier
     public JoinHash get()
     {
         Optional<JoinFilterFunction> filterFunction = filterFunctionFactory.map(factory -> factory.create(session, addresses, channels));
-        return new JoinHash(pagesHash, filterFunction);
+        if (filterFunction.isPresent()) {
+            positionLinks.setFilterFunction(filterFunction.get());
+        }
+        return new JoinHash(pagesHash, filterFunction, positionLinks.build());
+    }
+
+    public static class PositionComparator
+            implements Comparator<Integer>
+    {
+        private PagesHashStrategy pagesHashStrategy;
+        private LongArrayList addresses;
+        private boolean descending;
+
+        public PositionComparator(PagesHashStrategy pagesHashStrategy, LongArrayList addresses, boolean descending)
+        {
+            this.pagesHashStrategy = pagesHashStrategy;
+            this.addresses = addresses;
+            this.descending = descending;
+        }
+
+        @Override
+        public int compare(Integer leftPosition, Integer rightPosition)
+        {
+            long leftPageAddress = addresses.getLong(leftPosition);
+            int leftBlockIndex = decodeSliceIndex(leftPageAddress);
+            int leftBlockPosition = decodePosition(leftPageAddress);
+
+            long rightPageAddress = addresses.getLong(rightPosition);
+            int rightBlockIndex = decodeSliceIndex(rightPageAddress);
+            int rightBlockPosition = decodePosition(rightPageAddress);
+
+            if (descending) {
+                return pagesHashStrategy.compare(rightBlockIndex, rightBlockPosition, leftBlockIndex, leftBlockPosition);
+            }
+            else {
+                return pagesHashStrategy.compare(leftBlockIndex, leftBlockPosition, rightBlockIndex, rightBlockPosition);
+            }
+        }
     }
 }

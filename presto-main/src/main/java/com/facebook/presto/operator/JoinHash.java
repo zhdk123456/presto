@@ -28,16 +28,20 @@ public final class JoinHash
         implements LookupSource
 {
     private final PagesHash pagesHash;
+    private boolean first = true;
 
     // we unwrap Optional<JoinFilterFunction> to actual verifier or null in constructor for performance reasons
     // we do quick check for `filterFunction == null` in `getNextJoinPositionFrom` to avoid calls to applyFilterFunction
     @Nullable
     private final JoinFilterFunction filterFunction;
 
-    public JoinHash(PagesHash pagesHash, Optional<JoinFilterFunction> filterFunction)
+    private final PositionLinks positionLinks;
+
+    public JoinHash(PagesHash pagesHash, Optional<JoinFilterFunction> filterFunction, PositionLinks positionLinks)
     {
         this.pagesHash = requireNonNull(pagesHash, "pagesHash is null");
         this.filterFunction = requireNonNull(filterFunction, "filterFunction can not be null").orElse(null);
+        this.positionLinks = requireNonNull(positionLinks, "positionLinks is null");
     }
 
     @Override
@@ -55,12 +59,15 @@ public final class JoinHash
     @Override
     public long getInMemorySizeInBytes()
     {
-        return pagesHash.getInMemorySizeInBytes();
+        return pagesHash.getInMemorySizeInBytes() + positionLinks.getSizeInBytes();
     }
 
     @Override
     public long getJoinPosition(int position, Page hashChannelsPage, Page allChannelsPage)
     {
+        //TODO: this can not make to final version. first introduces state to a class that
+        //should be immutable because it's used across multiple threads
+        first = true;
         int addressIndex = pagesHash.getAddressIndex(position, hashChannelsPage, allChannelsPage);
         if (addressIndex == -1) {
             return -1;
@@ -71,6 +78,7 @@ public final class JoinHash
     @Override
     public long getJoinPosition(int position, Page hashChannelsPage, Page allChannelsPage, long rawHash)
     {
+        first = true;
         int addressIndex = pagesHash.getAddressIndex(position, hashChannelsPage, allChannelsPage, rawHash);
         if (addressIndex == -1) {
             return -1;
@@ -79,16 +87,40 @@ public final class JoinHash
     }
 
     @Override
-    public final long getNextJoinPosition(long currentJoinPosition, int probePosition, Page allProbeChannelsPage)
+    public long startNextJoinPosition(long currentJoinPosition, int probePosition, Page allProbeChannelsPage)
     {
-        int nextAddressIndex = pagesHash.getNextAddressIndex(toIntExact(currentJoinPosition));
+        int position;
+        if (first) {
+            position = positionLinks.start(toIntExact(currentJoinPosition), probePosition, allProbeChannelsPage);
+        }
+        else {
+            position = positionLinks.next(toIntExact(currentJoinPosition), probePosition, allProbeChannelsPage);
+        }
+        first = false;
+        return getNextJoinPositionFrom(
+                position,
+                probePosition,
+                allProbeChannelsPage);
+    }
+
+    @Override
+    public long getNextJoinPosition(long currentJoinPosition, int probePosition, Page allProbeChannelsPage)
+    {
+        first = false;
+        int nextAddressIndex = positionLinks.next(toIntExact(currentJoinPosition), probePosition, allProbeChannelsPage);
         return getNextJoinPositionFrom(nextAddressIndex, probePosition, allProbeChannelsPage);
     }
 
     private int getNextJoinPositionFrom(int currentJoinPosition, int probePosition, Page allProbeChannelsPage)
     {
         while (filterFunction != null && currentJoinPosition != -1 && !filterFunction.filter((currentJoinPosition), probePosition, allProbeChannelsPage)) {
-            currentJoinPosition = pagesHash.getNextAddressIndex(currentJoinPosition);
+            if (first) {
+                currentJoinPosition = positionLinks.start(currentJoinPosition, probePosition, allProbeChannelsPage);
+                first = false;
+            }
+            else {
+                currentJoinPosition = positionLinks.next(currentJoinPosition, probePosition, allProbeChannelsPage);
+            }
         }
         return currentJoinPosition;
     }

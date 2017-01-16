@@ -46,6 +46,8 @@ public interface LookupSource
     @Override
     void close();
 
+    long startNextJoinPosition(long joinPosition, int position, Page page);
+
     interface OuterPositionIterator
     {
         boolean appendToNext(PageBuilder pageBuilder, int outputChannelOffset);

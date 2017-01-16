@@ -129,6 +129,19 @@ public class PartitionedLookupSource
     }
 
     @Override
+    public long startNextJoinPosition(long currentJoinPosition, int probePosition, Page allProbeChannelsPage)
+    {
+        int partition = decodePartition(currentJoinPosition);
+        long joinPosition = decodeJoinPosition(currentJoinPosition);
+        LookupSource lookupSource = lookupSources[partition];
+        long nextJoinPosition = lookupSource.startNextJoinPosition(joinPosition, probePosition, allProbeChannelsPage);
+        if (nextJoinPosition < 0) {
+            return nextJoinPosition;
+        }
+        return encodePartitionedJoinPosition(partition, toIntExact(nextJoinPosition));
+    }
+
+    @Override
     public void appendTo(long partitionedJoinPosition, PageBuilder pageBuilder, int outputChannelOffset)
     {
         int partition = decodePartition(partitionedJoinPosition);

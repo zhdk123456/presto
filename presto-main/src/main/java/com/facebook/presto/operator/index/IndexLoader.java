@@ -410,6 +410,12 @@ public class IndexLoader
         }
 
         @Override
+        public long startNextJoinPosition(long joinPosition, int position, Page page)
+        {
+            return IndexSnapshot.UNLOADED_INDEX_KEY;
+        }
+
+        @Override
         public void appendTo(long position, PageBuilder pageBuilder, int outputChannelOffset)
         {
             throw new UnsupportedOperationException();

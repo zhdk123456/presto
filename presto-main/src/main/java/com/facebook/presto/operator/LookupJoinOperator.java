@@ -48,6 +48,7 @@ public class LookupJoinOperator
     private boolean closed;
     private boolean finishing;
     private long joinPosition = -1;
+    private boolean started = false;
 
     public LookupJoinOperator(
             OperatorContext operatorContext,
@@ -194,7 +195,14 @@ public class LookupJoinOperator
             lookupSource.appendTo(joinPosition, pageBuilder, probe.getOutputChannelCount());
 
             // get next join position for this row
-            joinPosition = lookupSource.getNextJoinPosition(joinPosition, probe.getPosition(), probe.getPage());
+            if (started) {
+                joinPosition = lookupSource.startNextJoinPosition(joinPosition, probe.getPosition(), probe.getPage());
+                started = false;
+            }
+            else {
+                joinPosition = lookupSource.getNextJoinPosition(joinPosition, probe.getPosition(), probe.getPage());
+            }
+
             if (pageBuilder.isFull()) {
                 return false;
             }
@@ -211,6 +219,7 @@ public class LookupJoinOperator
 
         // update join position
         joinPosition = probe.getCurrentJoinPosition();
+        started = true;
         return true;
     }
 
