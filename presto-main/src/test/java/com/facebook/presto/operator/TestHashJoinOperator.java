@@ -21,10 +21,12 @@ import com.facebook.presto.operator.exchange.LocalExchange;
 import com.facebook.presto.operator.exchange.LocalExchange.LocalExchangeSinkFactory;
 import com.facebook.presto.operator.exchange.LocalExchangeSinkOperator.LocalExchangeSinkOperatorFactory;
 import com.facebook.presto.operator.exchange.LocalExchangeSourceOperator.LocalExchangeSourceOperatorFactory;
+import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.gen.JoinFilterFunctionCompiler.JoinFilterFunctionFactory;
+import com.facebook.presto.sql.planner.SortChannelExtractor;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.testing.MaterializedResult;
 import com.facebook.presto.testing.TestingTaskContext;
@@ -33,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -677,7 +680,19 @@ public class TestHashJoinOperator
     private static LookupSourceFactory buildHash(boolean parallelBuild, TaskContext taskContext, List<Integer> hashChannels, RowPagesBuilder buildPages, Optional<InternalJoinFilterFunction> filterFunction)
     {
         Optional<JoinFilterFunctionFactory> filterFunctionFactory = filterFunction
-                .map(function -> ((session, addresses, channels) -> new StandardJoinFilterFunction(function, addresses, channels)));
+                .map(function -> new JoinFilterFunctionFactory() {
+                    @Override
+                    public JoinFilterFunction create(ConnectorSession session, LongArrayList addresses, List<List<Block>> channels)
+                    {
+                        return new StandardJoinFilterFunction(function, addresses, channels, Optional.empty());
+                    }
+
+                    @Override
+                    public Optional<SortChannelExtractor.SortChannel> getSortChannel()
+                    {
+                        return Optional.empty();
+                    }
+                });
 
         int partitionCount = parallelBuild ? PARTITION_COUNT : 1;
         LocalExchange localExchange = new LocalExchange(FIXED_HASH_DISTRIBUTION, partitionCount, buildPages.getTypes(), hashChannels, buildPages.getHashChannel());
