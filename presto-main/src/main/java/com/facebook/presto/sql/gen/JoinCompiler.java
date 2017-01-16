@@ -25,6 +25,7 @@ import com.facebook.presto.bytecode.Variable;
 import com.facebook.presto.bytecode.control.ForLoop;
 import com.facebook.presto.bytecode.control.IfStatement;
 import com.facebook.presto.bytecode.expression.BytecodeExpression;
+import com.facebook.presto.bytecode.expression.BytecodeExpressions;
 import com.facebook.presto.bytecode.instruction.LabelNode;
 import com.facebook.presto.operator.JoinHash;
 import com.facebook.presto.operator.JoinHashSupplier;
@@ -200,6 +201,7 @@ public class JoinCompiler
         generatePositionEqualsPositionMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, true);
         generatePositionEqualsPositionMethod(classDefinition, callSiteBinder, joinChannelTypes, joinChannelFields, false);
         generateIsPositionNull(classDefinition, joinChannelFields);
+        generateCompareMethod(classDefinition, callSiteBinder, types, channelFields, sortChannel);
 
         return defineClass(classDefinition, PagesHashStrategy.class, callSiteBinder.getBindings(), getClass().getClassLoader());
     }
@@ -664,6 +666,56 @@ public class JoinCompiler
         positionEqualsPositionMethod
                 .getBody()
                 .push(true)
+                .retInt();
+    }
+
+    private static void generateCompareMethod(
+            ClassDefinition classDefinition,
+            CallSiteBinder callSiteBinder,
+            List<Type> types,
+            List<FieldDefinition> channelFields,
+            Optional<SortChannel> sortChannel)
+    {
+        Parameter leftBlockIndex = arg("leftBlockIndex", int.class);
+        Parameter leftBlockPosition = arg("leftBlockPosition", int.class);
+        Parameter rightBlockIndex = arg("rightBlockIndex", int.class);
+        Parameter rightBlockPosition = arg("rightBlockPosition", int.class);
+        MethodDefinition compareMethod = classDefinition.declareMethod(
+                a(PUBLIC),
+                "compare",
+                type(int.class),
+                leftBlockIndex,
+                leftBlockPosition,
+                rightBlockIndex,
+                rightBlockPosition);
+
+        if (!sortChannel.isPresent()) {
+            compareMethod.getBody()
+                    .append(BytecodeExpressions.newInstance(UnsupportedOperationException.class))
+                    .throwObject();
+            return;
+        }
+
+        Variable thisVariable = compareMethod.getThis();
+
+        int index = sortChannel.get().getChannel();
+        BytecodeExpression type = constantType(callSiteBinder, types.get(index));
+
+        BytecodeExpression leftBlock = thisVariable
+                .getField(channelFields.get(index))
+                .invoke("get", Object.class, leftBlockIndex)
+                .cast(Block.class);
+
+        BytecodeExpression rightBlock = thisVariable
+                .getField(channelFields.get(index))
+                .invoke("get", Object.class, rightBlockIndex)
+                .cast(Block.class);
+
+        BytecodeNode comparison = type.invoke("compareTo", int.class, leftBlock, leftBlockPosition, rightBlock, rightBlockPosition);
+
+        compareMethod
+                .getBody()
+                .append(comparison)
                 .retInt();
     }
 
