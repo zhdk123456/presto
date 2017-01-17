@@ -164,13 +164,13 @@ public class PreparedStatements
                     param(BIGINT, new BigInteger("9223372036854775807")),
                     param(FLOAT, Float.valueOf("123.345")),
                     param(DOUBLE, 234.567),
-                    param(DECIMAL, BigDecimal.valueOf(345.678)),
+                    param(DECIMAL, BigDecimal.valueOf(346)),
                     param(DECIMAL, BigDecimal.valueOf(345.678)),
                     param(TIMESTAMP, Timestamp.valueOf("2015-05-10 12:15:35")),
                     param(DATE, Date.valueOf("2015-05-10")),
                     param(VARCHAR, "ala ma kota"),
                     param(VARCHAR, "ala ma kot"),
-                    param(CHAR, "ala ma"),
+                    param(CHAR, "ala ma    "),
                     param(BOOLEAN, Boolean.TRUE),
                     param(VARBINARY, "a290IGJpbmFybnk=".getBytes()));
 
@@ -187,7 +187,7 @@ public class PreparedStatements
                     param(DATE, Date.valueOf("2014-03-10")),
                     param(VARCHAR, "abc"),
                     param(VARCHAR, "def"),
-                    param(CHAR, "ghi"),
+                    param(CHAR, "ghi       "),
                     param(BOOLEAN, Boolean.FALSE),
                     param(VARBINARY, "jkl".getBytes()));
 
@@ -218,7 +218,7 @@ public class PreparedStatements
                             new BigInteger("9223372036854775807"),
                             Float.valueOf("123.345"),
                             234.567,
-                            BigDecimal.valueOf(345.678),
+                            BigDecimal.valueOf(346),
                             BigDecimal.valueOf(345.678),
                             Timestamp.valueOf("2015-05-10 12:15:35"),
                             Date.valueOf("2015-05-10"),
@@ -234,7 +234,7 @@ public class PreparedStatements
                             4,
                             Float.valueOf("5.6"),
                             7.8,
-                            BigDecimal.valueOf(9.1),
+                            BigDecimal.valueOf(91),
                             BigDecimal.valueOf(2.3),
                             Timestamp.valueOf("2012-05-10 1:35:15"),
                             Date.valueOf("2014-03-10"),
@@ -268,7 +268,7 @@ public class PreparedStatements
                     "cast(32767 as smallint), " +
                     "2147483647, " +
                     "9223372036854775807, " +
-                    "cast(123.345 as float), " +
+                    "cast(123.345 as real), " +
                     "cast(234.567 as double), " +
                     "cast(345.678 as decimal(10)), " +
                     "cast(345.678 as decimal(10,5)), " +
@@ -276,7 +276,8 @@ public class PreparedStatements
                     "date '2015-05-10', " +
                     "'ala ma kota', " +
                     "'ala ma kot', " +
-                    "cast('ala ma' as char(10)), " +
+                    "'ala ma    ', " +
+                    "cast('ala ma' as char(10), " +
                     "true, " +
                     "varbinary 'a290IGJpbmFybnk='");
 
@@ -285,7 +286,7 @@ public class PreparedStatements
                     "cast(2 as smallint), " +
                     "3, " +
                     "4, " +
-                    "cast(5.6 as float), " +
+                    "cast(5.6 as real), " +
                     "cast(7.8 as double), " +
                     "cast(9.1 as decimal(10)), " +
                     "cast(2.3 as decimal(10,5)), " +
@@ -294,7 +295,7 @@ public class PreparedStatements
                     "'abc', " +
                     "'def', " +
                     "cast('ghi' as char(10)), " +
-                    "true, " +
+                    "false, " +
                     "varbinary 'jkl'");
 
             statement.execute(executeSql +
@@ -324,13 +325,14 @@ public class PreparedStatements
                             new BigInteger("9223372036854775807"),
                             Float.valueOf("123.345"),
                             234.567,
-                            BigDecimal.valueOf(345.678),
+                            BigDecimal.valueOf(346),
                             BigDecimal.valueOf(345.678),
                             Timestamp.valueOf("2015-05-10 12:15:35"),
                             Date.valueOf("2015-05-10"),
                             "ala ma kota",
-                            "ala ma kota",
-                            "ala ma",
+                            "ala ma kot",
+                            "ala ma    ",
+                            "ala ma    ",
                             Boolean.TRUE,
                             "a290IGJpbmFybnk=".getBytes()),
                     row(
@@ -340,13 +342,13 @@ public class PreparedStatements
                             4,
                             Float.valueOf("5.6"),
                             7.8,
-                            BigDecimal.valueOf(9.1),
+                            BigDecimal.valueOf(9),
                             BigDecimal.valueOf(2.3),
                             Timestamp.valueOf("2012-05-10 1:35:15"),
                             Date.valueOf("2014-03-10"),
                             "abc",
                             "def",
-                            "ghi",
+                            "ghi       ",
                             Boolean.FALSE,
                             "jkl".getBytes()),
                     row(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
