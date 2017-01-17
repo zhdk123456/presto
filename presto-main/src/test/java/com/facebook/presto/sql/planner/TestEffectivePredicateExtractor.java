@@ -439,18 +439,25 @@ public class TestEffectivePredicateExtractor
                 null
         );
 
+        FilterNode left = filter(leftScan,
+                and(
+                        lessThan(BE, AE),
+                        lessThan(CE, bigintLiteral(10)),
+                        equals(GE, bigintLiteral(10))));
+        FilterNode right = filter(rightScan,
+                and(
+                        equals(DE, EE),
+                        lessThan(FE, bigintLiteral(100))));
+
         PlanNode node = new JoinNode(newId(),
                 JoinNode.Type.INNER,
-                filter(leftScan,
-                        and(
-                                lessThan(BE, AE),
-                                lessThan(CE, bigintLiteral(10)),
-                                equals(GE, bigintLiteral(10)))),
-                filter(rightScan,
-                        and(
-                                equals(DE, EE),
-                                lessThan(FE, bigintLiteral(100)))),
+                left,
+                right,
                 criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -499,18 +506,24 @@ public class TestEffectivePredicateExtractor
                 null
         );
 
+        FilterNode left = filter(leftScan,
+                and(
+                        lessThan(BE, AE),
+                        lessThan(CE, bigintLiteral(10)),
+                        equals(GE, bigintLiteral(10))));
+        FilterNode right = filter(rightScan,
+                and(
+                        equals(DE, EE),
+                        lessThan(FE, bigintLiteral(100))));
         PlanNode node = new JoinNode(newId(),
                 JoinNode.Type.LEFT,
-                filter(leftScan,
-                        and(
-                                lessThan(BE, AE),
-                                lessThan(CE, bigintLiteral(10)),
-                                equals(GE, bigintLiteral(10)))),
-                filter(rightScan,
-                        and(
-                                equals(DE, EE),
-                                lessThan(FE, bigintLiteral(100)))),
+                left,
+                right,
                 criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -556,15 +569,21 @@ public class TestEffectivePredicateExtractor
                 null
         );
 
+        FilterNode left = filter(leftScan,
+                and(
+                        lessThan(BE, AE),
+                        lessThan(CE, bigintLiteral(10)),
+                        equals(GE, bigintLiteral(10))));
+        FilterNode right = filter(rightScan, FALSE_LITERAL);
         PlanNode node = new JoinNode(newId(),
                 JoinNode.Type.LEFT,
-                filter(leftScan,
-                        and(
-                                lessThan(BE, AE),
-                                lessThan(CE, bigintLiteral(10)),
-                                equals(GE, bigintLiteral(10)))),
-                filter(rightScan, FALSE_LITERAL),
+                left,
+                right,
                 criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -610,18 +629,24 @@ public class TestEffectivePredicateExtractor
                 null
         );
 
+        FilterNode left = filter(leftScan,
+                and(
+                        lessThan(BE, AE),
+                        lessThan(CE, bigintLiteral(10)),
+                        equals(GE, bigintLiteral(10))));
+        FilterNode right = filter(rightScan,
+                and(
+                        equals(DE, EE),
+                        lessThan(FE, bigintLiteral(100))));
         PlanNode node = new JoinNode(newId(),
                 JoinNode.Type.RIGHT,
-                filter(leftScan,
-                        and(
-                                lessThan(BE, AE),
-                                lessThan(CE, bigintLiteral(10)),
-                                equals(GE, bigintLiteral(10)))),
-                filter(rightScan,
-                        and(
-                                equals(DE, EE),
-                                lessThan(FE, bigintLiteral(100)))),
+                left,
+                right,
                 criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -667,14 +692,20 @@ public class TestEffectivePredicateExtractor
                 null
         );
 
+        FilterNode left = filter(leftScan, FALSE_LITERAL);
+        FilterNode right = filter(rightScan,
+                and(
+                        equals(DE, EE),
+                        lessThan(FE, bigintLiteral(100))));
         PlanNode node = new JoinNode(newId(),
                 JoinNode.Type.RIGHT,
-                filter(leftScan, FALSE_LITERAL),
-                filter(rightScan,
-                        and(
-                                equals(DE, EE),
-                                lessThan(FE, bigintLiteral(100)))),
+                left,
+                right,
                 criteria,
+                ImmutableList.<Symbol>builder()
+                        .addAll(left.getOutputSymbols())
+                        .addAll(right.getOutputSymbols())
+                        .build(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),

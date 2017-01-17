@@ -27,8 +27,11 @@ import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.plan.DeleteNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
+import com.facebook.presto.util.ImmutableCollectors;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Map;
@@ -60,7 +63,7 @@ public class DetermineJoinDistributionType
         requireNonNull(plan, "plan is null");
         requireNonNull(session, "session is null");
 
-        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator, types, nodeCount), plan);
+        return SimplePlanRewriter.rewriteWith(new Rewriter(session, globalProperties, costCalculator, types, nodeCount, idAllocator), plan);
     }
 
     private static class Rewriter
@@ -75,14 +78,16 @@ public class DetermineJoinDistributionType
         private final Map<Symbol, Type> types;
         private final int nodeCount;
         private boolean isDeleteQuery;
+        private final PlanNodeIdAllocator idAllocator;
 
-        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator, Map<Symbol, Type> types, int nodeCount)
+        public Rewriter(Session session, GlobalProperties globalProperties, CostCalculator costCalculator, Map<Symbol, Type> types, int nodeCount, PlanNodeIdAllocator idAllocator)
         {
             this.session = session;
             this.globalProperties = globalProperties;
             this.costCalculator = costCalculator;
             this.types = types;
             this.nodeCount = nodeCount;
+            this.idAllocator = idAllocator;
         }
 
         @Override
@@ -122,7 +127,18 @@ public class DetermineJoinDistributionType
                         Optional.of(getTargetJoinDistributionType(flipped)));
             }
 
-            return rewritten;
+            if (!rewritten.getOutputSymbols().equals(node.getOutputSymbols())) {
+                // Introduce a projection to constrain the outputs to what was originally expected
+                // Some nodes are sensitive to what's produced (e.g., DistinctLimit node)
+                return new ProjectNode(
+                        idAllocator.getNextId(),
+                        rewritten,
+                        node.getOutputSymbols().stream()
+                                .collect(ImmutableCollectors.toImmutableMap(symbol -> symbol, Symbol::toSymbolReference)));
+            }
+            else {
+                return rewritten;
+            }
         }
 
         @Override
@@ -259,6 +275,10 @@ public class DetermineJoinDistributionType
                     node.getRight(),
                     node.getLeft(),
                     flipJoinCriteria(node.getCriteria()),
+                    ImmutableList.<Symbol>builder()
+                            .addAll(node.getRight().getOutputSymbols())
+                            .addAll(node.getLeft().getOutputSymbols())
+                            .build(),
                     node.getFilter(),
                     node.getRightHashSymbol(),
                     node.getLeftHashSymbol(),

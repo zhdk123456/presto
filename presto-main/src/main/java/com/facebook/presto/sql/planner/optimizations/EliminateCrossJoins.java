@@ -28,6 +28,7 @@ import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
 import com.facebook.presto.sql.tree.Expression;
+import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Comparator;
@@ -182,6 +183,10 @@ public class EliminateCrossJoins
                         result,
                         rightNode,
                         criteria.build(),
+                        ImmutableList.<Symbol>builder()
+                                .addAll(result.getOutputSymbols())
+                                .addAll(rightNode.getOutputSymbols())
+                                .build(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -197,13 +202,24 @@ public class EliminateCrossJoins
                         filter);
             }
 
-            if (!graph.getAssignments().isPresent()) {
-                return result;
+            if (graph.getAssignments().isPresent()) {
+                result = new ProjectNode(
+                        idAllocator.getNextId(),
+                        result,
+                        graph.getAssignments().get());
             }
-            return new ProjectNode(
-                    idAllocator.getNextId(),
-                    result,
-                    graph.getAssignments().get());
+
+            if (!result.getOutputSymbols().equals(node.getOutputSymbols())) {
+                // Introduce a projection to constrain the outputs to what was originally expected
+                // Some nodes are sensitive to what's produced (e.g., DistinctLimit node)
+                result = new ProjectNode(
+                        idAllocator.getNextId(),
+                        result,
+                        node.getOutputSymbols().stream()
+                                .collect(ImmutableCollectors.toImmutableMap(symbol -> symbol, Symbol::toSymbolReference)));
+            }
+
+            return result;
         }
     }
 }

@@ -188,6 +188,10 @@ public class TransformCorrelatedScalarAggregationToJoin
                     inputWithUniqueColumns,
                     scalarAggregationSource,
                     ImmutableList.of(),
+                    ImmutableList.<Symbol>builder()
+                            .addAll(inputWithUniqueColumns.getOutputSymbols())
+                            .addAll(scalarAggregationSource.getOutputSymbols())
+                            .build(),
                     joinExpression,
                     Optional.empty(),
                     Optional.empty(),
