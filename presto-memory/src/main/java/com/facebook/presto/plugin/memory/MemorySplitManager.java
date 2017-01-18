@@ -29,8 +29,6 @@ import javax.inject.Inject;
 
 import java.util.List;
 
-import static com.facebook.presto.plugin.memory.Types.checkType;
-
 public final class MemorySplitManager
         implements ConnectorSplitManager
 {
@@ -45,10 +43,7 @@ public final class MemorySplitManager
     @Override
     public ConnectorSplitSource getSplits(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorTableLayoutHandle layoutHandle, List<ColumnHandle> columns)
     {
-        MemoryTableLayoutHandle layout = checkType(
-                layoutHandle,
-                MemoryTableLayoutHandle.class,
-                "MemoryTableLayoutHandle");
+        MemoryTableLayoutHandle layout = (MemoryTableLayoutHandle) layoutHandle;
 
         List<HostAddress> hosts = layout.getTable().getHosts();
 
