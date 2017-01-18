@@ -17,6 +17,7 @@ import com.facebook.presto.sql.tree.ArithmeticBinaryExpression;
 import com.facebook.presto.sql.tree.AstVisitor;
 import com.facebook.presto.sql.tree.BooleanLiteral;
 import com.facebook.presto.sql.tree.Cast;
+import com.facebook.presto.sql.tree.CoalesceExpression;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.DoubleLiteral;
 import com.facebook.presto.sql.tree.Expression;
@@ -176,7 +177,10 @@ final class NodeVerifier
     @Override
     protected Boolean visitBooleanLiteral(BooleanLiteral actual, Node expected)
     {
-        return getValueFromLiteral(actual).equals(getValueFromLiteral(expected));
+        if (expected instanceof BooleanLiteral) {
+            return getValueFromLiteral(actual).equals(getValueFromLiteral(expected));
+        }
+        return false;
     }
 
     private static String getValueFromLiteral(Node expression)
@@ -263,6 +267,24 @@ final class NodeVerifier
         }
 
         return true;
+    }
+
+    @Override
+    protected Boolean visitCoalesceExpression(CoalesceExpression actual, Node expected)
+    {
+        if (!(expected instanceof CoalesceExpression)) {
+            return false;
+        }
+
+        CoalesceExpression expectedCoalesce = (CoalesceExpression) expected;
+        if (actual.getOperands().size() == expectedCoalesce.getOperands().size()) {
+            boolean verified = true;
+            for (int i = 0; i < actual.getOperands().size(); i++) {
+                verified &= process(actual.getOperands().get(i), expectedCoalesce.getOperands().get(i));
+            }
+            return verified;
+        }
+        return false;
     }
 
     private <T extends Node> boolean process(List<T> actual, List<T> expected)
