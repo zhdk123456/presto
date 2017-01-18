@@ -53,6 +53,7 @@ public class MergeLimitWithDistinct
                         child.getSource(),
                         parent.getCount(),
                         false,
+                        child.getSource().getOutputSymbols(),
                         child.getHashSymbol()));
     }
 

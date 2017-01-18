@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Predicates.not;
 import static java.util.Objects.requireNonNull;
 
 @Immutable
@@ -35,6 +34,7 @@ public class DistinctLimitNode
     private final PlanNode source;
     private final long limit;
     private final boolean partial;
+    private final List<Symbol> distinctSymbols;
     private final Optional<Symbol> hashSymbol;
 
     @JsonCreator
@@ -43,6 +43,7 @@ public class DistinctLimitNode
             @JsonProperty("source") PlanNode source,
             @JsonProperty("limit") long limit,
             @JsonProperty("partial") boolean partial,
+            @JsonProperty("distinctSymbols") List<Symbol> distinctSymbols,
             @JsonProperty("hashSymbol") Optional<Symbol> hashSymbol)
     {
         super(id);
@@ -50,6 +51,7 @@ public class DistinctLimitNode
         checkArgument(limit >= 0, "limit must be greater than or equal to zero");
         this.limit = limit;
         this.partial = partial;
+        this.distinctSymbols = ImmutableList.copyOf(distinctSymbols);
         this.hashSymbol = requireNonNull(hashSymbol, "hashSymbol is null");
     }
 
@@ -83,18 +85,16 @@ public class DistinctLimitNode
         return hashSymbol;
     }
 
+    @JsonProperty
     public List<Symbol> getDistinctSymbols()
     {
-        if (hashSymbol.isPresent()) {
-            return ImmutableList.copyOf(Iterables.filter(getOutputSymbols(), not(hashSymbol.get()::equals)));
-        }
-        return getOutputSymbols();
+        return distinctSymbols;
     }
 
     @Override
     public List<Symbol> getOutputSymbols()
     {
-        return source.getOutputSymbols();
+        return distinctSymbols;
     }
 
     @Override
@@ -106,6 +106,6 @@ public class DistinctLimitNode
     @Override
     public PlanNode replaceChildren(List<PlanNode> newChildren)
     {
-        return new DistinctLimitNode(getId(), Iterables.getOnlyElement(newChildren), limit, partial, hashSymbol);
+        return new DistinctLimitNode(getId(), Iterables.getOnlyElement(newChildren), limit, partial, distinctSymbols, hashSymbol);
     }
 }
