@@ -73,6 +73,7 @@ import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Sets.difference;
 
 /**
  * Ensures that all dependencies (i.e., symbols in expressions) for a plan node are provided by its source nodes
@@ -327,6 +328,11 @@ public final class ValidateDependenciesChecker
             source.accept(this, boundSymbols); // visit child
 
             verifyUniqueId(node);
+
+            Set<Symbol> distinctSymbols = ImmutableSet.copyOf(node.getDistinctSymbols());
+            Set<Symbol> childOutputSymbols = ImmutableSet.copyOf(node.getSource().getOutputSymbols());
+            checkState(distinctSymbols.equals(childOutputSymbols), "Distinct symbols don't match child output symbols, difference (%s)", difference(distinctSymbols, childOutputSymbols));
+
             return null;
         }
 
