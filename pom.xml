@@ -882,6 +882,7 @@
                         <failOnViolations>true</failOnViolations>
                         <exclusionsFile>${air.main.basedir}/src/modernizer/exclusions.txt</exclusionsFile>
                         <violationsFile>${air.main.basedir}/src/modernizer/violations.xml</violationsFile>
+                        <ignorePackages>com.facebook.presto.testing.assertions</ignorePackages>
                     </configuration>
                 </plugin>
 
