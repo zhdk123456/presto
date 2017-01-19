@@ -881,6 +881,7 @@
                         <javaVersion>1.8</javaVersion>
                         <failOnViolations>true</failOnViolations>
                         <exclusionsFile>${air.main.basedir}/src/modernizer/exclusions.txt</exclusionsFile>
+                        <violationsFile>${air.main.basedir}/src/modernizer/violations.xml</violationsFile>
                     </configuration>
                 </plugin>
 
