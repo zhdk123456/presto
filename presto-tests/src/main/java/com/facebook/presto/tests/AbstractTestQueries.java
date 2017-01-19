@@ -5362,6 +5362,20 @@ public abstract class AbstractTestQueries
     }
 
     @Test
+    public void testShowColumnStats()
+            throws Exception
+    {
+        // FIXME Add tests for more complex scenario with more stats
+        MaterializedResult result = computeActual("SHOW STATS nation");
+
+        MaterializedResult expectedStatistics = resultBuilder(getSession(), VARCHAR, DOUBLE)
+                .row(null, 25.0)
+                .build();
+
+        assertEquals(result, expectedStatistics);
+    }
+
+    @Test
     public void testTry()
     {
         // divide by zero
