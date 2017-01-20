@@ -48,6 +48,16 @@ public class AggregationNode
     private final Optional<Symbol> hashSymbol;
     private final Optional<Symbol> groupIdSymbol;
 
+    public boolean hasEmptyGroupingSet()
+    {
+        return groupingSets.stream().anyMatch(List::isEmpty);
+    }
+
+    public boolean hasNonEmptyGroupingSet()
+    {
+        return groupingSets.stream().anyMatch(symbols -> !symbols.isEmpty());
+    }
+
     public enum Step
     {
         PARTIAL(true, true),

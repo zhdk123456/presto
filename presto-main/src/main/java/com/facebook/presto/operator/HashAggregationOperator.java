@@ -30,7 +30,6 @@ import com.facebook.presto.spiller.SpillerFactory;
 import com.facebook.presto.sql.gen.JoinCompiler;
 import com.facebook.presto.sql.planner.plan.AggregationNode.Step;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
-import com.facebook.presto.type.TypeUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -43,6 +42,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.aggregation.builder.InMemoryHashAggregationBuilder.toTypes;
+import static com.facebook.presto.sql.planner.optimizations.HashGenerationOptimizer.INITIAL_HASH_VALUE;
+import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.SINGLE;
+import static com.facebook.presto.type.TypeUtils.NULL_HASH_CODE;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -405,10 +407,10 @@ public class HashAggregationOperator
             outputIterator = null;
 
             if (finishing) {
-                if (!inputProcessed && !step.isOutputPartial()) {
+                if (!inputProcessed && (step.isOutputPartial() || step.equals(SINGLE))) {
                     // global aggregations always generate an output row with the default aggregation output (e.g. 0 for COUNT, NULL for SUM)
                     finished = true;
-                    return getGlobalAggregationOutput();
+                    return getGlobalAggregationOutput(step.isOutputPartial());
                 }
 
                 if (aggregationBuilder == null) {
@@ -454,7 +456,7 @@ public class HashAggregationOperator
         }
     }
 
-    private Page getGlobalAggregationOutput()
+    private Page getGlobalAggregationOutput(boolean outputPartial)
     {
         List<Accumulator> accumulators = accumulatorFactories.stream()
                 .map(AccumulatorFactory::createAccumulator)
@@ -476,11 +478,17 @@ public class HashAggregationOperator
             }
 
             if (hashChannel.isPresent()) {
-                output.getBlockBuilder(channel++).writeLong(calculateDefaultOutputHash(groupByTypes, groupIdChannel.get(), groupId));
+                long hashValue = calculateDefaultOutputHash(groupByTypes, groupIdChannel.get(), groupId);
+                output.getBlockBuilder(channel++).writeLong(hashValue);
             }
 
             for (int j = 0; j < accumulators.size(); channel++, j++) {
-                accumulators.get(j).evaluateFinal(output.getBlockBuilder(channel));
+                if (outputPartial) {
+                    accumulators.get(j).evaluateIntermediate(output.getBlockBuilder(channel));
+                }
+                else {
+                    accumulators.get(j).evaluateFinal(output.getBlockBuilder(channel));
+                }
             }
         }
 
@@ -493,10 +501,10 @@ public class HashAggregationOperator
     private static long calculateDefaultOutputHash(List<Type> groupByChannels, int groupIdChannel, int groupId)
     {
         // Default output has NULLs on all columns except of groupIdChannel
-        long result = HashGenerationOptimizer.INITIAL_HASH_VALUE;
+        long result = INITIAL_HASH_VALUE;
         for (int channel = 0; channel < groupByChannels.size(); channel++) {
             if (channel != groupIdChannel) {
-                result = CombineHashFunction.getHash(result, TypeUtils.NULL_HASH_CODE);
+                result = CombineHashFunction.getHash(result, NULL_HASH_CODE);
             }
             else {
                 result = CombineHashFunction.getHash(result, BigintType.hash(groupId));
