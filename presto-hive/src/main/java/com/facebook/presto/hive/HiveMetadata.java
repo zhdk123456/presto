@@ -418,7 +418,7 @@ public class HiveMetadata
                 column,
                 columnStatistics -> {
                     if (columnStatistics.getNullsCount().isPresent()) {
-                        return OptionalDouble.of(columnStatistics.getDistinctValuesCount().getAsLong());
+                        return OptionalDouble.of(columnStatistics.getNullsCount().getAsLong());
                     }
                     else {
                         return OptionalDouble.empty();
