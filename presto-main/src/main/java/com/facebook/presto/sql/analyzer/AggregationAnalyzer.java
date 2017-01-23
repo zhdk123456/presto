@@ -57,6 +57,7 @@ import com.facebook.presto.sql.tree.TryExpression;
 import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.sql.tree.Window;
 import com.facebook.presto.sql.tree.WindowFrame;
+import com.facebook.presto.sql.util.AstUtils;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
@@ -181,7 +182,31 @@ class AggregationAnalyzer
         @Override
         protected Boolean visitSubqueryExpression(SubqueryExpression node, Void context)
         {
-            return true;
+            return AstUtils.preOrder(node)
+                    .filter(columnReferences::containsKey)
+                    .map(Expression.class::cast)
+                    .allMatch(this::analyzeSubqueryReference);
+        }
+
+        private boolean analyzeSubqueryReference(Expression referenceExpression)
+        {
+            FieldId fieldId = requireNonNull(columnReferences.get(referenceExpression), "No FieldId for Expression");
+
+            /*
+             * fieldId can resolve to (a) some subquery's scope, (b) a projection (ORDER BY scope),
+             * (c) source scope or (d) outer query scope (effectively a constant).
+             * From AggregationAnalyzer's perspective, only case (c) needs verification.
+             */
+            if (!isFieldFromRelation(fieldId, sourceScope.getRelationType())) {
+                return true;
+            }
+
+            if (groupingFields.contains(fieldId)) {
+                return true;
+            }
+
+            throw new SemanticException(MUST_BE_AGGREGATE_OR_GROUP_BY, referenceExpression,
+                    "Subquery uses '%s' which must appear in GROUP BY clause", referenceExpression);
         }
 
         @Override
