@@ -88,7 +88,7 @@ import static java.util.Objects.requireNonNull;
 class AggregationAnalyzer
 {
     // fields and expressions in the group by clause
-    private final List<Integer> fieldIndexes;
+    private final Set<Integer> groupingFields;
     private final List<Expression> expressions;
 
     private final Analysis analysis;
@@ -117,9 +117,9 @@ class AggregationAnalyzer
         this.expressions = groupByExpressions.stream()
                 .map(e -> ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(parameters), e))
                 .collect(toImmutableList());
-        ImmutableList.Builder<Integer> fieldIndexes = ImmutableList.builder();
+        ImmutableSet.Builder<Integer> groupingFields = ImmutableSet.builder();
 
-        fieldIndexes.addAll(groupByExpressions.stream()
+        groupingFields.addAll(groupByExpressions.stream()
                 .filter(FieldReference.class::isInstance)
                 .map(FieldReference.class::cast)
                 .map(FieldReference::getFieldIndex)
@@ -142,10 +142,10 @@ class AggregationAnalyzer
 
             if (fields.size() == 1) {
                 Field field = Iterables.getOnlyElement(fields);
-                fieldIndexes.add(scope.getRelationType().indexOf(field));
+                groupingFields.add(scope.getRelationType().indexOf(field));
             }
         }
-        this.fieldIndexes = fieldIndexes.build();
+        this.groupingFields = groupingFields.build();
     }
 
     public void analyze(Expression expression)
@@ -193,7 +193,7 @@ class AggregationAnalyzer
                 // Not our scope, not our responsibility
                 return;
             }
-            if (!fieldIndexes.contains(resolvedField.getFieldIndex())) {
+            if (!groupingFields.contains(resolvedField.getFieldIndex())) {
                 throw new SemanticException(MUST_BE_AGGREGATE_OR_GROUP_BY, referenceExpression,
                         "Subquery uses '%s' which must appear in GROUP BY clause", referenceExpression);
             }
@@ -427,13 +427,13 @@ class AggregationAnalyzer
             checkState(fields.size() <= 1, "Found more than one field for name '%s': %s", qualifiedName, fields);
 
             Field field = Iterables.getOnlyElement(fields);
-            return fieldIndexes.contains(scope.getRelationType().indexOf(field));
+            return groupingFields.contains(scope.getRelationType().indexOf(field));
         }
 
         @Override
         protected Boolean visitFieldReference(FieldReference node, Void context)
         {
-            boolean inGroup = fieldIndexes.contains(node.getFieldIndex());
+            boolean inGroup = groupingFields.contains(node.getFieldIndex());
             if (!inGroup) {
                 Field field = scope.getRelationType().getFieldByIndex(node.getFieldIndex());
 
