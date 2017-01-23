@@ -66,6 +66,7 @@ import static com.facebook.presto.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_Z
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_PARAMETER_USAGE;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MISSING_SCHEMA;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATE_OR_GROUP_BY;
@@ -83,6 +84,7 @@ import static com.facebook.presto.tests.QueryAssertions.assertContains;
 import static com.facebook.presto.tests.QueryAssertions.assertEqualsIgnoreOrder;
 import static com.facebook.presto.tests.QueryTemplate.parameter;
 import static com.facebook.presto.tests.QueryTemplate.queryTemplate;
+import static com.facebook.presto.type.UnknownType.UNKNOWN;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.collect.Iterables.transform;
 import static io.airlift.tpch.TpchTable.ORDERS;
@@ -3818,7 +3820,7 @@ public abstract class AbstractTestQueries
                 "FROM (SELECT * FROM orders ORDER BY orderkey LIMIT 10) x\n" +
                 "ORDER BY orderkey LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, createVarcharType(1), BIGINT)
                 .row(1L, "O", (1L * 10) + 100)
                 .row(2L, "O", (2L * 9) + 100)
                 .row(3L, "F", (3L * 8) + 100)
@@ -3845,7 +3847,7 @@ public abstract class AbstractTestQueries
                 "WHERE rnk <= 2\n" +
                 "ORDER BY orderstatus, rnk");
 
-        MaterializedResult expected = resultBuilder(getSession(), VARCHAR, VARCHAR, DOUBLE, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), createVarcharType(1), createVarcharType(15), DOUBLE, BIGINT)
                 .row("F", "Clerk#000000090", 2784836.61, 1L)
                 .row("F", "Clerk#000000084", 2674447.15, 2L)
                 .row("O", "Clerk#000000500", 2569878.29, 1L)
@@ -3887,7 +3889,7 @@ public abstract class AbstractTestQueries
                 "ORDER BY 2 DESC\n" +
                 "LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), DOUBLE, BIGINT)
                 .row(12.0, 10L)
                 .row(12.0, 9L)
                 .row(12.0, 8L)
@@ -4318,7 +4320,7 @@ public abstract class AbstractTestQueries
                 "FROM (SELECT 'foo' x)\n" +
                 "GROUP BY 1");
 
-        MaterializedResult expected = resultBuilder(getSession(), VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), createVarcharType(3), BIGINT)
                 .row("foo", 1L)
                 .build();
 
@@ -4409,7 +4411,7 @@ public abstract class AbstractTestQueries
                 "FROM (SELECT * FROM orders ORDER BY orderkey, custkey LIMIT 10)\n" +
                 "ORDER BY orderkey LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT, VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT, createVarcharType(15), BIGINT)
                 .row(1L, 370L, "5-LOW", 1L)
                 .row(2L, 781L, "1-URGENT", 1L)
                 .row(3L, 1234L, "5-LOW", 1L)
@@ -4428,7 +4430,7 @@ public abstract class AbstractTestQueries
                 "FROM (SELECT * FROM orders ORDER BY orderkey, custkey LIMIT 10)\n" +
                 "ORDER BY orderkey LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT, VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, BIGINT, BIGINT)
                 .row(1L, 370L, 1L)
                 .row(2L, 781L, 1L)
                 .row(3L, 1234L, 1L)
@@ -4501,7 +4503,7 @@ public abstract class AbstractTestQueries
                 "  ) x\n" +
                 "ORDER BY orderkey LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, VARCHAR, BIGINT, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, createVarcharType(1), BIGINT, BIGINT)
                 .row(1L, "O", 1001L, 1002L)
                 .row(2L, "O", 1001L, 1002L)
                 .row(3L, "F", 1003L, 1005L)
@@ -4523,7 +4525,7 @@ public abstract class AbstractTestQueries
                 "  ) x\n" +
                 "ORDER BY orderkey LIMIT 5");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT, createVarcharType(1), BIGINT)
                 .row(1L, "O", 1001L)
                 .row(2L, "O", 3007L)
                 .row(3L, "F", 3014L)
@@ -4541,7 +4543,7 @@ public abstract class AbstractTestQueries
                 "FROM (SELECT * FROM orders LIMIT 10)\n" +
                 "LIMIT 3");
 
-        MaterializedResult expected = resultBuilder(getSession(), BIGINT, VARCHAR, BIGINT)
+        MaterializedResult expected = resultBuilder(getSession(), BIGINT)
                 .row(1L)
                 .row(1L)
                 .row(1L)
@@ -7899,7 +7901,7 @@ public abstract class AbstractTestQueries
                 .addPreparedStatement("my_query", "select * from nation")
                 .build();
         MaterializedResult actual = computeActual(session, "DESCRIBE INPUT my_query");
-        MaterializedResult expected = resultBuilder(session, BIGINT, VARCHAR).build();
+        MaterializedResult expected = resultBuilder(session, UNKNOWN, UNKNOWN).build();
         assertEquals(actual, expected);
     }
 
