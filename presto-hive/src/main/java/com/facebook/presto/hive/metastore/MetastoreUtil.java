@@ -35,6 +35,8 @@ import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.StringColumnStatsData;
 
+import javax.annotation.Nullable;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
@@ -307,8 +309,8 @@ public class MetastoreUtil
         else if (columnStatistics.getStatsData().isSetDecimalStats()) {
             DecimalColumnStatsData decimalStatsData = columnStatistics.getStatsData().getDecimalStats();
             return new ColumnStatistics<>(
-                    Optional.of(fromMetastoreDecimal(decimalStatsData.getLowValue())),
-                    Optional.of(fromMetastoreDecimal(decimalStatsData.getHighValue())),
+                    fromMetastoreDecimal(decimalStatsData.getLowValue()),
+                    fromMetastoreDecimal(decimalStatsData.getHighValue()),
                     OptionalLong.empty(),
                     OptionalDouble.empty(),
                     OptionalLong.empty(),
@@ -331,8 +333,8 @@ public class MetastoreUtil
         else if (columnStatistics.getStatsData().isSetDateStats()) {
             DateColumnStatsData dateStatsData = columnStatistics.getStatsData().getDateStats();
             return new ColumnStatistics<>(
-                    Optional.of(dateStatsData.getLowValue()),
-                    Optional.of(dateStatsData.getHighValue()),
+                    Optional.ofNullable(dateStatsData.getLowValue()),
+                    Optional.ofNullable(dateStatsData.getHighValue()),
                     OptionalLong.empty(),
                     OptionalDouble.empty(),
                     OptionalLong.empty(),
@@ -369,9 +371,12 @@ public class MetastoreUtil
         }
     }
 
-    private static BigDecimal fromMetastoreDecimal(Decimal decimal)
+    private static Optional<BigDecimal> fromMetastoreDecimal(@Nullable Decimal decimal)
     {
-        return new BigDecimal(new BigInteger(decimal.getUnscaled()), decimal.getScale());
+        if (decimal == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new BigDecimal(new BigInteger(decimal.getUnscaled()), decimal.getScale()));
     }
 
     public static Set<HivePrivilegeInfo> toGrants(List<PrivilegeGrantInfo> userGrants)
