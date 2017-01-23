@@ -610,7 +610,11 @@ class AggregationAnalyzer
         @Override
         protected Void visitSubqueryExpression(SubqueryExpression node, Void context)
         {
-            // TODO: add support for subqueries (issue: https://github.com/prestodb/presto/issues/7030)
+            AstUtils.preOrder(node)
+                    .filter(columnReferences::containsKey)
+                    .map(Expression.class::cast)
+                    .forEach(this::isColumnReferenceUseCorrect);
+
             return null;
         }
 
