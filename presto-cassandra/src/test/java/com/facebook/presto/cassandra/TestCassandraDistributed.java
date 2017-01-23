@@ -18,6 +18,8 @@ import com.facebook.presto.tests.AbstractTestDistributedQueries;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.cassandra.CassandraQueryRunner.createCassandraQueryRunner;
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
+import static com.facebook.presto.spi.type.DoubleType.DOUBLE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.testing.MaterializedResult.resultBuilder;
 import static org.testng.Assert.assertEquals;
@@ -124,5 +126,35 @@ public class TestCassandraDistributed
     public void testDescribeOutputNamedAndUnnamed()
     {
         // this connector uses a non-canonical type for varchar columns in tpch
+    }
+
+    @Override
+    public void testWindowFunctionsFromAggregate()
+    {
+        testWindowFunctionsFromAggregate(VARCHAR, VARCHAR, DOUBLE, BIGINT);
+    }
+
+    @Override
+    public void testFullyPartitionedAndPartiallySortedWindowFunction()
+    {
+        testFullyPartitionedAndPartiallySortedWindowFunction(BIGINT, BIGINT, VARCHAR, BIGINT);
+    }
+
+    @Override
+    public void testValueWindowFunctions()
+    {
+        testValueWindowFunctions(BIGINT, VARCHAR, BIGINT, BIGINT);
+    }
+
+    @Override
+    public void testWindowFrames()
+    {
+        testWindowFrames(BIGINT, VARCHAR, BIGINT);
+    }
+
+    @Override
+    public void testWindowFunctionsExpressions()
+    {
+        testWindowFunctionsExpressions(BIGINT, VARCHAR, BIGINT);
     }
 }
