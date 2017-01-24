@@ -45,12 +45,8 @@ function run_in_application_runner_container() {
 function check_presto() {
   run_in_application_runner_container \
     java -jar "/docker/volumes/presto-cli/presto-cli-executable.jar" \
-<<<<<<< HEAD
-    --server presto-master:8080 \
-    --quiet \
-=======
     ${CLI_ARGUMENTS} \
->>>>>>> e9bb0ebdb1... Add product tests suite for secured internal communication
+    --quiet \
     --execute "SHOW CATALOGS" | grep -i hive
 }
 
