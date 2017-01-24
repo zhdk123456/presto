@@ -1692,7 +1692,7 @@ public class TestSqlParser
                             ImmutableList.of(new AllColumns()),
                             Optional.of(
                                     new ComparisonExpression(GREATER_THAN,
-                                            new QualifiedNameReference(QualifiedName.of("field")),
+                                            new Identifier("field"),
                                             new LongLiteral("0")))));
             assertStatement(format("SHOW STATS FOR (SELECT * FROM %s WHERE field > 0 or field < 0)", qualifiedName),
                     createShowStats(qualifiedName,
@@ -1700,10 +1700,10 @@ public class TestSqlParser
                             Optional.of(
                                     new LogicalBinaryExpression(LogicalBinaryExpression.Type.OR,
                                         new ComparisonExpression(GREATER_THAN,
-                                                new QualifiedNameReference(QualifiedName.of("field")),
+                                                new Identifier("field"),
                                                 new LongLiteral("0")),
                                             new ComparisonExpression(LESS_THAN,
-                                                    new QualifiedNameReference(QualifiedName.of("field")),
+                                                    new Identifier("field"),
                                                     new LongLiteral("0"))
                                             )
                                     )));
