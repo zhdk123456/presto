@@ -16,11 +16,16 @@ package com.facebook.presto.plugin.sqlserver;
 import com.facebook.presto.plugin.jdbc.BaseJdbcClient;
 import com.facebook.presto.plugin.jdbc.BaseJdbcConfig;
 import com.facebook.presto.plugin.jdbc.JdbcConnectorId;
+import com.facebook.presto.plugin.jdbc.JdbcOutputTableHandle;
+import com.facebook.presto.spi.PrestoException;
 import com.microsoft.sqlserver.jdbc.SQLServerDriver;
 
 import javax.inject.Inject;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+
+import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
 
 public class SqlServerClient
         extends BaseJdbcClient
@@ -30,5 +35,32 @@ public class SqlServerClient
             throws SQLException
     {
         super(connectorId, config, "\"", new SQLServerDriver());
+    }
+
+    @Override
+    public void commitCreateTable(JdbcOutputTableHandle handle)
+    {
+        StringBuilder sql = new StringBuilder()
+                .append("sp_rename ")
+                .append(singleQuote(handle.getCatalogName(), handle.getSchemaName(), handle.getTableName()))
+                .append(", ")
+                .append(singleQuote(handle.getTableName()));
+
+        try (Connection connection = getConnection(handle)) {
+            execute(connection, sql.toString());
+        }
+        catch (SQLException e) {
+            throw new PrestoException(JDBC_ERROR, e);
+        }
+    }
+
+    private static String singleQuote(String catalog, String schema, String table)
+    {
+        return singleQuote(catalog + "." + schema + "." + table);
+    }
+
+    private static String singleQuote(String literal)
+    {
+        return "\'" + literal + "\'";
     }
 }
