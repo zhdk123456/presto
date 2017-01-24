@@ -13,10 +13,12 @@
  */
 package com.facebook.presto.sql.tree;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Collections.emptyList;
 
 public class ShowStats
         extends Statement
@@ -43,6 +45,12 @@ public class ShowStats
     public <R, C> R accept(AstVisitor<R, C> visitor, C context)
     {
         return visitor.visitShowStats(this, context);
+    }
+
+    @Override
+    public List<? extends Node> getChildren()
+    {
+        return emptyList();
     }
 
     @Override
