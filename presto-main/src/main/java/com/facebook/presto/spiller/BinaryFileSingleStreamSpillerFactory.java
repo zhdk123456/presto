@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.PatternFilenameFilter;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.inject.Inject;
 import io.airlift.log.Logger;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
 import java.nio.file.Path;
 import java.util.Arrays;
