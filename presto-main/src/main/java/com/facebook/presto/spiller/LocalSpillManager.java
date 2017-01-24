@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.spiller;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import static java.util.Objects.requireNonNull;
 
