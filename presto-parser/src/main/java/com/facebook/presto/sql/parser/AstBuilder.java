@@ -696,7 +696,7 @@ class AstBuilder
             check(selectItem instanceof SingleColumn, "Only * and column references are supported by SHOW STATS SELECT clause", context.querySpecification().selectItem(selectId));
 
             SingleColumn columnSelect = (SingleColumn) selectItem;
-            check(columnSelect.getExpression() instanceof QualifiedNameReference, "Only * and column references are supported by SHOW STATS SELECT clause", context.querySpecification().selectItem(selectId));
+            check(columnSelect.getExpression() instanceof Identifier, "Only * and column references are supported by SHOW STATS SELECT clause", context.querySpecification().selectItem(selectId));
 
             selectId++;
         }
@@ -711,7 +711,7 @@ class AstBuilder
     }
 
     public static final List<Class<? extends Expression>> ALLOWED_SHOW_STATS_WHERE_EXPRESSION_TYPES = ImmutableList.of(
-            Literal.class, QualifiedNameReference.class, ComparisonExpression.class, LogicalBinaryExpression.class, NotExpression.class, IsNullPredicate.class, IsNotNullPredicate.class);
+            Literal.class, Identifier.class, ComparisonExpression.class, LogicalBinaryExpression.class, NotExpression.class, IsNullPredicate.class, IsNotNullPredicate.class);
 
     void validateShowStatsWhereExpression(Expression expression, ParserRuleContext context)
     {
