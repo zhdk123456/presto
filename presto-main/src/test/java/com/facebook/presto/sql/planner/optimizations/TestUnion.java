@@ -53,6 +53,7 @@ public class TestUnion
                 LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED,
                 false);
         assertAtMostOneAggregationBetweenRemoteExchanges(plan);
+        assertPlanIsFullyDistributed(plan);
     }
 
     @Test
@@ -63,6 +64,7 @@ public class TestUnion
                 LogicalPlanner.Stage.OPTIMIZED_AND_VALIDATED,
                 false);
         assertAtMostOneAggregationBetweenRemoteExchanges(plan);
+        assertPlanIsFullyDistributed(plan);
     }
 
     @Test
