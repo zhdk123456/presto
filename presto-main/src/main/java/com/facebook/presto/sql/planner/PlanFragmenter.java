@@ -198,8 +198,10 @@ public class PlanFragmenter
             else if (exchange.getType() == ExchangeNode.Type.REPARTITION) {
                 context.get().setDistribution(partitioningScheme.getPartitioning().getHandle());
 
-                FragmentProperties childProperties = new FragmentProperties(partitioningScheme.translateOutputLayout(Iterables.getOnlyElement(exchange.getInputs())));
-                builder.add(buildSubPlan(Iterables.getOnlyElement(exchange.getSources()), childProperties, context));
+                for (int i = 0; i < exchange.getSources().size(); i++) {
+                    FragmentProperties childProperties = new FragmentProperties(partitioningScheme.translateOutputLayout(exchange.getInputs().get(i)));
+                    builder.add(buildSubPlan(exchange.getSources().get(i), childProperties, context));
+                }
             }
             else if (exchange.getType() == ExchangeNode.Type.REPLICATE) {
                 FragmentProperties childProperties = new FragmentProperties(partitioningScheme.translateOutputLayout(Iterables.getOnlyElement(exchange.getInputs())));
