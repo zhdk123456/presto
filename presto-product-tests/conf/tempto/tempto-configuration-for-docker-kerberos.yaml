@@ -19,7 +19,7 @@ databases:
     kerberos_keytab: /etc/hadoop/conf/hdfs.keytab
 
   presto:
-    host: presto-master
+    host: presto-master.docker.cluster
     port: 7778
     server_address: https://${databases.presto.host}:${databases.presto.port}
     # Use the HTTP interface in JDBC, as Kerberos authentication is not yet supported in there.
