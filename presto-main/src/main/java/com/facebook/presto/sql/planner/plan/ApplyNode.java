@@ -86,7 +86,7 @@ public class ApplyNode
     }
 
     /**
-     * @return true when subquery is scalar and it's output symbols are directly mapped to ApplyNode output symbols
+     * @return true when subquery is scalar and its output symbols are directly mapped to this ApplyNode's output symbols
      */
     public boolean isResolvedScalarSubquery(PlanNode subquery)
     {
