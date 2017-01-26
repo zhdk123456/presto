@@ -211,7 +211,7 @@ public class TestHiveBucketedTables
 
     private static void populateDataToHiveTable(String destination, String source, Optional<String> partition)
     {
-        String queryStatement = format("INSERT INTO %s" +
+        String queryStatement = format("INSERT INTO TABLE %s" +
                         (partition.isPresent() ? format(" PARTITION (%s) ", partition.get()) : " ") +
                         "SELECT * FROM %s",
                 destination, source);
