@@ -19,6 +19,7 @@ import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.transaction.TransactionManager;
 import io.airlift.units.Duration;
+import org.joda.time.DateTime;
 
 import java.net.URI;
 import java.util.Optional;
@@ -140,6 +141,12 @@ public class FailedQueryExecution
     public void recordHeartbeat()
     {
         // no-op
+    }
+
+    @Override
+    public DateTime getLastHeartbeat()
+    {
+        return getQueryInfo().getQueryStats().getLastHeartbeat();
     }
 
     @Override

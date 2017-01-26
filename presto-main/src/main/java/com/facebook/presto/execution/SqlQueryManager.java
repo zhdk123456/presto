@@ -526,22 +526,21 @@ public class SqlQueryManager
     public void failAbandonedQueries()
     {
         for (QueryExecution queryExecution : queries.values()) {
-            QueryInfo queryInfo = queryExecution.getQueryInfo();
-            if (queryInfo.getState().isDone()) {
+            if (queryExecution.getState().isDone()) {
                 continue;
             }
 
-            if (isAbandoned(queryInfo)) {
+            DateTime lastHeartbeat = queryExecution.getLastHeartbeat();
+            if (isAbandoned(queryExecution, lastHeartbeat)) {
                 log.info("Failing abandoned query %s", queryExecution.getQueryId());
-                queryExecution.fail(new PrestoException(ABANDONED_QUERY, format("Query %s has not been accessed since %s: currentTime %s", queryInfo.getQueryId(), queryInfo.getQueryStats().getLastHeartbeat(), DateTime.now())));
+                queryExecution.fail(new PrestoException(ABANDONED_QUERY, format("Query %s has not been accessed since %s: currentTime %s", queryExecution.getQueryId(), lastHeartbeat, DateTime.now())));
             }
         }
     }
 
-    private boolean isAbandoned(QueryInfo queryInfo)
+    private boolean isAbandoned(QueryExecution queryExecution, DateTime lastHeartbeat)
     {
         DateTime oldestAllowedHeartbeat = DateTime.now().minus(clientTimeout.toMillis());
-        DateTime lastHeartbeat = queryInfo.getQueryStats().getLastHeartbeat();
 
         return lastHeartbeat != null && lastHeartbeat.isBefore(oldestAllowedHeartbeat);
     }

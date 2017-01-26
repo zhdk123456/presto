@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.Duration;
+import org.joda.time.DateTime;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -185,6 +186,12 @@ public class MockQueryExecution
     @Override
     public void recordHeartbeat()
     {
+    }
+
+    @Override
+    public DateTime getLastHeartbeat()
+    {
+        return getQueryInfo().getQueryStats().getLastHeartbeat();
     }
 
     @Override

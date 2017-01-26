@@ -676,6 +676,11 @@ public class QueryStateMachine
         this.lastHeartbeat.set(DateTime.now());
     }
 
+    public DateTime getLastHeartbeat()
+    {
+        return this.lastHeartbeat.get();
+    }
+
     public void recordAnalysisTime(long analysisStart)
     {
         analysisTime.compareAndSet(null, nanosSince(analysisStart).convertToMostSuccinctTimeUnit());

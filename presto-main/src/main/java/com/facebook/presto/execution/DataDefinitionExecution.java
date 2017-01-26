@@ -25,6 +25,7 @@ import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Throwables;
 import io.airlift.units.Duration;
+import org.joda.time.DateTime;
 
 import javax.inject.Inject;
 
@@ -167,6 +168,12 @@ public class DataDefinitionExecution<T extends Statement>
     public void recordHeartbeat()
     {
         stateMachine.recordHeartbeat();
+    }
+
+    @Override
+    public DateTime getLastHeartbeat()
+    {
+        return stateMachine.getLastHeartbeat();
     }
 
     @Override

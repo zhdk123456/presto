@@ -55,6 +55,7 @@ import com.google.common.base.Throwables;
 import io.airlift.concurrent.SetThreadName;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
+import org.joda.time.DateTime;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -427,6 +428,12 @@ public final class SqlQueryExecution
     public void recordHeartbeat()
     {
         stateMachine.recordHeartbeat();
+    }
+
+    @Override
+    public DateTime getLastHeartbeat()
+    {
+        return stateMachine.getLastHeartbeat();
     }
 
     @Override

@@ -20,6 +20,7 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.Statement;
 import io.airlift.units.Duration;
+import org.joda.time.DateTime;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +55,8 @@ public interface QueryExecution
     void cancelStage(StageId stageId);
 
     void recordHeartbeat();
+
+    DateTime getLastHeartbeat();
 
     // XXX: This should be removed when the client protocol is improved, so that we don't need to hold onto so much query history
     void pruneInfo();
