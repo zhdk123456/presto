@@ -245,14 +245,14 @@ public class JdbcTests
     public void testSessionProperties()
             throws SQLException
     {
-        final String joinDistributionType = "join_distribution_type";
+        final String propertyName = "join_distribution_type";
         final String defaultValue = "repartitioned";
-
-        assertThat(getSessionProperty(connection, joinDistributionType)).isEqualTo(defaultValue);
-        setSessionProperty(connection, joinDistributionType, "replicated");
-        assertThat(getSessionProperty(connection, joinDistributionType)).isEqualTo("replicated");
-        resetSessionProperty(connection, joinDistributionType);
-        assertThat(getSessionProperty(connection, joinDistributionType)).isEqualTo(defaultValue);
+        final String testValue = "replicated";
+        assertThat(getSessionProperty(connection, propertyName)).isEqualTo(defaultValue);
+        setSessionProperty(connection, propertyName, testValue);
+        assertThat(getSessionProperty(connection, propertyName)).isEqualTo(testValue);
+        resetSessionProperty(connection, propertyName);
+        assertThat(getSessionProperty(connection, propertyName)).isEqualTo(defaultValue);
     }
 
     private QueryResult queryResult(Statement statement, String query)
