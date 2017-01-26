@@ -130,7 +130,7 @@ public class TransformCorrelatedScalarAggregationToJoin
         public PlanNode visitApply(ApplyNode node, RewriteContext<PlanNode> context)
         {
             ApplyNode rewrittenNode = (ApplyNode) context.defaultRewrite(node, context.get());
-            if (!rewrittenNode.getCorrelation().isEmpty() && rewrittenNode.isResolvedScalarSubquery()) {
+            if (!rewrittenNode.getCorrelation().isEmpty() && rewrittenNode.isResolvedScalarSubquery(rewrittenNode.getSubquery())) {
                 Optional<AggregationNode> aggregation = searchFrom(rewrittenNode.getSubquery())
                         .where(AggregationNode.class::isInstance)
                         .skipOnlyWhen(isInstanceOfAny(ProjectNode.class, EnforceSingleRowNode.class))

@@ -88,7 +88,7 @@ public class ApplyNode
     /**
      * @return true when subquery is scalar and it's output symbols are directly mapped to ApplyNode output symbols
      */
-    public boolean isResolvedScalarSubquery()
+    public boolean isResolvedScalarSubquery(PlanNode subquery)
     {
         return isScalar(subquery) && subqueryAssignments.getExpressions().stream()
                 .allMatch(expression -> expression instanceof SymbolReference);

@@ -46,7 +46,7 @@ public class RemoveUnreferencedScalarInputApplyNodes
         @Override
         public PlanNode visitApply(ApplyNode node, RewriteContext<PlanNode> context)
         {
-            if (node.getInput().getOutputSymbols().isEmpty() && isScalar(node.getInput()) && node.isResolvedScalarSubquery()) {
+            if (node.getInput().getOutputSymbols().isEmpty() && isScalar(node.getInput()) && node.isResolvedScalarSubquery(node.getSubquery())) {
                 return context.rewrite(node.getSubquery());
             }
 
