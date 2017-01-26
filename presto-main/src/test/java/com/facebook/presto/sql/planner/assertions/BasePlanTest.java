@@ -31,6 +31,7 @@ import org.testng.annotations.BeforeClass;
 import java.util.List;
 import java.util.Map;
 
+import static com.facebook.presto.SystemSessionProperties.ITERATIVE_OPTIMIZER;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static io.airlift.testing.Closeables.closeAllRuntimeException;
 import static java.util.Objects.requireNonNull;
@@ -58,6 +59,7 @@ public class BasePlanTest
         Session.SessionBuilder sessionBuilder = testSessionBuilder()
                 .setCatalog("local")
                 .setSchema("tiny")
+                .setSystemProperty(ITERATIVE_OPTIMIZER, "true")
                 .setSystemProperty("task_concurrency", "1"); // these tests don't handle exchanges from local parallel
 
         sessionProperties.entrySet().forEach(entry -> sessionBuilder.setSystemProperty(entry.getKey(), entry.getValue()));
