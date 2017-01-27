@@ -53,6 +53,12 @@ public class MockSplitSource
     }
 
     @Override
+    public Split getEmptySplit()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public CompletableFuture<List<Split>> getNextBatch(int maxSize)
     {
         nextBatchCalls++;
