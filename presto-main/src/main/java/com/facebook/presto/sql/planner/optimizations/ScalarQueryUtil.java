@@ -14,6 +14,7 @@
 package com.facebook.presto.sql.planner.optimizations;
 
 import com.facebook.presto.sql.planner.plan.AggregationNode;
+import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.EnforceSingleRowNode;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
@@ -21,6 +22,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
+import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.collect.ImmutableList;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -28,6 +30,15 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 public final class ScalarQueryUtil
 {
     private ScalarQueryUtil() {}
+
+    /**
+     * @return true when subquery is scalar and its output symbols are directly mapped to the ApplyNode's output symbols
+     */
+    public static boolean isResolvedScalarSubqueryOf(ApplyNode applyNode, PlanNode subquery)
+    {
+        return isScalar(subquery) && applyNode.getSubqueryAssignments().getExpressions().stream()
+                .allMatch(expression -> expression instanceof SymbolReference);
+    }
 
     public static boolean isScalar(PlanNode node)
     {
