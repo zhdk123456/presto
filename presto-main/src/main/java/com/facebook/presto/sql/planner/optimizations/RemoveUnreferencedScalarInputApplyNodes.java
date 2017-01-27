@@ -32,6 +32,7 @@ import static com.facebook.presto.sql.planner.plan.SimplePlanRewriter.rewriteWit
 /**
  * Remove resolved ApplyNodes with unreferenced scalar input, e.g: "SELECT (SELECT 1)".
  */
+@Deprecated
 public class RemoveUnreferencedScalarInputApplyNodes
         implements PlanOptimizer
 {
