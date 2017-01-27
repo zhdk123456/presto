@@ -18,6 +18,7 @@ import com.facebook.presto.TaskSource;
 import com.facebook.presto.metadata.Split;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.UpdatablePageSource;
+import com.facebook.presto.split.EmptySplit;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -270,6 +271,10 @@ public class Driver
         if (sourceOperator.isPresent() && sourceOperator.get().getSourceId().equals(source.getPlanNodeId())) {
             for (ScheduledSplit newSplit : newSplits) {
                 Split split = newSplit.getSplit();
+
+                if (split.getConnectorSplit() instanceof EmptySplit) {
+                    continue;
+                }
 
                 Supplier<Optional<UpdatablePageSource>> pageSource = sourceOperator.get().addSplit(split);
                 if (deleteOperator.isPresent()) {
