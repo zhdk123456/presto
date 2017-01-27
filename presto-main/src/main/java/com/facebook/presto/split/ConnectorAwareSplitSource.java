@@ -45,6 +45,15 @@ public class ConnectorAwareSplitSource
     }
 
     @Override
+    public Split getEmptySplit()
+    {
+        return new Split(
+                connectorId,
+                transactionHandle,
+                new EmptySplit(connectorId));
+    }
+
+    @Override
     public CompletableFuture<List<Split>> getNextBatch(int maxSize)
     {
         return source.getNextBatch(maxSize)
