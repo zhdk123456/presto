@@ -27,6 +27,7 @@ import static com.facebook.presto.tests.TestGroups.HIVE_CONNECTOR;
 import static com.facebook.presto.tests.hive.AllAnalyzableTypesTableDefinitions.ALL_ANALYZABLE_HIVE_TYPES_TEXTFILE;
 import static com.facebook.presto.tests.hive.HiveTableDefinitions.NATION_PARTITIONED_BY_REGIONKEY;
 import static com.teradata.tempto.assertions.QueryAssert.Row.row;
+import static com.teradata.tempto.assertions.QueryAssert.anyOf;
 import static com.teradata.tempto.assertions.QueryAssert.assertThat;
 import static com.teradata.tempto.context.ThreadLocalTestContextHolder.testContext;
 import static com.teradata.tempto.fulfillment.table.MutableTablesState.mutableTablesState;
@@ -87,7 +88,7 @@ public class TestHiveTableStatistics
                 row("n_name", null, null, null, null),
                 row("n_regionkey", null, null, null, null),
                 row("n_comment", null, null, null, null),
-                row(null, null, null, null, null));
+                row(null, null, null, null, anyOf(null, 0.0))); // anyOf because of different behaviour on HDP (hive 1.2) and CDH (hive 1.1)
 
         // basic analysis
 
