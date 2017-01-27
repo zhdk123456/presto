@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 
 import static com.facebook.presto.sql.analyzer.TypeSignatureProvider.fromTypeSignatures;
 import static com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher.searchFrom;
-import static com.facebook.presto.sql.planner.optimizations.Predicates.isInstanceOfAny;
 import static com.facebook.presto.sql.planner.optimizations.ScalarQueryUtil.isResolvedScalarSubquery;
 import static com.facebook.presto.sql.planner.plan.SimplePlanRewriter.rewriteWith;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
