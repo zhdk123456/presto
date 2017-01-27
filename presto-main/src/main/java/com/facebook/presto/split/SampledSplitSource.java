@@ -45,6 +45,12 @@ public class SampledSplitSource
     }
 
     @Override
+    public Split getEmptySplit()
+    {
+        return splitSource.getEmptySplit();
+    }
+
+    @Override
     public CompletableFuture<List<Split>> getNextBatch(int maxSize)
     {
         return splitSource.getNextBatch(maxSize)
