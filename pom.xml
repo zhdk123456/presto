@@ -1030,7 +1030,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <skip>${air.check.skip-checkstyle}</skip>
+                            <skip>true</skip>
                             <failOnViolation>${air.check.fail-checkstyle}</failOnViolation>
                             <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
