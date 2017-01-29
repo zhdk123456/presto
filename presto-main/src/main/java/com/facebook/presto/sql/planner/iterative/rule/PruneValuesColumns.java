@@ -38,14 +38,16 @@ public class PruneValuesColumns
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        return cast(node, ProjectNode.class)
-            .flatMap((ProjectNode parent) -> lookup.resolve(parent.getSource(), ValuesNode.class)
-            .flatMap((ValuesNode child) -> pruneInputs(child.getOutputSymbols(), parent.getAssignments().getExpressions())
-            .map((List<Symbol> dependencies) ->
-                        new ProjectNode(
-                                parent.getId(),
-                                createNewValuesNode(child, dependencies),
-                                parent.getAssignments()))));
+        //FIXME no test fails when this rule does no work. This must be fixed before theses changes are merged.
+        return Optional.empty();
+//        return cast(node, ProjectNode.class)
+//            .flatMap((ProjectNode parent) -> lookup.resolve(parent.getSource(), ValuesNode.class)
+//            .flatMap((ValuesNode child) -> pruneInputs(child.getOutputSymbols(), parent.getAssignments().getExpressions())
+//            .map((List<Symbol> dependencies) ->
+//                        new ProjectNode(
+//                                parent.getId(),
+//                                createNewValuesNode(child, dependencies),
+//                                parent.getAssignments()))));
     }
 
     private ValuesNode createNewValuesNode(ValuesNode values, List<Symbol> newOutputs)
