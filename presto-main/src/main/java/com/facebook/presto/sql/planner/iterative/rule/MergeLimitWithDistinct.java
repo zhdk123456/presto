@@ -42,14 +42,21 @@ public class MergeLimitWithDistinct
                 .flatMap(p -> lookup.resolve(p.getSource(), AggregationNode.class))
                 .filter(NOT_DISTINCT);
 
-        return parent.flatMap(p ->
-                childNotDistinct.map(d ->
-                        new DistinctLimitNode(
-                                p.getId(),
-                                lookup.resolve(d.getSource()),
-                                p.getCount(),
-                                false,
-                                d.getHashSymbol())));
+        //FIXME no test fails when this rule does no work. This must be fixed before theses changes are merged.
+        //testDistinctLimitOverInequalityJoin fails when exception is thrown instead of creating the returned distinct node,
+        //so the rule matches in tests at least once (doesn't seem to do anything, though).
+//        return parent.flatMap(p ->
+//                childNotDistinct.map(d ->
+//
+////                { throw new UnsupportedOperationException(); }));
+//
+//                        new DistinctLimitNode(
+//                                p.getId(),
+//                                lookup.resolve(d.getSource()),
+//                                p.getCount(),
+//                                false,
+//                                d.getHashSymbol())));
+        return Optional.empty();
     }
 
     /**
