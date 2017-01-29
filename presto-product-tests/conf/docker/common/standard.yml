@@ -11,6 +11,7 @@ services:
       service: java-8-base
     image: ${HADOOP_MASTER_IMAGE}
     hostname: hadoop-master
+    privileged: true
     ports:
       - '${HIVE_PROXY_PORT}:1180'
       - '8020:8020'
@@ -19,6 +20,7 @@ services:
       - '10000:10000'
       - '50070:50070'
       - '50075:50075'
+      - '7222:7222'
 
   presto-master:
     extends:

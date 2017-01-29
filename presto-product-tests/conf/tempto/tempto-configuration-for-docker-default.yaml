@@ -1,6 +1,14 @@
+hdfs:
+  username: mapr
+  webhdfs:
+    host: ${databases.hive.host}
+    port: 14000
+
 databases:
   hive:
     host: hadoop-master
+    jdbc_user: mapr
+    jdbc_password: mapr
   presto:
     host: presto-master
     configured_hdfs_user: hive

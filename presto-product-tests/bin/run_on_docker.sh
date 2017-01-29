@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 function retry() {
   END=$(($(date +%s) + 600))
@@ -189,7 +189,7 @@ if [[ "$CONTINUOUS_INTEGRATION" == 'true' ]]; then
 fi
 
 # catch terminate signals
-trap terminate INT TERM EXIT
+# trap terminate INT TERM EXIT
 
 # start external services
 EXTERNAL_SERVICES="hadoop-master mysql postgres cassandra"
@@ -200,8 +200,9 @@ environment_compose logs --no-color -f ${EXTERNAL_SERVICES} &
 HADOOP_LOGS_PID=$!
 
 # wait until hadoop processes is started
-retry check_hadoop
-stop_unnecessary_hadoop_services
+# retry check_hadoop
+# stop_unnecessary_hadoop_services
+sleep 300
 
 # start presto containers
 environment_compose up -d ${PRESTO_SERVICES}
