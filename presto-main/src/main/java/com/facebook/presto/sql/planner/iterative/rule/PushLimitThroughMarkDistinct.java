@@ -32,8 +32,10 @@ public class PushLimitThroughMarkDistinct
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        return cast(node, LimitNode.class)
-                .flatMap(parent -> lookup.resolve(parent.getSource(), MarkDistinctNode.class)
-                .map(child -> transpose(parent, child)));
+        //FIXME no test fails when this rule does no work. This must be fixed before these changes are merged.
+        return Optional.empty();
+//        return cast(node, LimitNode.class)
+//                .flatMap(parent -> lookup.resolve(parent.getSource(), MarkDistinctNode.class)
+//                .map(child -> transpose(parent, child)));
     }
 }
