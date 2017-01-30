@@ -1924,6 +1924,7 @@ public class LocalExecutionPlanner
                     groupByChannels,
                     globalAggregationGroupIds.build(),
                     node.getStep(),
+                    node.hasDefaultOutput(),
                     accumulatorFactories,
                     hashChannel,
                     node.getGroupIdSymbol().map(mappings::get),
