@@ -83,6 +83,10 @@ public class PlanBuilder
             throw new IllegalArgumentException(format("Symbol '%s' already registered with type '%s'", name, old));
         }
 
+        if (old == null) {
+            symbols.put(symbol, type);
+        }
+
         return symbol;
     }
 
