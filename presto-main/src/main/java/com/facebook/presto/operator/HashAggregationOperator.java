@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.aggregation.builder.InMemoryHashAggregationBuilder.toTypes;
 import static com.facebook.presto.sql.planner.optimizations.HashGenerationOptimizer.INITIAL_HASH_VALUE;
-import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.SINGLE;
 import static com.facebook.presto.type.TypeUtils.NULL_HASH_CODE;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
@@ -61,6 +60,7 @@ public class HashAggregationOperator
         private final List<Integer> groupByChannels;
         private final List<Integer> globalAggregationGroupIds;
         private final Step step;
+        private final boolean produceDefaultOutput;
         private final List<AccumulatorFactory> accumulatorFactories;
         private final Optional<Integer> hashChannel;
         private final Optional<Integer> groupIdChannel;
@@ -96,6 +96,7 @@ public class HashAggregationOperator
                     groupByChannels,
                     globalAggregationGroupIds,
                     step,
+                    false,
                     accumulatorFactories,
                     hashChannel,
                     groupIdChannel,
@@ -128,6 +129,7 @@ public class HashAggregationOperator
                 List<Integer> groupByChannels,
                 List<Integer> globalAggregationGroupIds,
                 Step step,
+                boolean produceDefaultOutput,
                 List<AccumulatorFactory> accumulatorFactories,
                 Optional<Integer> hashChannel,
                 Optional<Integer> groupIdChannel,
@@ -144,6 +146,7 @@ public class HashAggregationOperator
                     groupByChannels,
                     globalAggregationGroupIds,
                     step,
+                    produceDefaultOutput,
                     accumulatorFactories,
                     hashChannel,
                     groupIdChannel,
@@ -164,6 +167,7 @@ public class HashAggregationOperator
                 List<Integer> groupByChannels,
                 List<Integer> globalAggregationGroupIds,
                 Step step,
+                boolean produceDefaultOutput,
                 List<AccumulatorFactory> accumulatorFactories,
                 Optional<Integer> hashChannel,
                 Optional<Integer> groupIdChannel,
@@ -183,6 +187,7 @@ public class HashAggregationOperator
             this.groupByChannels = ImmutableList.copyOf(groupByChannels);
             this.globalAggregationGroupIds = ImmutableList.copyOf(globalAggregationGroupIds);
             this.step = step;
+            this.produceDefaultOutput = produceDefaultOutput;
             this.accumulatorFactories = ImmutableList.copyOf(accumulatorFactories);
             this.expectedGroups = expectedGroups;
             this.maxPartialMemory = requireNonNull(maxPartialMemory, "maxPartialMemory is null");
@@ -213,6 +218,7 @@ public class HashAggregationOperator
                     groupByChannels,
                     globalAggregationGroupIds,
                     step,
+                    produceDefaultOutput,
                     accumulatorFactories,
                     hashChannel,
                     groupIdChannel,
@@ -242,6 +248,7 @@ public class HashAggregationOperator
                     groupByChannels,
                     globalAggregationGroupIds,
                     step,
+                    produceDefaultOutput,
                     accumulatorFactories,
                     hashChannel,
                     groupIdChannel,
@@ -260,6 +267,7 @@ public class HashAggregationOperator
     private final List<Integer> groupByChannels;
     private final List<Integer> globalAggregationGroupIds;
     private final Step step;
+    private final boolean produceDefaultOutput;
     private final List<AccumulatorFactory> accumulatorFactories;
     private final Optional<Integer> hashChannel;
     private final Optional<Integer> groupIdChannel;
@@ -286,6 +294,7 @@ public class HashAggregationOperator
             List<Integer> groupByChannels,
             List<Integer> globalAggregationGroupIds,
             Step step,
+            boolean produceDefaultOutput,
             List<AccumulatorFactory> accumulatorFactories,
             Optional<Integer> hashChannel,
             Optional<Integer> groupIdChannel,
@@ -309,6 +318,7 @@ public class HashAggregationOperator
         this.hashChannel = requireNonNull(hashChannel, "hashChannel is null");
         this.groupIdChannel = requireNonNull(groupIdChannel, "groupIdChannel is null");
         this.step = step;
+        this.produceDefaultOutput = produceDefaultOutput;
         this.expectedGroups = expectedGroups;
         this.maxPartialMemory = requireNonNull(maxPartialMemory, "maxPartialMemory is null");
         this.types = toTypes(groupByTypes, step, accumulatorFactories, hashChannel);
@@ -424,7 +434,7 @@ public class HashAggregationOperator
             outputIterator = null;
 
             if (finishing) {
-                if (!inputProcessed && (step.isOutputPartial() || step.equals(SINGLE))) {
+                if (!inputProcessed && produceDefaultOutput) {
                     // global aggregations always generate an output row with the default aggregation output (e.g. 0 for COUNT, NULL for SUM)
                     finished = true;
                     return getGlobalAggregationOutput(step.isOutputPartial());
