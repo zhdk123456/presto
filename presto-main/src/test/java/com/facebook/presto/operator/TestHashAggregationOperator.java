@@ -153,6 +153,7 @@ public class TestHashAggregationOperator
                 hashChannels,
                 ImmutableList.of(),
                 Step.SINGLE,
+                false,
                 ImmutableList.of(COUNT.bind(ImmutableList.of(0), Optional.empty()),
                         LONG_SUM.bind(ImmutableList.of(3), Optional.empty()),
                         LONG_AVERAGE.bind(ImmutableList.of(3), Optional.empty()),
@@ -209,6 +210,7 @@ public class TestHashAggregationOperator
                 groupByChannels,
                 globalAggregationGroupIds,
                 Step.SINGLE,
+                true,
                 ImmutableList.of(COUNT.bind(ImmutableList.of(0), Optional.empty()),
                         LONG_SUM.bind(ImmutableList.of(4), Optional.empty()),
                         LONG_AVERAGE.bind(ImmutableList.of(4), Optional.empty()),
@@ -218,7 +220,11 @@ public class TestHashAggregationOperator
                 rowPagesBuilder.getHashChannel(),
                 groupIdChannel,
                 100_000,
-                new DataSize(16, MEGABYTE));
+                new DataSize(16, MEGABYTE),
+                false,
+                new DataSize(0, MEGABYTE),
+                new DataSize(0, MEGABYTE),
+                spillerFactory);
 
         MaterializedResult expected = resultBuilder(driverContext.getSession(), VARCHAR, BIGINT, BIGINT, BIGINT, DOUBLE, VARCHAR, BIGINT, BIGINT)
                 .row(null, 42L, 0L, null, null, null, 0L, 0L)
@@ -292,6 +298,7 @@ public class TestHashAggregationOperator
                 hashChannels,
                 ImmutableList.of(),
                 Step.SINGLE,
+                false,
                 ImmutableList.of(COUNT.bind(ImmutableList.of(0), Optional.empty())),
                 rowPagesBuilder.getHashChannel(),
                 Optional.empty(),
@@ -391,6 +398,7 @@ public class TestHashAggregationOperator
                 hashChannels,
                 ImmutableList.of(),
                 Step.PARTIAL,
+                false,
                 ImmutableList.of(LONG_SUM.bind(ImmutableList.of(0), Optional.empty())),
                 rowPagesBuilder.getHashChannel(),
                 Optional.empty(),
@@ -474,6 +482,7 @@ public class TestHashAggregationOperator
                 hashChannels,
                 ImmutableList.of(),
                 Step.SINGLE,
+                false,
                 ImmutableList.of(LONG_SUM.bind(ImmutableList.of(0), Optional.empty())),
                 rowPagesBuilder.getHashChannel(),
                 Optional.empty(),
@@ -522,6 +531,7 @@ public class TestHashAggregationOperator
                 hashChannels,
                 ImmutableList.of(),
                 Step.SINGLE,
+                false,
                 ImmutableList.of(COUNT.bind(ImmutableList.of(0), Optional.empty()),
                         LONG_SUM.bind(ImmutableList.of(3), Optional.empty()),
                         LONG_AVERAGE.bind(ImmutableList.of(3), Optional.empty()),
