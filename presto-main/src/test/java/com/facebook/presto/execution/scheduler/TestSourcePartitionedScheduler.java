@@ -24,9 +24,11 @@ import com.facebook.presto.execution.RemoteTask;
 import com.facebook.presto.execution.SqlStageExecution;
 import com.facebook.presto.execution.StageId;
 import com.facebook.presto.execution.TestSqlTaskManager.MockLocationFactory;
+import com.facebook.presto.metadata.FunctionKind;
 import com.facebook.presto.metadata.InMemoryNodeManager;
 import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.PrestoNode;
+import com.facebook.presto.metadata.Signature;
 import com.facebook.presto.metadata.TableHandle;
 import com.facebook.presto.spi.ConnectorSplit;
 import com.facebook.presto.spi.ConnectorSplitSource;
@@ -44,11 +46,14 @@ import com.facebook.presto.sql.planner.StageExecutionPlan;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.TestingColumnHandle;
 import com.facebook.presto.sql.planner.TestingTableHandle;
+import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.PlanFragmentId;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.TableScanNode;
+import com.facebook.presto.sql.tree.FunctionCall;
+import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.testing.TestingSplit;
 import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.util.FinalizerService;
@@ -63,6 +68,7 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -72,9 +78,11 @@ import static com.facebook.presto.OutputBuffers.BufferType.PARTITIONED;
 import static com.facebook.presto.OutputBuffers.createInitialEmptyOutputBuffers;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.facebook.presto.spi.StandardErrorCode.NO_NODES_AVAILABLE;
+import static com.facebook.presto.spi.type.BigintType.BIGINT;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.sql.planner.SystemPartitioningHandle.SINGLE_DISTRIBUTION;
 import static com.facebook.presto.sql.planner.SystemPartitioningHandle.SOURCE_DISTRIBUTION;
+import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.SINGLE;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.INNER;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.Integer.min;
@@ -121,6 +129,25 @@ public class TestSourcePartitionedScheduler
             throws Exception
     {
         StageExecutionPlan plan = createPlan(createFixedSplitSource(0, TestingSplit::createRemoteSplit));
+        NodeTaskMap nodeTaskMap = new NodeTaskMap(finalizerService);
+        SqlStageExecution stage = createSqlStageExecution(plan, nodeTaskMap);
+
+        SourcePartitionedScheduler scheduler = getSourcePartitionedScheduler(plan, stage, nodeManager, nodeTaskMap, 1);
+
+        ScheduleResult scheduleResult = scheduler.schedule();
+
+        assertTrue(scheduleResult.isFinished());
+        assertTrue(scheduleResult.getBlocked().isDone());
+        assertTrue(scheduleResult.getNewTasks().isEmpty());
+
+        stage.abort();
+    }
+
+    @Test
+    public void testScheduleEmptySplitWithDefaultOutput()
+            throws Exception
+    {
+        StageExecutionPlan plan = createPlanWithDefaultOutput(createFixedSplitSource(0, TestingSplit::createRemoteSplit));
         NodeTaskMap nodeTaskMap = new NodeTaskMap(finalizerService);
         SqlStageExecution stage = createSqlStageExecution(plan, nodeTaskMap);
 
@@ -460,6 +487,55 @@ public class TestSourcePartitionedScheduler
                 SOURCE_DISTRIBUTION,
                 ImmutableList.of(tableScanNodeId),
                 new PartitioningScheme(Partitioning.create(SINGLE_DISTRIBUTION, ImmutableList.of()), ImmutableList.of(symbol)));
+
+        return new StageExecutionPlan(
+                testFragment,
+                ImmutableMap.of(tableScanNodeId, new ConnectorAwareSplitSource(CONNECTOR_ID, TestingTransactionHandle.create(), splitSource)),
+                ImmutableList.of());
+    }
+
+    private static StageExecutionPlan createPlanWithDefaultOutput(ConnectorSplitSource splitSource)
+    {
+        Symbol symbol = new Symbol("column");
+
+        // table scan with splitCount splits
+        PlanNodeId tableScanNodeId = new PlanNodeId("plan_id");
+        TableScanNode tableScan = new TableScanNode(
+                tableScanNodeId,
+                new TableHandle(CONNECTOR_ID, new TestingTableHandle()),
+                ImmutableList.of(symbol),
+                ImmutableMap.of(symbol, new TestingColumnHandle("column")),
+                Optional.empty(),
+                TupleDomain.all(),
+                null);
+
+        Symbol aggregationSymbol = new Symbol("count");
+        Map<Symbol, Signature> functions = ImmutableMap.of(
+                aggregationSymbol, new Signature(
+                        "count",
+                        FunctionKind.AGGREGATE,
+                        ImmutableList.of(),
+                        ImmutableList.of(),
+                        BIGINT.getTypeSignature(),
+                        ImmutableList.of(BIGINT.getTypeSignature()),
+                        false));
+
+        PlanFragment testFragment = new PlanFragment(
+                new PlanFragmentId("plan_id"),
+                new AggregationNode(
+                        new PlanNodeId("aggregation_id"),
+                        tableScan,
+                        ImmutableMap.of(aggregationSymbol, new FunctionCall(QualifiedName.of("count"), ImmutableList.of())),
+                        functions,
+                        ImmutableMap.of(),
+                        ImmutableList.of(ImmutableList.of()),
+                        SINGLE,
+                        Optional.empty(),
+                        Optional.empty()),
+                ImmutableMap.of(symbol, VARCHAR, aggregationSymbol, BIGINT),
+                SOURCE_DISTRIBUTION,
+                ImmutableList.of(tableScanNodeId),
+                new PartitioningScheme(Partitioning.create(SINGLE_DISTRIBUTION, ImmutableList.of()), ImmutableList.of(aggregationSymbol)));
 
         return new StageExecutionPlan(
                 testFragment,
