@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.SINGLE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
@@ -230,6 +231,12 @@ public class AggregationNode
     public List<List<Symbol>> getGroupingSets()
     {
         return groupingSets;
+    }
+
+    public boolean hasDefaultOutput()
+    {
+        return hasEmptyGroupingSet() &&
+                (step.isOutputPartial() || step.equals(SINGLE));
     }
 
     @JsonProperty("source")
