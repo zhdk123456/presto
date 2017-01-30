@@ -33,6 +33,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 
 import static com.facebook.presto.tests.TestGroups.JDBC;
+import static com.facebook.presto.tests.TestGroups.QUARANTINE;
 import static com.facebook.presto.tests.TestGroups.SIMBA_JDBC;
 import static com.facebook.presto.tests.hive.AllSimpleTypesTableDefinitions.ALL_HIVE_SIMPLE_TYPES_TEXTFILE;
 import static com.facebook.presto.tests.utils.JdbcDriverUtils.usingTeradataJdbcDriver;
@@ -147,7 +148,8 @@ public class PreparedStatements
         }
     }
 
-    @Test(groups = {JDBC, SIMBA_JDBC})
+    // SWARM-4005
+    @Test(groups = {JDBC, SIMBA_JDBC, QUARANTINE})
     @Requires(MutableAllTypesTable.class)
     public void preparedInsertApi()
             throws SQLException
