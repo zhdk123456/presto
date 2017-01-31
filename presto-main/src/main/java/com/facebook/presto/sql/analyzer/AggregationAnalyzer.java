@@ -175,7 +175,7 @@ class AggregationAnalyzer
         protected Boolean visitSubqueryExpression(SubqueryExpression node, Void context)
         {
             AstUtils.preOrder(node)
-                    .filter(isInstanceOfAny(DereferenceExpression.class, Identifier.class))
+                    .filter(isInstanceOfAny(DereferenceExpression.class, QualifiedNameReference.class))
                     .map(Expression.class::cast)
                     .forEach(this::analyzeSubqueryReference);
 
