@@ -31,6 +31,7 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.NullLiteral;
+import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -104,12 +105,12 @@ public class PushAggregationBelowOuterJoin
             extends SimplePlanRewriter<Void>
     {
         private final PlanNodeIdAllocator idAllocator;
-        private final SymbolAllocator symbolAllcoator;
+        private final SymbolAllocator symbolAllocator;
 
         public Rewriter(PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
         {
             this.idAllocator = idAllocator;
-            this.symbolAllcoator = symbolAllocator;
+            this.symbolAllocator = symbolAllocator;
         }
 
         @Override
@@ -145,7 +146,10 @@ public class PushAggregationBelowOuterJoin
                         rewrittenLeft,
                         aggregationNode,
                         joinSource.getCriteria(),
-                        ImmutableList.<Symbol>builder().addAll(rewrittenLeft.getOutputSymbols()).addAll(aggregationNode.getOutputSymbols()).build(),
+                        ImmutableList.<Symbol>builder()
+                                .addAll(rewrittenLeft.getOutputSymbols())
+                                .addAll(aggregationNode.getOutputSymbols())
+                                .build(),
                         joinSource.getFilter(),
                         joinSource.getLeftHashSymbol(),
                         joinSource.getRightHashSymbol());
@@ -177,7 +181,10 @@ public class PushAggregationBelowOuterJoin
                         aggregationNode,
                         rewrittenRight,
                         joinSource.getCriteria(),
-                        ImmutableList.<Symbol>builder().addAll(aggregationNode.getOutputSymbols()).addAll(rewrittenRight.getOutputSymbols()).build(),
+                        ImmutableList.<Symbol>builder()
+                                .addAll(aggregationNode.getOutputSymbols())
+                                .addAll(rewrittenRight.getOutputSymbols())
+                                .build(),
                         joinSource.getFilter(),
                         joinSource.getLeftHashSymbol(),
                         joinSource.getRightHashSymbol());
@@ -196,39 +203,41 @@ public class PushAggregationBelowOuterJoin
             NullLiteral nullLiteral = new NullLiteral();
             ImmutableList.Builder<Symbol> nullSymbols = ImmutableList.builder();
             ImmutableList.Builder<Expression> nullLiterals = ImmutableList.builder();
-            ImmutableMap.Builder<Symbol, Expression> aggregationSourceToValuesMapping = ImmutableMap.builder();
+            ImmutableMap.Builder<Symbol, SymbolReference> aggregationSourceToValuesMappingBuilder = ImmutableMap.builder();
             for (Symbol sourceSymbol : aggregationNode.getSource().getOutputSymbols()) {
                 nullLiterals.add(nullLiteral);
-                Symbol nullSymbol = symbolAllcoator.newSymbol(nullLiteral, symbolAllcoator.getTypes().get(sourceSymbol));
+                Symbol nullSymbol = symbolAllocator.newSymbol(nullLiteral, symbolAllocator.getTypes().get(sourceSymbol));
                 nullSymbols.add(nullSymbol);
-                aggregationSourceToValuesMapping.put(sourceSymbol, nullSymbol.toSymbolReference());
+                aggregationSourceToValuesMappingBuilder.put(sourceSymbol, nullSymbol.toSymbolReference());
             }
             ValuesNode values = new ValuesNode(
                     idAllocator.getNextId(),
                     nullSymbols.build(),
                     ImmutableList.of(nullLiterals.build()));
 
+            Map<Symbol, SymbolReference> aggregationSourceToValuesMapping = aggregationSourceToValuesMappingBuilder.build();
             ImmutableMap.Builder<Symbol, Symbol> basicAggregationToOverNullMappingBuilder = ImmutableMap.builder();
             ImmutableMap.Builder<Symbol, FunctionCall> aggregationsOverNullBuilder = ImmutableMap.builder();
             for (Map.Entry<Symbol, FunctionCall> entry : aggregationNode.getAggregations().entrySet()) {
-                FunctionCall overNullFunction = ExpressionTreeRewriter.rewriteWith(new ExpressionSymbolInliner(aggregationSourceToValuesMapping.build()), entry.getValue());
-                Symbol overNullSymbol = symbolAllcoator.newSymbol(overNullFunction, symbolAllcoator.getTypes().get(entry.getKey()));
+                FunctionCall overNullFunction = ExpressionTreeRewriter.rewriteWith(new ExpressionSymbolInliner(aggregationSourceToValuesMapping), entry.getValue());
+                Symbol overNullSymbol = symbolAllocator.newSymbol(overNullFunction, symbolAllocator.getTypes().get(entry.getKey()));
                 aggregationsOverNullBuilder.put(overNullSymbol, overNullFunction);
                 basicAggregationToOverNullMappingBuilder.put(entry.getKey(), overNullSymbol);
             }
 
-            ImmutableMap<Symbol, Symbol> basicAggregationToOverNullMapping = basicAggregationToOverNullMappingBuilder.build();
+            Map<Symbol, Symbol> basicAggregationToOverNullMapping = basicAggregationToOverNullMappingBuilder.build();
             AggregationNode aggregationOverNullNode = new AggregationNode(
                     idAllocator.getNextId(),
                     values,
                     aggregationsOverNullBuilder.build(),
                     aggregationNode.getFunctions().entrySet().stream()
                             .collect(toImmutableMap(entry -> basicAggregationToOverNullMapping.get(entry.getKey()), Map.Entry::getValue)),
-                    aggregationNode.getMasks(),
+                    aggregationNode.getMasks().entrySet().stream()
+                            .collect(toImmutableMap(entry -> basicAggregationToOverNullMapping.get(entry.getKey()),  entry-> Symbol.from(aggregationSourceToValuesMapping.get(entry.getValue())))),
                     ImmutableList.of(ImmutableList.of()),
-                    aggregationNode.getStep(),
-                    aggregationNode.getHashSymbol(),
-                    aggregationNode.getGroupIdSymbol()
+                    AggregationNode.Step.SINGLE,
+                    Optional.empty(),
+                    Optional.empty()
             );
 
             JoinNode crossJoin = new JoinNode(
@@ -237,7 +246,10 @@ public class PushAggregationBelowOuterJoin
                     outerJoin,
                     aggregationOverNullNode,
                     ImmutableList.of(),
-                    ImmutableList.<Symbol>builder().addAll(outerJoin.getOutputSymbols()).addAll(aggregationOverNullNode.getOutputSymbols()).build(),
+                    ImmutableList.<Symbol>builder()
+                            .addAll(outerJoin.getOutputSymbols())
+                            .addAll(aggregationOverNullNode.getOutputSymbols())
+                            .build(),
                     Optional.empty(),
                     Optional.empty(),
                     Optional.empty());

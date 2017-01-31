@@ -8199,7 +8199,7 @@ public abstract class AbstractTestQueries
                         "WHERE n1.regionkey=n2.regionkey))"
         );
         assertQuery(
-                "SELECT max(name), min(name), count(nationkey) + 1 " +
+                "SELECT max(name), min(name), count(nationkey) + 1, count(DISTINCT nationkey) " +
                         "FROM (SELECT DISTINCT regionkey FROM region) as r1 " +
                         "LEFT JOIN " +
                         "nation " +
