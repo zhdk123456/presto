@@ -28,6 +28,7 @@ import org.intellij.lang.annotations.Language;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
@@ -127,6 +128,11 @@ public class TestReorderWindows
         // this won't be necessary once ReorderWindows is turned on by default back
         // currently it's disabled because of https://github.com/prestodb/presto/issues/7247
         super(ImmutableMap.of("reorder_windows", "true"));
+    }
+
+    TestReorderWindows(Map<String, String> sessionProperties)
+    {
+        super(sessionProperties);
     }
 
     @Test
