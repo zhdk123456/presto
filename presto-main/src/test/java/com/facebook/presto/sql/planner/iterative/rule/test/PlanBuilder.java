@@ -316,6 +316,11 @@ public class PlanBuilder
                 sources.length);
     }
 
+    public UnionNode union(List<? extends PlanNode> sources, ListMultimap<Symbol, Symbol> outputsToInputs, List<Symbol> outputs)
+    {
+        return new UnionNode(idAllocator.getNextId(), (List<PlanNode>) sources, outputsToInputs, outputs);
+    }
+
     public Symbol symbol(String name, Type type)
     {
         Symbol symbol = new Symbol(name);
