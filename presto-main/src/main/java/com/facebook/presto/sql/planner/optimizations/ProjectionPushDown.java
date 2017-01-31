@@ -38,6 +38,7 @@ import static com.facebook.presto.sql.planner.ExpressionSymbolInliner.inlineSymb
 import static com.facebook.presto.sql.planner.plan.ChildReplacer.replaceChildren;
 import static java.util.Objects.requireNonNull;
 
+@Deprecated
 public class ProjectionPushDown
         implements PlanOptimizer
 {
