@@ -347,6 +347,11 @@ public final class PlanMatchPattern
         return this;
     }
 
+    public PlanMatchPattern withAlias(String alias)
+    {
+        return withAlias(Optional.of(alias), new AliasPresent(alias));
+    }
+
     public PlanMatchPattern withAlias(String alias, RvalueMatcher matcher)
     {
         return withAlias(Optional.of(alias), matcher);
@@ -354,7 +359,7 @@ public final class PlanMatchPattern
 
     public PlanMatchPattern withAlias(Optional<String> alias, RvalueMatcher matcher)
     {
-        matchers.add(new Alias(alias, matcher));
+        matchers.add(new AliasMatcher(alias, matcher));
         return this;
     }
 
