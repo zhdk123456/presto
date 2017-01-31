@@ -27,10 +27,12 @@ import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
+import com.facebook.presto.sql.planner.plan.UnionNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ListMultimap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -152,6 +154,11 @@ public class PlanBuilder
         {
             return new ExchangeNode(idAllocator.getNextId(), type, scope, partitioningScheme, sources, inputs);
         }
+    }
+
+    public UnionNode union(List<? extends PlanNode> sources, ListMultimap<Symbol, Symbol> outputsToInputs, List<Symbol> outputs)
+    {
+        return new UnionNode(idAllocator.getNextId(), (List<PlanNode>) sources, outputsToInputs, outputs);
     }
 
     public Symbol symbol(String name, Type type)
