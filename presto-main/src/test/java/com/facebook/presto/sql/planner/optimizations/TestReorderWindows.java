@@ -28,6 +28,7 @@ import org.intellij.lang.annotations.Language;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.anyTree;
@@ -120,6 +121,16 @@ public class TestReorderWindows
                 ImmutableList.of(QUANTITY_ALIAS),
                 ImmutableList.of(RECEIPTDATE_ALIAS),
                 ImmutableMap.of(RECEIPTDATE_ALIAS, SortOrder.ASC_NULLS_LAST));
+    }
+
+    public TestReorderWindows()
+    {
+        super();
+    }
+
+    public TestReorderWindows(Map<String, String> sessionProperties)
+    {
+        super(sessionProperties);
     }
 
     @Test
