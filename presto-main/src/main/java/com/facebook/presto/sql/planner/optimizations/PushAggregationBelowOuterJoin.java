@@ -200,70 +200,88 @@ public class PushAggregationBelowOuterJoin
         // null row.
         private PlanNode coalesceWithNullAggregation(AggregationNode aggregationNode, PlanNode outerJoin)
         {
-            NullLiteral nullLiteral = new NullLiteral();
-            ImmutableList.Builder<Symbol> nullSymbols = ImmutableList.builder();
-            ImmutableList.Builder<Expression> nullLiterals = ImmutableList.builder();
-            ImmutableMap.Builder<Symbol, SymbolReference> aggregationSourceToValuesMappingBuilder = ImmutableMap.builder();
-            for (Symbol sourceSymbol : aggregationNode.getSource().getOutputSymbols()) {
-                nullLiterals.add(nullLiteral);
-                Symbol nullSymbol = symbolAllocator.newSymbol(nullLiteral, symbolAllocator.getTypes().get(sourceSymbol));
-                nullSymbols.add(nullSymbol);
-                aggregationSourceToValuesMappingBuilder.put(sourceSymbol, nullSymbol.toSymbolReference());
-            }
-            ValuesNode values = new ValuesNode(
-                    idAllocator.getNextId(),
-                    nullSymbols.build(),
-                    ImmutableList.of(nullLiterals.build()));
+            // Create an aggregation node over a row of nulls.
+            MappedAggregationInfo aggregationOverNullInfo = createAggregationOverNull(aggregationNode);
+            AggregationNode aggregationOverNull = aggregationOverNullInfo.getAggregation();
+            Map<Symbol, Symbol> sourceAggregationToOverNullMapping = aggregationOverNullInfo.getSymbolMapping();
 
-            Map<Symbol, SymbolReference> aggregationSourceToValuesMapping = aggregationSourceToValuesMappingBuilder.build();
-            ImmutableMap.Builder<Symbol, Symbol> basicAggregationToOverNullMappingBuilder = ImmutableMap.builder();
-            ImmutableMap.Builder<Symbol, FunctionCall> aggregationsOverNullBuilder = ImmutableMap.builder();
-            for (Map.Entry<Symbol, FunctionCall> entry : aggregationNode.getAggregations().entrySet()) {
-                FunctionCall overNullFunction = ExpressionTreeRewriter.rewriteWith(new ExpressionSymbolInliner(aggregationSourceToValuesMapping), entry.getValue());
-                Symbol overNullSymbol = symbolAllocator.newSymbol(overNullFunction, symbolAllocator.getTypes().get(entry.getKey()));
-                aggregationsOverNullBuilder.put(overNullSymbol, overNullFunction);
-                basicAggregationToOverNullMappingBuilder.put(entry.getKey(), overNullSymbol);
-            }
-
-            Map<Symbol, Symbol> basicAggregationToOverNullMapping = basicAggregationToOverNullMappingBuilder.build();
-            AggregationNode aggregationOverNullNode = new AggregationNode(
-                    idAllocator.getNextId(),
-                    values,
-                    aggregationsOverNullBuilder.build(),
-                    aggregationNode.getFunctions().entrySet().stream()
-                            .collect(toImmutableMap(entry -> basicAggregationToOverNullMapping.get(entry.getKey()), Map.Entry::getValue)),
-                    aggregationNode.getMasks().entrySet().stream()
-                            .collect(toImmutableMap(entry -> basicAggregationToOverNullMapping.get(entry.getKey()),  entry-> Symbol.from(aggregationSourceToValuesMapping.get(entry.getValue())))),
-                    ImmutableList.of(ImmutableList.of()),
-                    AggregationNode.Step.SINGLE,
-                    Optional.empty(),
-                    Optional.empty()
-            );
-
+            // Do a cross join with the aggregation over null
             JoinNode crossJoin = new JoinNode(
                     idAllocator.getNextId(),
                     JoinNode.Type.INNER,
                     outerJoin,
-                    aggregationOverNullNode,
+                    aggregationOverNull,
                     ImmutableList.of(),
                     ImmutableList.<Symbol>builder()
                             .addAll(outerJoin.getOutputSymbols())
-                            .addAll(aggregationOverNullNode.getOutputSymbols())
+                            .addAll(aggregationOverNull.getOutputSymbols())
                             .build(),
                     Optional.empty(),
                     Optional.empty(),
                     Optional.empty());
 
+            // Add coalesce expressions for all aggregation functions
             Assignments.Builder assignmentsBuilder = Assignments.builder();
             for (Symbol symbol : outerJoin.getOutputSymbols()) {
                 if (aggregationNode.getAggregations().containsKey(symbol)) {
-                    assignmentsBuilder.put(symbol, new CoalesceExpression(symbol.toSymbolReference(), basicAggregationToOverNullMapping.get(symbol).toSymbolReference()));
+                    assignmentsBuilder.put(symbol, new CoalesceExpression(symbol.toSymbolReference(), sourceAggregationToOverNullMapping.get(symbol).toSymbolReference()));
                 }
                 else {
                     assignmentsBuilder.put(symbol, symbol.toSymbolReference());
                 }
             }
             return new ProjectNode(idAllocator.getNextId(), crossJoin, assignmentsBuilder.build());
+        }
+
+        private MappedAggregationInfo createAggregationOverNull(AggregationNode referenceAggregation)
+        {
+            // Create a values node that consists of a single row of nulls.
+            // Map the output symbols from the referenceAggregation's source
+            // to symbol references for the new values node.
+            NullLiteral nullLiteral = new NullLiteral();
+            ImmutableList.Builder<Symbol> nullSymbols = ImmutableList.builder();
+            ImmutableList.Builder<Expression> nullLiterals = ImmutableList.builder();
+            ImmutableMap.Builder<Symbol, SymbolReference> sourcesSymbolMappingBuilder = ImmutableMap.builder();
+            for (Symbol sourceSymbol : referenceAggregation.getSource().getOutputSymbols()) {
+                nullLiterals.add(nullLiteral);
+                Symbol nullSymbol = symbolAllocator.newSymbol(nullLiteral, symbolAllocator.getTypes().get(sourceSymbol));
+                nullSymbols.add(nullSymbol);
+                sourcesSymbolMappingBuilder.put(sourceSymbol, nullSymbol.toSymbolReference());
+            }
+            ValuesNode nullRow = new ValuesNode(
+                    idAllocator.getNextId(),
+                    nullSymbols.build(),
+                    ImmutableList.of(nullLiterals.build()));
+            Map<Symbol, SymbolReference> sourcesSymbolMapping = sourcesSymbolMappingBuilder.build();
+
+            // For each aggregation function in the reference node, create a corresponding aggregation function
+            // that points to the nullRow. Map the symbols from the aggregations in referenceAggregation to the
+            // symbols in these new aggregations.
+            ImmutableMap.Builder<Symbol, Symbol> aggregationsSymbolMappingBuilder = ImmutableMap.builder();
+            ImmutableMap.Builder<Symbol, FunctionCall> aggregationsOverNullBuilder = ImmutableMap.builder();
+            for (Map.Entry<Symbol, FunctionCall> entry : referenceAggregation.getAggregations().entrySet()) {
+                FunctionCall overNullFunction = ExpressionTreeRewriter.rewriteWith(new ExpressionSymbolInliner(sourcesSymbolMapping), entry.getValue());
+                Symbol overNullSymbol = symbolAllocator.newSymbol(overNullFunction, symbolAllocator.getTypes().get(entry.getKey()));
+                aggregationsOverNullBuilder.put(overNullSymbol, overNullFunction);
+                aggregationsSymbolMappingBuilder.put(entry.getKey(), overNullSymbol);
+            }
+            Map<Symbol, Symbol> aggregationsSymbolMapping = aggregationsSymbolMappingBuilder.build();
+
+            // create an aggregation node whose source is the null row.
+            AggregationNode aggregationOverNullRow = new AggregationNode(
+                    idAllocator.getNextId(),
+                    nullRow,
+                    aggregationsOverNullBuilder.build(),
+                    referenceAggregation.getFunctions().entrySet().stream()
+                            .collect(toImmutableMap(entry -> aggregationsSymbolMapping.get(entry.getKey()), Map.Entry::getValue)),
+                    referenceAggregation.getMasks().entrySet().stream()
+                            .collect(toImmutableMap(entry -> aggregationsSymbolMapping.get(entry.getKey()), entry -> Symbol.from(sourcesSymbolMapping.get(entry.getValue())))),
+                    ImmutableList.of(ImmutableList.of()),
+                    AggregationNode.Step.SINGLE,
+                    Optional.empty(),
+                    Optional.empty()
+            );
+            return new MappedAggregationInfo(aggregationOverNullRow, aggregationsSymbolMapping);
         }
 
         private static boolean groupsOnAllOuterTableColumns(AggregationNode node, JoinNode joinSource)
@@ -290,6 +308,28 @@ public class PushAggregationBelowOuterJoin
         private static boolean isIdentityProject(PlanNode planNode)
         {
             return (planNode instanceof ProjectNode) && ((ProjectNode) planNode).isIdentity();
+        }
+
+        private static class MappedAggregationInfo
+        {
+            private AggregationNode aggregationNode;
+            private Map<Symbol, Symbol> symbolMapping;
+
+            public MappedAggregationInfo(AggregationNode aggregationNode, Map<Symbol, Symbol> symbolMapping)
+            {
+                this.aggregationNode = aggregationNode;
+                this.symbolMapping = symbolMapping;
+            }
+
+            public Map<Symbol, Symbol> getSymbolMapping()
+            {
+                return symbolMapping;
+            }
+
+            public AggregationNode getAggregation()
+            {
+                return aggregationNode;
+            }
         }
     }
 }
