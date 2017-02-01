@@ -392,7 +392,7 @@ public final class DomainTranslator
         @Override
         protected ExtractionResult visitComparisonExpression(ComparisonExpression node, Boolean complement)
         {
-            Optional<NormalizedSimpleComparison> optionalNormalized = toNormalizedSimpleComparison(session, metadata, types, node);
+            Optional<NormalizedSimpleComparison> optionalNormalized = toNormalizedSimpleComparison(node);
             if (!optionalNormalized.isPresent()) {
                 return super.visitComparisonExpression(node, complement);
             }
@@ -407,6 +407,28 @@ public final class DomainTranslator
             }
             else if (symbolExpression instanceof Cast) {
                 Cast castExpression = (Cast) symbolExpression;
+                if (!isImplicitCoercion(castExpression)) {
+                    //
+                    // we cannot use non-coercion cast to literal_type on symbol side to build tuple domain
+                    //
+                    // example which illustrates the problem:
+                    //
+                    // let t be of timestamp type:
+                    //
+                    // and expression be:
+                    // cast(t as date) == date_literal
+                    //
+                    // after dropping cast we end up with:
+                    //
+                    // t == date_literal
+                    //
+                    // if we build tuple domain based coercion of date_literal to timestamp type we would
+                    // end up with tuple domain with just one time point (cast(date_literal as timestamp).
+                    // While we need range which maps to single date pointed by date_literal.
+                    //
+                    return super.visitComparisonExpression(node, complement);
+                }
+
                 NullableValue value = normalized.getValue();
                 Type valueType = value.getType(); // type of value
                 Type castSourceType = typeOf(castExpression.getExpression(), session, metadata, types); // type of expression which is then cast to type of value
@@ -422,8 +444,55 @@ public final class DomainTranslator
                 return super.visitComparisonExpression(node, complement);
             }
             else {
-                throw new IllegalArgumentException("expected symbolExpression to be either SymbolReference or Cast; got " + symbolExpression);
+                return super.visitComparisonExpression(node, complement);
             }
+        }
+
+        /**
+         * Extract a normalized simple comparison between a QualifiedNameReference and a native value if possible.
+         */
+        private Optional<NormalizedSimpleComparison> toNormalizedSimpleComparison(ComparisonExpression comparison)
+        {
+            IdentityHashMap<Expression, Type> expressionTypes = analyzeExpression(comparison);
+            Object left = ExpressionInterpreter.expressionOptimizer(comparison.getLeft(), metadata, session, expressionTypes).optimize(NoOpSymbolResolver.INSTANCE);
+            Object right = ExpressionInterpreter.expressionOptimizer(comparison.getRight(), metadata, session, expressionTypes).optimize(NoOpSymbolResolver.INSTANCE);
+
+            Type leftType = expressionTypes.get(comparison.getLeft());
+            Type rightType = expressionTypes.get(comparison.getRight());
+            checkArgument(leftType.equals(rightType), "left and right type do not match in comparison expression (%s)", comparison);
+
+            if (left instanceof Expression == right instanceof Expression) {
+                // we expect one side to be expression and other to be value.
+                return Optional.empty();
+            }
+
+            Expression symbolExpression;
+            ComparisonExpressionType comparisonType;
+            NullableValue value;
+
+            if (left instanceof Expression) {
+                symbolExpression = comparison.getLeft();
+                comparisonType = comparison.getType();
+                value = new NullableValue(rightType, right);
+            }
+            else {
+                symbolExpression = comparison.getRight();
+                comparisonType = comparison.getType().flip();
+                value = new NullableValue(leftType, left);
+            }
+
+            return Optional.of(new NormalizedSimpleComparison(symbolExpression, comparisonType, value));
+        }
+
+        private boolean isImplicitCoercion(Cast cast)
+        {
+            IdentityHashMap<Expression, Type> expressionTypes = analyzeExpression(cast);
+            return metadata.getTypeManager().canCoerce(expressionTypes.get(cast.getExpression()), expressionTypes.get(cast));
+        }
+
+        private IdentityHashMap<Expression, Type> analyzeExpression(Expression expression)
+        {
+            return ExpressionAnalyzer.getExpressionTypes(session, metadata, new SqlParser(), types, expression, emptyList() /* parameters already replaced */);
         }
 
         private static ExtractionResult createComparisonExtractionResult(ComparisonExpressionType comparisonType, Symbol column, Type type, @Nullable Object value, boolean complement)
@@ -677,91 +746,10 @@ public final class DomainTranslator
         }
     }
 
-    /**
-     * Extract a normalized simple comparison between a QualifiedNameReference and a native value if possible.
-     */
-    private static Optional<NormalizedSimpleComparison> toNormalizedSimpleComparison(Session session, Metadata metadata, Map<Symbol, Type> types, ComparisonExpression comparison)
-    {
-        IdentityHashMap<Expression, Type> expressionTypes = ExpressionAnalyzer.getExpressionTypes(session, metadata, new SqlParser(), types, comparison, emptyList() /* parameters already replaced */);
-        Object left = ExpressionInterpreter.expressionOptimizer(comparison.getLeft(), metadata, session, expressionTypes).optimize(NoOpSymbolResolver.INSTANCE);
-        Object right = ExpressionInterpreter.expressionOptimizer(comparison.getRight(), metadata, session, expressionTypes).optimize(NoOpSymbolResolver.INSTANCE);
-
-        Type leftType = expressionTypes.get(comparison.getLeft());
-        Type rightType = expressionTypes.get(comparison.getRight());
-        checkArgument(leftType.equals(rightType), "left and right type do not match in comparison expression (%s)", comparison);
-
-        if (left instanceof Expression == right instanceof Expression) {
-            // we expect one side to be expression and other to be value.
-            return Optional.empty();
-        }
-
-        Expression symbolExpression;
-        ComparisonExpressionType comparisonType;
-        NullableValue value;
-
-        if (left instanceof Expression) {
-            symbolExpression = comparison.getLeft();
-            comparisonType = comparison.getType();
-            value = new NullableValue(rightType, right);
-        }
-        else {
-            symbolExpression = comparison.getRight();
-            comparisonType = comparison.getType().flip();
-            value = new NullableValue(leftType, left);
-        }
-
-        if (!checkOnlyImplicitCastsAroundSymbol(metadata, expressionTypes, symbolExpression)) {
-            return Optional.empty();
-        }
-
-        return Optional.of(new NormalizedSimpleComparison(symbolExpression, comparisonType, value));
-    }
-
     private static Type typeOf(Expression expression, Session session, Metadata metadata, Map<Symbol, Type> types)
     {
         IdentityHashMap<Expression, Type> expressionTypes = ExpressionAnalyzer.getExpressionTypes(session, metadata, new SqlParser(), types, expression, emptyList() /* parameters already replaced */);
         return expressionTypes.get(expression);
-    }
-
-    private static boolean checkOnlyImplicitCastsAroundSymbol(Metadata metadata, IdentityHashMap<Expression, Type> expressionTypes, Expression symbolExpression)
-    {
-        while (true) {
-            if (symbolExpression instanceof SymbolReference) {
-                return true;
-            }
-            else if (symbolExpression instanceof Cast) {
-                if (!isImplicitCoercion(metadata, expressionTypes, (Cast) symbolExpression)) {
-                    //
-                    // we cannot use non-coercion cast to literal_type on symbol side to build tuple domain
-                    //
-                    // example which illustrates the problem:
-                    //
-                    // let t be of timestamp type:
-                    //
-                    // and expression be:
-                    // cast(t as date) == date_literal
-                    //
-                    // after dropping cast we end up with:
-                    //
-                    // t == date_literal
-                    //
-                    // if we build tuple domain based coercion of date_literal to timestamp type we would
-                    // end up with tuple domain with just one time point (cast(date_literal as timestamp).
-                    // While we need range which maps to single date pointed by date_literal.
-                    //
-                    return false;
-                }
-                symbolExpression = ((Cast) symbolExpression).getExpression();
-            }
-            else {
-                return false;
-            }
-        }
-    }
-
-    private static boolean isImplicitCoercion(Metadata metadata, Map<Expression, Type> expressionTypes, Cast cast)
-    {
-        return metadata.getTypeManager().canCoerce(expressionTypes.get(cast.getExpression()), expressionTypes.get(cast));
     }
 
     private static class NormalizedSimpleComparison
