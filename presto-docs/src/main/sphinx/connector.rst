@@ -14,6 +14,7 @@ from different data sources.
     connector/cassandra
     connector/mysql
     connector/postgresql
+    connector/sqlserver
     connector/tpch
     connector/tpcds
     connector/system
