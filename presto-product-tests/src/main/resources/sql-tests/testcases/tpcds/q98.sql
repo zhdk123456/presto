@@ -1,5 +1,5 @@
--- database: presto_tpcds; groups: tpcds; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
---- quarantined due wrong
+-- database: presto_tpcds; groups: tpcds, quarantine; requires: com.teradata.tempto.fulfillment.table.hive.tpcds.ImmutableTpcdsTablesRequirements
+--- quarantined due SWARM-4054
 SELECT
   "i_item_id"
 , "i_item_desc"
