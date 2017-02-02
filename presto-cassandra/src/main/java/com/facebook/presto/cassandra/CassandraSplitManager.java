@@ -67,7 +67,7 @@ public class CassandraSplitManager
     {
         CassandraTableLayoutHandle layoutHandle = checkType(layout, CassandraTableLayoutHandle.class, "layout");
         CassandraTableHandle cassandraTableHandle = layoutHandle.getTable();
-        List<CassandraPartition> partitions = layoutHandle.getPartitions().get();
+        List<CassandraPartition> partitions = layoutHandle.getPartitions();
 
         requireNonNull(partitions, "partitions is null");
         if (partitions.isEmpty()) {
