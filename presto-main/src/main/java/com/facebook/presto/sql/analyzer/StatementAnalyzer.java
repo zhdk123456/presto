@@ -845,7 +845,14 @@ class StatementAnalyzer
 
             Scope outputScope = computeOutputScope(node, scope, sourceScope);
 
-            List<Expression> orderByExpressions = analyzeOrderBy(node, sourceScope, outputScope, outputExpressions);
+            List<Expression> orderByExpressions = emptyList();
+            if (node.getOrderBy().isPresent()) {
+                Scope orderByScope = computeOrderByScope(node.getOrderBy().get(), sourceScope, outputScope);
+                orderByExpressions = analyzeOrderBy(node, sourceScope, orderByScope, outputExpressions);
+            }
+
+            analysis.setOrderByExpressions(node, orderByExpressions);
+
             analyzeHaving(node, sourceScope);
 
             List<Expression> expressions = new ArrayList<>();
@@ -1288,15 +1295,15 @@ class StatementAnalyzer
             }
         }
 
-        private List<Expression> analyzeOrderBy(QuerySpecification node, Scope sourceScope, Scope outputScope, List<Expression> outputExpressions)
+        private List<Expression> analyzeOrderBy(QuerySpecification node, Scope sourceScope, Scope orderByScope, List<Expression> outputExpressions)
         {
+            checkState(node.getOrderBy().isPresent(), "orderBy is absent");
+
             if (SystemSessionProperties.isLegacyOrderByEnabled(session)) {
-                return legacyAnalyzeOrderBy(node, sourceScope, outputScope, outputExpressions);
+                return legacyAnalyzeOrderBy(node, sourceScope, orderByScope, outputExpressions);
             }
 
-            List<SortItem> items = node.getOrderBy()
-                    .map(OrderBy::getSortItems)
-                    .orElse(emptyList());
+            List<SortItem> items = node.getOrderBy().get().getSortItems();
 
             ImmutableList.Builder<Expression> orderByExpressionsBuilder = ImmutableList.builder();
 
@@ -1314,7 +1321,7 @@ class StatementAnalyzer
                         }
 
                         int field = toIntExact(ordinal - 1);
-                        Type type = outputScope.getRelationType().getFieldByIndex(field).getType();
+                        Type type = orderByScope.getRelationType().getFieldByIndex(field).getType();
                         if (!type.isOrderable()) {
                             throw new SemanticException(TYPE_MISMATCH, node, "The type of expression in position %s is not orderable (actual: %s), and therefore cannot be used in ORDER BY", ordinal, type);
                         }
@@ -1322,14 +1329,7 @@ class StatementAnalyzer
                         orderByExpression = outputExpressions.get(field);
                     }
                     else {
-                        // Analyze the original expression using a synthetic scope (which delegates to the source scope for any missing name)
-                        // to catch any semantic errors (due to type mismatch, etc)
-                        Scope synthetic = Scope.builder()
-                                .withParent(sourceScope)
-                                .withRelationType(outputScope.getRelationType())
-                                .build();
-
-                        analyzeExpression(expression, synthetic);
+                        analyzeExpression(expression, orderByScope);
 
                         orderByExpression = ExpressionTreeRewriter.rewriteWith(new OrderByExpressionRewriter(extractNamedOutputExpressions(node)), expression);
 
@@ -1347,7 +1347,6 @@ class StatementAnalyzer
             }
 
             List<Expression> orderByExpressions = orderByExpressionsBuilder.build();
-            analysis.setOrderByExpressions(node, orderByExpressions);
 
             if (node.getSelect().isDistinct() && !outputExpressions.containsAll(orderByExpressions)) {
                 throw new SemanticException(ORDER_BY_MUST_BE_IN_SELECT, node.getSelect(), "For SELECT DISTINCT, ORDER BY expressions must appear in select list");
@@ -1359,11 +1358,9 @@ class StatementAnalyzer
          * Preserve the old column resolution behavior for ORDER BY while we transition workloads to new semantics
          * TODO: remove this
          */
-        private List<Expression> legacyAnalyzeOrderBy(QuerySpecification node, Scope sourceScope, Scope outputScope, List<Expression> outputExpressions)
+        private List<Expression> legacyAnalyzeOrderBy(QuerySpecification node, Scope sourceScope, Scope orderByScope, List<Expression> outputExpressions)
         {
-            List<SortItem> items = node.getOrderBy()
-                    .map(OrderBy::getSortItems)
-                    .orElse(emptyList());
+            List<SortItem> items = node.getOrderBy().get().getSortItems();
 
             ImmutableList.Builder<Expression> orderByExpressionsBuilder = ImmutableList.builder();
 
@@ -1407,7 +1404,7 @@ class StatementAnalyzer
                         }
 
                         int field = toIntExact(ordinal - 1);
-                        Type type = outputScope.getRelationType().getFieldByIndex(field).getType();
+                        Type type = orderByScope.getRelationType().getFieldByIndex(field).getType();
                         if (!type.isOrderable()) {
                             throw new SemanticException(TYPE_MISMATCH, node, "The type of expression in position %s is not orderable (actual: %s), and therefore cannot be used in ORDER BY", ordinal, type);
                         }
@@ -1433,7 +1430,6 @@ class StatementAnalyzer
             }
 
             List<Expression> orderByExpressions = orderByExpressionsBuilder.build();
-            analysis.setOrderByExpressions(node, orderByExpressions);
 
             if (node.getSelect().isDistinct() && !outputExpressions.containsAll(orderByExpressions)) {
                 throw new SemanticException(ORDER_BY_MUST_BE_IN_SELECT, node.getSelect(), "For SELECT DISTINCT, ORDER BY expressions must appear in select list");
@@ -1633,6 +1629,16 @@ class StatementAnalyzer
             }
 
             return createAndAssignScope(node, scope, outputFields.build());
+        }
+
+        private Scope computeOrderByScope(OrderBy node, Scope sourceScope, Scope outputScope)
+        {
+            Scope orderByScope = Scope.builder()
+                    .withParent(sourceScope)
+                    .withRelationType(outputScope.getRelationType())
+                    .build();
+            analysis.setScope(node, orderByScope);
+            return orderByScope;
         }
 
         private List<Expression> analyzeSelect(QuerySpecification node, Scope scope)
