@@ -35,6 +35,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.facebook.presto.sql.planner.plan.Assignments.identity;
+
+/**
+ * Transforms:
+ *
+ *  <pre>
+ *  Project(x = e1, y = e2)
+ *    Exchange()
+ *      Source(a, b, c)
+ *  </pre>
+ *
+ *  to:
+ *
+ *  <pre>
+ *  Exchange()
+ *    Project(x = e1, y = e2)
+ *      Source(a, b, c)
+ *  </pre>
+ *
+ *  Or if Exchange needs symbols from Source for partitioning or as hash symbol to:
+ *
+ *  <pre>
+ *  Project(x, y)
+ *    Exchange()
+ *      Project(x = e1, y = e2, a)
+ *        Source(a, b, c)
+ *  </pre>
+ *
+ *
+ *  To avoid looping this optimizer will not be fired if upper Project contains just symbol references.
+ */
 public class PushProjectionThroughExchange
         implements Rule
 {
@@ -49,6 +80,10 @@ public class PushProjectionThroughExchange
 
         PlanNode child = lookup.resolve(project.getSource());
         if (!(child instanceof ExchangeNode)) {
+            return Optional.empty();
+        }
+
+        if (isSymbolToSymbolProjection(project)) {
             return Optional.empty();
         }
 
@@ -106,13 +141,25 @@ public class PushProjectionThroughExchange
                 exchange.getPartitioningScheme().isReplicateNulls(),
                 exchange.getPartitioningScheme().getBucketToPartition());
 
-        return Optional.of(new ExchangeNode(
+        PlanNode result = new ExchangeNode(
                 exchange.getId(),
                 exchange.getType(),
                 exchange.getScope(),
                 partitioningScheme,
                 newSourceBuilder.build(),
-                inputsBuilder.build()));
+                inputsBuilder.build());
+
+        if (!result.getOutputSymbols().equals(project.getOutputSymbols())) {
+            // we need to strip unnecessary symbols (hash, partitioning columns).
+            result = new ProjectNode(idAllocator.getNextId(), result, identity(project.getOutputSymbols()));
+        }
+
+        return Optional.of(result);
+    }
+
+    private boolean isSymbolToSymbolProjection(ProjectNode project)
+    {
+        return project.getAssignments().getExpressions().stream().allMatch(e -> e instanceof SymbolReference);
     }
 
     private static Map<Symbol, SymbolReference> extractExchangeOutputToInput(ExchangeNode exchange, int sourceIndex)
