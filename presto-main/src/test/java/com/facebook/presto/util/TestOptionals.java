@@ -23,7 +23,8 @@ import static org.testng.Assert.assertEquals;
 public class TestOptionals
 {
     @Test
-    void testPresentIfCastPossible() {
+    void testPresentIfCastPossible()
+    {
         Optional<Integer> expectedResult = Optional.of(42);
         assertEquals(tryCast(42, Object.class), expectedResult);
         assertEquals(tryCast(42, Number.class), expectedResult);
@@ -31,13 +32,15 @@ public class TestOptionals
     }
 
     @Test
-    void testEmptyIfCastImpossible() {
+    void testEmptyIfCastImpossible()
+    {
         assertEquals(tryCast(42, String.class), Optional.empty());
         assertEquals(tryCast("none", Integer.class), Optional.empty());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    void testDoesNotAllowNulls() {
+    void testDoesNotAllowNulls()
+    {
         tryCast(null, Object.class);
     }
 }
