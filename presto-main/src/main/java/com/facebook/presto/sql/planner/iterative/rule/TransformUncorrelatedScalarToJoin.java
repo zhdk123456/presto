@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.optimizations.ScalarQueryUtil.isResolvedScalarSubqueryOf;
-import static com.facebook.presto.util.Optionals.cast;
+import static com.facebook.presto.util.Optionals.tryCast;
 
 public class TransformUncorrelatedScalarToJoin
         implements Rule
@@ -34,7 +34,7 @@ public class TransformUncorrelatedScalarToJoin
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        return cast(node, ApplyNode.class)
+        return tryCast(node, ApplyNode.class)
                 .flatMap(applyNode -> {
                     PlanNode input = lookup.resolve(applyNode.getInput());
                     PlanNode subquery = lookup.resolve(applyNode.getSubquery());
