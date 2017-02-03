@@ -24,7 +24,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import java.util.Optional;
 
 import static com.facebook.presto.sql.planner.iterative.rule.Util.transpose;
-import static com.facebook.presto.util.Optionals.cast;
+import static com.facebook.presto.util.Optionals.tryCast;
 
 public class PushLimitThroughMarkDistinct
         implements Rule
@@ -32,7 +32,7 @@ public class PushLimitThroughMarkDistinct
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        return cast(node, LimitNode.class)
+        return tryCast(node, LimitNode.class)
                 .flatMap(parent -> lookup.resolve(parent.getSource(), MarkDistinctNode.class)
                 .map(child -> transpose(parent, child)));
     }
