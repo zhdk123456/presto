@@ -83,18 +83,6 @@ public class TestSwapAdjacentWindowsByPartitionsOrder
     public void subsetComesFirst()
             throws Exception
     {
-        Signature signature = new Signature(
-                "avg",
-                FunctionKind.WINDOW,
-                ImmutableList.of(),
-                ImmutableList.of(),
-                DOUBLE.getTypeSignature(),
-                ImmutableList.of(DOUBLE.getTypeSignature()),
-                false);
-
-        WindowNode.Frame frame = new WindowNode.Frame(WindowFrame.Type.RANGE, UNBOUNDED_PRECEDING,
-                Optional.empty(), CURRENT_ROW, Optional.empty());
-
         tester.assertThat(new SwapAdjacentWindowsByPartitionsOrder())
                 .on(p ->
                         p.window(new WindowNode.Specification(
