@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.sql.planner.iterative.rule.Util.pruneInputs;
-import static com.facebook.presto.util.Optionals.cast;
+import static com.facebook.presto.util.Optionals.tryCast;
 
 public class PruneValuesColumns
         implements Rule
@@ -38,7 +38,7 @@ public class PruneValuesColumns
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        return cast(node, ProjectNode.class)
+        return tryCast(node, ProjectNode.class)
             .flatMap((ProjectNode parent) -> lookup.resolve(parent.getSource(), ValuesNode.class)
             .flatMap((ValuesNode child) -> pruneInputs(child.getOutputSymbols(), parent.getAssignments().getExpressions())
             .map((List<Symbol> dependencies) ->
