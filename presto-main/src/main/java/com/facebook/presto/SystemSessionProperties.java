@@ -55,6 +55,7 @@ public final class SystemSessionProperties
     public static final String QUERY_MAX_CPU_TIME = "query_max_cpu_time";
     public static final String REDISTRIBUTE_WRITES = "redistribute_writes";
     public static final String PUSH_TABLE_WRITE_THROUGH_UNION = "push_table_write_through_union";
+    public static final String PUSH_AGGREGATION_THROUGH_JOIN = "push_aggregation_through_join";
     public static final String EXECUTION_POLICY = "execution_policy";
     public static final String PROCESSING_OPTIMIZATION = "processing_optimization";
     public static final String DICTIONARY_AGGREGATION = "dictionary_aggregation";
@@ -162,6 +163,11 @@ public final class SystemSessionProperties
                         PUSH_TABLE_WRITE_THROUGH_UNION,
                         "Parallelize writes when using UNION ALL in queries that write data",
                         featuresConfig.isPushTableWriteThroughUnion(),
+                        false),
+                booleanSessionProperty(
+                        PUSH_AGGREGATION_THROUGH_JOIN,
+                        "Push aggregations through joins",
+                        false,
                         false),
                 new PropertyMetadata<>(
                         TASK_CONCURRENCY,
@@ -362,6 +368,11 @@ public final class SystemSessionProperties
     public static boolean isPushTableWriteThroughUnion(Session session)
     {
         return session.getSystemProperty(PUSH_TABLE_WRITE_THROUGH_UNION, Boolean.class);
+    }
+
+    public static boolean isPushAggregationThroughJoin(Session session)
+    {
+        return session.getSystemProperty(PUSH_AGGREGATION_THROUGH_JOIN, Boolean.class);
     }
 
     public static int getTaskConcurrency(Session session)
