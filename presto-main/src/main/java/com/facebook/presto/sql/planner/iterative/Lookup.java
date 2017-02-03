@@ -17,7 +17,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 
 import java.util.Optional;
 
-import static com.facebook.presto.util.Optionals.cast;
+import static com.facebook.presto.util.Optionals.tryCast;
 
 public interface Lookup
 {
@@ -32,6 +32,6 @@ public interface Lookup
 
     default <T extends PlanNode> Optional<T> resolve(PlanNode node, Class<T> target)
     {
-        return cast(resolve(node), target);
+        return tryCast(resolve(node), target);
     }
 }
