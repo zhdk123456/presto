@@ -26,25 +26,35 @@ import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.Assignments;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
+import com.facebook.presto.sql.planner.plan.JoinNode;
+import com.facebook.presto.sql.planner.plan.JoinNode.EquiJoinClause;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
+import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.QualifiedName;
+import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.facebook.presto.SystemSessionProperties.isPushAggregationThroughJoin;
 import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.FINAL;
 import static com.facebook.presto.sql.planner.plan.AggregationNode.Step.PARTIAL;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Type.GATHER;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Type.REPARTITION;
+import static com.facebook.presto.util.ImmutableCollectors.toImmutableSet;
 import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +73,7 @@ public class PartialAggregationPushDown
     @Override
     public PlanNode optimize(PlanNode plan, Session session, Map<Symbol, Type> types, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator)
     {
-        return SimplePlanRewriter.rewriteWith(new Rewriter(symbolAllocator, idAllocator), plan, null);
+        return SimplePlanRewriter.rewriteWith(new Rewriter(symbolAllocator, idAllocator, isPushAggregationThroughJoin(session)), plan, null);
     }
 
     private class Rewriter
@@ -71,17 +81,23 @@ public class PartialAggregationPushDown
     {
         private final SymbolAllocator allocator;
         private final PlanNodeIdAllocator idAllocator;
+        private final boolean pushAggregationThroughJoin;
 
-        public Rewriter(SymbolAllocator allocator, PlanNodeIdAllocator idAllocator)
+        public Rewriter(SymbolAllocator allocator, PlanNodeIdAllocator idAllocator, boolean pushAggregationThroughJoin)
         {
             this.allocator = requireNonNull(allocator, "allocator is null");
             this.idAllocator = requireNonNull(idAllocator, "idAllocator is null");
+            this.pushAggregationThroughJoin = pushAggregationThroughJoin;
         }
 
         @Override
         public PlanNode visitAggregation(AggregationNode node, RewriteContext<Void> context)
         {
             PlanNode child = node.getSource();
+
+            if (child instanceof JoinNode && pushAggregationThroughJoin) {
+                return pushPartialThroughJoin(node, (JoinNode) child, context);
+            }
 
             if (!(child instanceof ExchangeNode)) {
                 return context.defaultRewrite(node);
@@ -138,6 +154,114 @@ public class PartialAggregationPushDown
                 default:
                     return context.defaultRewrite(node);
             }
+        }
+
+        private PlanNode pushPartialThroughJoin(AggregationNode node, JoinNode child, RewriteContext<Void> context)
+        {
+            if (node.getStep() != PARTIAL) {
+                return context.defaultRewrite(node);
+            }
+            if (child.getType() != JoinNode.Type.INNER) {
+                return context.defaultRewrite(node);
+            }
+            if (!joinKeyColumnsSameAsGroupingSet(node, child)) {
+                return context.defaultRewrite(node);
+            }
+
+            // TODO: leave partial aggregation above Join?
+            if (allAggregationsOn(node.getAggregations(), child.getLeft().getOutputSymbols())) {
+                return pushPartialToLeftChild(node, child, context);
+            }
+            if (allAggregationsOn(node.getAggregations(), child.getRight().getOutputSymbols())) {
+                return pushPartialToRightChild(node, child, context);
+            }
+
+            return context.defaultRewrite(node);
+        }
+
+        private PlanNode pushPartialToLeftChild(AggregationNode node, JoinNode child, RewriteContext<Void> context)
+        {
+            AggregationNode pushedAggregation = replaceAggregationSource(node, child.getLeft(), child.getCriteria(), context);
+            return pushPartialToJoin(pushedAggregation, child, pushedAggregation, context.rewrite(child.getRight()), child.getRight().getOutputSymbols());
+        }
+
+        private PlanNode pushPartialToRightChild(AggregationNode node, JoinNode child, RewriteContext<Void> context)
+        {
+            AggregationNode pushedAggregation = replaceAggregationSource(node, child.getRight(), child.getCriteria(), context);
+            return pushPartialToJoin(pushedAggregation, child, context.rewrite(child.getLeft()), pushedAggregation, child.getLeft().getOutputSymbols());
+        }
+
+        private PlanNode pushPartialToJoin(
+                AggregationNode pushedAggregation,
+                JoinNode child,
+                PlanNode leftChild,
+                PlanNode rightChild,
+                Collection<Symbol> otherSymbols)
+        {
+            ImmutableList.Builder<Symbol> outputSymbols = ImmutableList.builder();
+            outputSymbols.addAll(pushedAggregation.getOutputSymbols());
+            outputSymbols.addAll(otherSymbols);
+
+            return new JoinNode(
+                    child.getId(),
+                    child.getType(),
+                    leftChild,
+                    rightChild,
+                    child.getCriteria(),
+                    outputSymbols.build(),
+                    child.getFilter(),
+                    child.getLeftHashSymbol(),
+                    child.getRightHashSymbol(),
+                    child.getDistributionType());
+        }
+
+        private AggregationNode replaceAggregationSource(AggregationNode aggregation, PlanNode source, List<EquiJoinClause> criteria, RewriteContext<Void> context)
+        {
+            PlanNode rewrittenSource = context.rewrite(source);
+            ImmutableSet<Symbol> rewrittenSourceSymbols = ImmutableSet.copyOf(rewrittenSource.getOutputSymbols());
+            ImmutableMap.Builder<Symbol, Symbol> mapping = ImmutableMap.builder();
+
+            for (EquiJoinClause joinClause : criteria) {
+                if (rewrittenSourceSymbols.contains(joinClause.getLeft())) {
+                    mapping.put(joinClause.getRight(), joinClause.getLeft());
+                }
+                else {
+                    mapping.put(joinClause.getLeft(), joinClause.getRight());
+                }
+            }
+
+            return new SymbolMapper(mapping.build()).map(aggregation, source, aggregation.getId());
+        }
+
+        private boolean allAggregationsOn(Map<Symbol, FunctionCall> aggregations, List<Symbol> outputSymbols)
+        {
+            Set<String> outputNames = outputSymbols.stream().map(Symbol::getName).collect(toImmutableSet());
+
+            return aggregations.values().stream()
+                    .flatMap(functionCall -> functionCall.getArguments().stream())
+                    .allMatch(expression -> isSymbolReferenceTo(expression, outputNames));
+        }
+
+        private boolean isSymbolReferenceTo(Expression expression, Set<String> outputNames)
+        {
+            return expression instanceof SymbolReference && outputNames.contains(((SymbolReference) expression).getName());
+        }
+
+        private boolean joinKeyColumnsSameAsGroupingSet(AggregationNode aggregation, JoinNode join)
+        {
+            if (join.getFilter().isPresent()) {
+                return false;
+            }
+            if (aggregation.getGroupingSets().size() != 1) {
+                return false;
+            }
+            Set<Symbol> groupingSet = ImmutableSet.copyOf(Iterables.getOnlyElement(aggregation.getGroupingSets()));
+            for (EquiJoinClause clause : join.getCriteria()) {
+                if (!groupingSet.contains(clause.getLeft()) && !groupingSet.contains(clause.getRight())) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private PlanNode pushPartial(AggregationNode partial, ExchangeNode exchange)
