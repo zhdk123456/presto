@@ -15,7 +15,7 @@ package com.facebook.presto.util;
 
 import java.util.Optional;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 public class Optionals
 {
@@ -25,7 +25,7 @@ public class Optionals
 
     public static <T> Optional<T> tryCast(Object object, Class<T> targetType)
     {
-        checkNotNull(object);
+        requireNonNull(object);
         if (targetType.isInstance(object)) {
             return Optional.of(targetType.cast(object));
         }
