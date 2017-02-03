@@ -113,6 +113,7 @@ import java.util.stream.Stream;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.spi.type.TypeSignature.parseTypeSignature;
 import static com.facebook.presto.spi.type.TypeUtils.writeNativeValue;
+import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.createConstantAnalyzer;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.EXPRESSION_NOT_CONSTANT;
 import static com.facebook.presto.sql.analyzer.TypeSignatureProvider.fromTypes;
@@ -120,6 +121,8 @@ import static com.facebook.presto.sql.gen.TryCodeGenerator.tryExpressionExceptio
 import static com.facebook.presto.sql.gen.VarArgsToMapAdapterGenerator.generateVarArgsToMapAdapter;
 import static com.facebook.presto.sql.planner.LiteralInterpreter.toExpression;
 import static com.facebook.presto.sql.planner.LiteralInterpreter.toExpressions;
+import static com.facebook.presto.type.LikeFunctions.isLikePattern;
+import static com.facebook.presto.type.LikeFunctions.unescapeValidLikePattern;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.Types.checkType;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -1034,25 +1037,23 @@ public class ExpressionInterpreter
             }
 
             // if pattern is a constant without % or _ replace with a comparison
-            if (pattern instanceof Slice && escape == null) {
-                String stringPattern = ((Slice) pattern).toStringUtf8();
-                if (!stringPattern.contains("%") && !stringPattern.contains("_")) {
-                    Type valueType = expressionTypes.get(node.getValue());
-                    Type patternType = expressionTypes.get(node.getPattern());
-                    TypeManager typeManager = metadata.getTypeManager();
-                    Optional<Type> commonSuperType = typeManager.getCommonSuperType(valueType, patternType);
-                    checkArgument(commonSuperType.isPresent(), "Missing super type when optimizing %s", node);
-                    Expression valueExpression = toExpression(value, valueType);
-                    Expression patternExpression = toExpression(pattern, patternType);
-                    Type superType = commonSuperType.get();
-                    if (!valueType.equals(superType)) {
-                        valueExpression = new Cast(valueExpression, superType.getTypeSignature().toString(), false, typeManager.isTypeOnlyCoercion(valueType, superType));
-                    }
-                    if (!patternType.equals(superType)) {
-                        patternExpression = new Cast(patternExpression, superType.getTypeSignature().toString(), false, typeManager.isTypeOnlyCoercion(patternType, superType));
-                    }
-                    return new ComparisonExpression(ComparisonExpressionType.EQUAL, valueExpression, patternExpression);
+            if (pattern instanceof Slice && (escape == null || escape instanceof Slice) && !isLikePattern((Slice) pattern, (Slice) escape)) {
+                Slice unescapedPattern = unescapeValidLikePattern((Slice) pattern, (Slice) escape);
+                Type valueType = expressionTypes.get(node.getValue());
+                Type patternType = createVarcharType(unescapedPattern.length());
+                TypeManager typeManager = metadata.getTypeManager();
+                Optional<Type> commonSuperType = typeManager.getCommonSuperType(valueType, patternType);
+                checkArgument(commonSuperType.isPresent(), "Missing super type when optimizing %s", node);
+                Expression valueExpression = toExpression(value, valueType);
+                Expression patternExpression = toExpression(unescapedPattern, patternType);
+                Type superType = commonSuperType.get();
+                if (!valueType.equals(superType)) {
+                    valueExpression = new Cast(valueExpression, superType.getTypeSignature().toString(), false, typeManager.isTypeOnlyCoercion(valueType, superType));
                 }
+                if (!patternType.equals(superType)) {
+                    patternExpression = new Cast(patternExpression, superType.getTypeSignature().toString(), false, typeManager.isTypeOnlyCoercion(patternType, superType));
+                }
+                return new ComparisonExpression(ComparisonExpressionType.EQUAL, valueExpression, patternExpression);
             }
 
             Expression optimizedEscape = null;

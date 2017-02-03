@@ -25,9 +25,11 @@ import io.airlift.joni.Option;
 import io.airlift.joni.Regex;
 import io.airlift.joni.Syntax;
 import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
 import static com.facebook.presto.spi.type.Chars.padSpaces;
+import static com.facebook.presto.util.Failures.checkCondition;
 import static io.airlift.joni.constants.MetaChar.INEFFECTIVE_META_CHAR;
 import static io.airlift.joni.constants.SyntaxProperties.OP_ASTERISK_ZERO_INF;
 import static io.airlift.joni.constants.SyntaxProperties.OP_DOT_ANYCHAR;
@@ -92,6 +94,55 @@ public final class LikeFunctions
     public static Regex likePattern(@SqlType("varchar(x)") Slice pattern, @SqlType("varchar(y)") Slice escape)
     {
         return likePattern(pattern.toStringUtf8(), getEscapeChar(escape), true);
+    }
+
+    public static boolean isLikePattern(Slice pattern, Slice escape)
+    {
+        String stringPattern = pattern.toStringUtf8();
+        if (escape == null) {
+            return stringPattern.contains("%") || stringPattern.contains("_");
+        }
+
+        String stringEscape = escape.toStringUtf8();
+        checkCondition(stringEscape.length() == 1, INVALID_FUNCTION_ARGUMENT, "Escape must be empty or a single character");
+
+        char escapeChar = stringEscape.charAt(0);
+        boolean escaped = false;
+        for (int currentChar : stringPattern.codePoints().toArray()) {
+            if (!escaped && (currentChar == escapeChar)) {
+                escaped = true;
+            }
+            else if (escaped) {
+                escaped = false;
+            }
+            else if ((currentChar == '%') || (currentChar == '_')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Slice unescapeValidLikePattern(Slice pattern, Slice escape)
+    {
+        if (escape == null) {
+            return pattern;
+        }
+
+        String stringEscape = escape.toStringUtf8();
+        char escapeChar = stringEscape.charAt(0);
+        String stringPattern = pattern.toStringUtf8();
+        StringBuilder unescapedPattern = new StringBuilder(stringPattern.length());
+        boolean escaped = false;
+        for (int currentChar : stringPattern.codePoints().toArray()) {
+            if (!escaped && (currentChar == escapeChar)) {
+                escaped = true;
+            }
+            else {
+                unescapedPattern.append(Character.toChars(currentChar));
+                escaped = false;
+            }
+        }
+        return Slices.utf8Slice(unescapedPattern.toString());
     }
 
     private static boolean regexMatches(Regex regex, byte[] bytes)
