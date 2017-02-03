@@ -25,7 +25,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static com.facebook.presto.util.Optionals.cast;
+import static com.facebook.presto.util.Optionals.tryCast;
 import static com.facebook.presto.util.Predicates.predicate;
 
 public class MergeLimitWithDistinct
@@ -36,7 +36,7 @@ public class MergeLimitWithDistinct
     @Override
     public Optional<PlanNode> apply(PlanNode node, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
     {
-        Optional<LimitNode> parent = cast(node, LimitNode.class);
+        Optional<LimitNode> parent = tryCast(node, LimitNode.class);
 
         Optional<AggregationNode> childNotDistinct = parent
                 .flatMap(p -> lookup.resolve(p.getSource(), AggregationNode.class))
