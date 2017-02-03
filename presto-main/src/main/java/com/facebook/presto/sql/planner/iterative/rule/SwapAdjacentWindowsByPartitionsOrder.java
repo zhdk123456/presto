@@ -21,7 +21,6 @@ import com.facebook.presto.sql.planner.iterative.Rule;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.WindowNode;
 
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -44,8 +43,7 @@ public class SwapAdjacentWindowsByPartitionsOrder
             return Optional.empty();
         }
 
-        Comparator<WindowNode> comparator = new PartitionByComparator();
-        if (comparator.compare(parent, (WindowNode) child) < 0) {
+        if ((compare(parent, (WindowNode) child) < 0) && (!dependsOn(parent, (WindowNode) child))) {
             return Optional.of(transpose(parent, child));
         }
         else {
@@ -53,35 +51,40 @@ public class SwapAdjacentWindowsByPartitionsOrder
         }
     }
 
-    private static class PartitionByComparator
-            implements Comparator<WindowNode>
+    private static boolean dependsOn(WindowNode parent, WindowNode dependent)
     {
-        @Override
-        public int compare(WindowNode o1, WindowNode o2)
-        {
-            Iterator<Symbol> iterator1 = o1.getPartitionBy().iterator();
-            Iterator<Symbol> iterator2 = o2.getPartitionBy().iterator();
+        return parent.getPartitionBy().stream().anyMatch(symbol -> dependent.getCreatedSymbols().contains(symbol))
+                || parent.getOrderBy().stream().anyMatch(symbol -> dependent.getCreatedSymbols().contains(symbol))
+                || parent.getWindowFunctions().values().stream()
+                .map(WindowNode.Function::getFunctionCall)
+                .flatMap(functionCall -> functionCall.getArguments().stream())
+                .anyMatch(expression -> dependent.getCreatedSymbols().contains(Symbol.from(expression)));
+    }
 
-            while (iterator1.hasNext() && iterator2.hasNext()) {
-                Symbol symbol1 = iterator1.next();
-                Symbol symbol2 = iterator2.next();
+    private static int compare(WindowNode o1, WindowNode o2)
+    {
+        Iterator<Symbol> iterator1 = o1.getPartitionBy().iterator();
+        Iterator<Symbol> iterator2 = o2.getPartitionBy().iterator();
 
-                int comparison = symbol1.compareTo(symbol2);
-                if (comparison != 0) {
-                    return comparison;
-                }
+        while (iterator1.hasNext() && iterator2.hasNext()) {
+            Symbol symbol1 = iterator1.next();
+            Symbol symbol2 = iterator2.next();
+
+            int comparison = symbol1.compareTo(symbol2);
+            if (comparison != 0) {
+                return comparison;
             }
-
-            if (iterator1.hasNext()) {
-                return 1;
-            }
-
-            if (iterator2.hasNext()) {
-                return -1;
-            }
-
-            // If both are equal, let's establish an arbitrary order to prevent non-deterministic results of swapping WindowNodes with identical PartitionBy clauses
-            return o1.getId().toString().compareTo(o2.getId().toString());
         }
+
+        if (iterator1.hasNext()) {
+            return 1;
+        }
+
+        if (iterator2.hasNext()) {
+            return -1;
+        }
+
+        // If both are equal, let's establish an arbitrary order to prevent non-deterministic results of swapping WindowNodes with identical PartitionBy clauses
+        return o1.getId().toString().compareTo(o2.getId().toString());
     }
 }
