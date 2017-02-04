@@ -1237,6 +1237,24 @@ public class TestExpressionInterpreter
         assertOptimizedEquals("unbound_string LIKE unbound_pattern ESCAPE unbound_string", "unbound_string LIKE unbound_pattern ESCAPE unbound_string");
     }
 
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLike1()
+    {
+        optimize("unbound_string LIKE '#' ESCAPE '#'");
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLike2()
+    {
+        optimize("unbound_string LIKE '#abc' ESCAPE '#'");
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLike3()
+    {
+        optimize("unbound_string LIKE 'ab#' ESCAPE '#'");
+    }
+
     @Test
     public void testFailedExpressionOptimization()
             throws Exception

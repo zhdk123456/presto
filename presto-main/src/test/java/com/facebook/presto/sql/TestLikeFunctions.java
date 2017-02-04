@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql;
 
+import com.facebook.presto.spi.PrestoException;
 import io.airlift.joni.Regex;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
@@ -106,8 +107,26 @@ public class TestLikeFunctions
     public void testAlternateEscapedCharacters()
             throws Exception
     {
-        Regex regex = likePattern(utf8Slice("xxx%x_xabcxx"), utf8Slice("x"));
+        Regex regex = likePattern(utf8Slice("xxx%x_abcxx"), utf8Slice("x"));
         assertTrue(like(utf8Slice("x%_abcx"), regex));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLikePattern1()
+    {
+        likePattern(utf8Slice("#"), utf8Slice("#"));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLikePattern2()
+    {
+        likePattern(utf8Slice("abc#abc"), utf8Slice("#"));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidLikePattern3()
+    {
+        likePattern(utf8Slice("abc#"), utf8Slice("#"));
     }
 
     @Test
@@ -121,6 +140,24 @@ public class TestLikeFunctions
         assertTrue(isLikePattern(utf8Slice("abcdef_"), null));
         assertTrue(isLikePattern(utf8Slice("abcdef##_"), utf8Slice("#")));
         assertTrue(isLikePattern(utf8Slice("%abcdef#_"), utf8Slice("#")));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidIsLikePattern1()
+    {
+        isLikePattern(utf8Slice("#"), utf8Slice("#"));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidIsLikePattern2()
+    {
+        isLikePattern(utf8Slice("abc#abc"), utf8Slice("#"));
+    }
+
+    @Test(expectedExceptions = PrestoException.class)
+    public void testInvalidIsLikePattern3()
+    {
+        isLikePattern(utf8Slice("abc#"), utf8Slice("#"));
     }
 
     @Test
