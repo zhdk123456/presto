@@ -112,6 +112,12 @@ public class MockQueryExecution
         return state;
     }
 
+    @Override
+    public QueryPlan getQueryPlan()
+    {
+        throw new UnsupportedOperationException();
+    }
+
     public Throwable getFailureCause()
     {
         return failureCause;

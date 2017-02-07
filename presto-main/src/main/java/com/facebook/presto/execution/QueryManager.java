@@ -29,6 +29,8 @@ public interface QueryManager
 
     QueryInfo getQueryInfo(QueryId queryId);
 
+    QueryPlan getQueryPlan(QueryId queryId);
+
     Optional<QueryState> getQueryState(QueryId queryId);
 
     void recordHeartbeat(QueryId queryId);

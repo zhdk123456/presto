@@ -65,6 +65,12 @@ public class FailedQueryExecution
     }
 
     @Override
+    public QueryPlan getQueryPlan()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public VersionedMemoryPoolId getMemoryPool()
     {
         return new VersionedMemoryPoolId(GENERAL_POOL, 0);
