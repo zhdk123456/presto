@@ -34,6 +34,7 @@ import com.facebook.presto.sql.tree.ColumnDefinition;
 import com.facebook.presto.sql.tree.Commit;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.ComparisonExpressionType;
+import com.facebook.presto.sql.tree.CreateRole;
 import com.facebook.presto.sql.tree.CreateSchema;
 import com.facebook.presto.sql.tree.CreateTable;
 import com.facebook.presto.sql.tree.CreateTableAsSelect;
@@ -47,6 +48,7 @@ import com.facebook.presto.sql.tree.DereferenceExpression;
 import com.facebook.presto.sql.tree.DescribeInput;
 import com.facebook.presto.sql.tree.DescribeOutput;
 import com.facebook.presto.sql.tree.DoubleLiteral;
+import com.facebook.presto.sql.tree.DropRole;
 import com.facebook.presto.sql.tree.DropSchema;
 import com.facebook.presto.sql.tree.DropTable;
 import com.facebook.presto.sql.tree.DropView;
@@ -95,6 +97,7 @@ import com.facebook.presto.sql.tree.NullLiteral;
 import com.facebook.presto.sql.tree.OrderBy;
 import com.facebook.presto.sql.tree.Parameter;
 import com.facebook.presto.sql.tree.Prepare;
+import com.facebook.presto.sql.tree.PrincipalSpecification;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.QuantifiedComparisonExpression;
 import com.facebook.presto.sql.tree.Query;
@@ -713,6 +716,18 @@ class AstBuilder
     public Node visitResetSession(SqlBaseParser.ResetSessionContext context)
     {
         return new ResetSession(getLocation(context), getQualifiedName(context.qualifiedName()));
+    }
+
+    @Override
+    public Node visitCreateRole(SqlBaseParser.CreateRoleContext context)
+    {
+        return new CreateRole(getLocation(context), context.name.getText(), getPrincipalSpecificationIfPresent(context.grantor), getTextIfPresent(context.catalog));
+    }
+
+    @Override
+    public Node visitDropRole(SqlBaseParser.DropRoleContext context)
+    {
+        return new DropRole(getLocation(context), context.name.getText(), getTextIfPresent(context.catalog));
     }
 
     @Override
@@ -1793,6 +1808,33 @@ class AstBuilder
             return getType(typeParameter.type());
         }
         throw new IllegalArgumentException("Unsupported typeParameter: " + typeParameter.getText());
+    }
+
+    private static Optional<PrincipalSpecification> getPrincipalSpecificationIfPresent(SqlBaseParser.PrincipalContext principal)
+    {
+        return Optional.ofNullable(principal).map(AstBuilder::getPrincipalSpecification);
+    }
+
+    private static PrincipalSpecification getPrincipalSpecification(SqlBaseParser.PrincipalContext principal)
+    {
+        if (principal instanceof SqlBaseParser.UnspecifiedPrincipalContext) {
+            return PrincipalSpecification.createUnspecified(((SqlBaseParser.UnspecifiedPrincipalContext) principal).identifier().getText());
+        }
+        else if (principal instanceof SqlBaseParser.UserPrincipalContext) {
+            return PrincipalSpecification.createUser(((SqlBaseParser.UserPrincipalContext) principal).identifier().getText());
+        }
+        else if (principal instanceof SqlBaseParser.RolePrincipalContext) {
+            return PrincipalSpecification.createRole(((SqlBaseParser.RolePrincipalContext) principal).identifier().getText());
+        }
+        else if (principal instanceof SqlBaseParser.CurrentUserPrincipalContext) {
+            return PrincipalSpecification.createCurrentUser();
+        }
+        else if (principal instanceof SqlBaseParser.CurrentRolePrincipalContext) {
+            return PrincipalSpecification.createCurrentRole();
+        }
+        else {
+            throw new IllegalArgumentException("Unsupported principal: " + principal);
+        }
     }
 
     private static void check(boolean condition, String message, ParserRuleContext context)

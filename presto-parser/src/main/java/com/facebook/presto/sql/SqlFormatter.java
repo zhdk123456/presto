@@ -21,6 +21,7 @@ import com.facebook.presto.sql.tree.Call;
 import com.facebook.presto.sql.tree.CallArgument;
 import com.facebook.presto.sql.tree.ColumnDefinition;
 import com.facebook.presto.sql.tree.Commit;
+import com.facebook.presto.sql.tree.CreateRole;
 import com.facebook.presto.sql.tree.CreateSchema;
 import com.facebook.presto.sql.tree.CreateTable;
 import com.facebook.presto.sql.tree.CreateTableAsSelect;
@@ -29,6 +30,7 @@ import com.facebook.presto.sql.tree.Deallocate;
 import com.facebook.presto.sql.tree.Delete;
 import com.facebook.presto.sql.tree.DescribeInput;
 import com.facebook.presto.sql.tree.DescribeOutput;
+import com.facebook.presto.sql.tree.DropRole;
 import com.facebook.presto.sql.tree.DropSchema;
 import com.facebook.presto.sql.tree.DropTable;
 import com.facebook.presto.sql.tree.DropView;
@@ -52,6 +54,7 @@ import com.facebook.presto.sql.tree.NaturalJoin;
 import com.facebook.presto.sql.tree.Node;
 import com.facebook.presto.sql.tree.OrderBy;
 import com.facebook.presto.sql.tree.Prepare;
+import com.facebook.presto.sql.tree.PrincipalSpecification;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.Query;
 import com.facebook.presto.sql.tree.QuerySpecification;
@@ -820,6 +823,23 @@ public final class SqlFormatter
                     .collect(joining("."));
         }
 
+        private static String formatPrincipal(PrincipalSpecification principal)
+        {
+            PrincipalSpecification.Type type = principal.getType();
+            switch (type) {
+                case UNSPECIFIED:
+                    return formatName(principal.getName());
+                case USER:
+                case ROLE:
+                    return type.toString() + " " + formatName(principal.getName());
+                case CURRENT_ROLE:
+                case CURRENT_USER:
+                    return type.toString();
+                default:
+                    throw new IllegalArgumentException("Unsupported principal type: " + type);
+            }
+        }
+
         @Override
         protected Void visitDropTable(DropTable node, Integer context)
         {
@@ -996,6 +1016,29 @@ public final class SqlFormatter
         protected Void visitRollback(Rollback node, Integer context)
         {
             builder.append("ROLLBACK");
+            return null;
+        }
+
+        @Override
+        protected Void visitCreateRole(CreateRole node, Integer context)
+        {
+            builder.append("CREATE ROLE ").append(formatName(node.getName()));
+            if (node.getGrantor().isPresent()) {
+                builder.append(" WITH ADMIN ").append(formatPrincipal(node.getGrantor().get()));
+            }
+            if (node.getCatalog().isPresent()) {
+                builder.append(" IN ").append(formatName(node.getCatalog().get()));
+            }
+            return null;
+        }
+
+        @Override
+        protected Void visitDropRole(DropRole node, Integer context)
+        {
+            builder.append("DROP ROLE ").append(formatName(node.getName()));
+            if (node.getCatalog().isPresent()) {
+                builder.append(" IN ").append(formatName(node.getCatalog().get()));
+            }
             return null;
         }
 

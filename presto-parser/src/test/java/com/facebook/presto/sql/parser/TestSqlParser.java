@@ -29,6 +29,7 @@ import com.facebook.presto.sql.tree.ColumnDefinition;
 import com.facebook.presto.sql.tree.Commit;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.ComparisonExpressionType;
+import com.facebook.presto.sql.tree.CreateRole;
 import com.facebook.presto.sql.tree.CreateSchema;
 import com.facebook.presto.sql.tree.CreateTable;
 import com.facebook.presto.sql.tree.CreateTableAsSelect;
@@ -42,6 +43,7 @@ import com.facebook.presto.sql.tree.DereferenceExpression;
 import com.facebook.presto.sql.tree.DescribeInput;
 import com.facebook.presto.sql.tree.DescribeOutput;
 import com.facebook.presto.sql.tree.DoubleLiteral;
+import com.facebook.presto.sql.tree.DropRole;
 import com.facebook.presto.sql.tree.DropSchema;
 import com.facebook.presto.sql.tree.DropTable;
 import com.facebook.presto.sql.tree.DropView;
@@ -133,6 +135,11 @@ import static com.facebook.presto.sql.parser.IdentifierSymbol.COLON;
 import static com.facebook.presto.sql.testing.TreeAssertions.assertFormattedSql;
 import static com.facebook.presto.sql.tree.ArithmeticUnaryExpression.negative;
 import static com.facebook.presto.sql.tree.ArithmeticUnaryExpression.positive;
+import static com.facebook.presto.sql.tree.PrincipalSpecification.createCurrentRole;
+import static com.facebook.presto.sql.tree.PrincipalSpecification.createCurrentUser;
+import static com.facebook.presto.sql.tree.PrincipalSpecification.createRole;
+import static com.facebook.presto.sql.tree.PrincipalSpecification.createUnspecified;
+import static com.facebook.presto.sql.tree.PrincipalSpecification.createUser;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
@@ -1748,6 +1755,34 @@ public class TestSqlParser
                         identifier("col1"),
                         new SubqueryExpression(simpleQuery(selectList(new LongLiteral("10"))))
                 ));
+    }
+
+    @Test
+    public void testCreateRole()
+            throws Exception
+    {
+        assertStatement("CREATE ROLE role", new CreateRole("role", Optional.empty(), Optional.empty()));
+        assertStatement("CREATE ROLE role1 WITH ADMIN admin", new CreateRole("role1", Optional.of(createUnspecified("admin")), Optional.empty()));
+        assertStatement("CREATE ROLE role2 WITH ADMIN admin1 IN catalog", new CreateRole("role2", Optional.of(createUnspecified("admin1")), Optional.of("catalog")));
+        assertStatement("CREATE ROLE role3 IN catalog1", new CreateRole("role3", Optional.empty(), Optional.of("catalog1")));
+        assertStatement("CREATE ROLE \"role\" WITH ADMIN \"admin\" IN \"catalog\"", new CreateRole("role", Optional.of(createUnspecified("admin")), Optional.of("catalog")));
+        assertStatement("CREATE ROLE \"ro le\" WITH ADMIN \"ad min\" IN \"ca talog\"", new CreateRole("ro le", Optional.of(createUnspecified("ad min")), Optional.of("ca talog")));
+        assertStatement("CREATE ROLE \"!@#$%^&*'\" WITH ADMIN \"ад\"\"мін\" IN \"カタログ\"", new CreateRole("!@#$%^&*'", Optional.of(createUnspecified("ад\"\"мін")), Optional.of("カタログ")));
+        assertStatement("CREATE ROLE role2 WITH ADMIN USER admin1 IN catalog", new CreateRole("role2", Optional.of(createUser("admin1")), Optional.of("catalog")));
+        assertStatement("CREATE ROLE role2 WITH ADMIN ROLE role1 IN catalog", new CreateRole("role2", Optional.of(createRole("role1")), Optional.of("catalog")));
+        assertStatement("CREATE ROLE role2 WITH ADMIN CURRENT_USER IN catalog", new CreateRole("role2", Optional.of(createCurrentUser()), Optional.of("catalog")));
+        assertStatement("CREATE ROLE role2 WITH ADMIN CURRENT_ROLE IN catalog", new CreateRole("role2", Optional.of(createCurrentRole()), Optional.of("catalog")));
+    }
+
+    @Test
+    public void testDropRole()
+            throws Exception
+    {
+        assertStatement("DROP ROLE role", new DropRole("role", Optional.empty()));
+        assertStatement("DROP ROLE role1 IN catalog", new DropRole("role1", Optional.of("catalog")));
+        assertStatement("DROP ROLE \"role\" IN \"catalog\"", new DropRole("role", Optional.of("catalog")));
+        assertStatement("DROP ROLE \"ro le\" IN \"ca talog\"", new DropRole("ro le", Optional.of("ca talog")));
+        assertStatement("DROP ROLE \"!@#$%^&*'ад\"\"мін\" IN \"カタログ\"", new DropRole("!@#$%^&*'ад\"\"мін", Optional.of("カタログ")));
     }
 
     private static void assertCast(String type)
