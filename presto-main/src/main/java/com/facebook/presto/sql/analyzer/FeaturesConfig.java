@@ -87,6 +87,7 @@ public class FeaturesConfig
     private int spillerThreads = 4;
     private boolean iterativeOptimizerEnabled;
     private boolean parseDecimalLiteralsAsDouble;
+    private boolean pushAggregationThroughJoin = true;
 
     public boolean isResourceGroupsEnabled()
     {
@@ -469,5 +470,17 @@ public class FeaturesConfig
     public double getSmallTableCoefficient()
     {
         return smallTableCoefficient;
+    }
+
+    public boolean isPushAggregationThroughJoin()
+    {
+        return pushAggregationThroughJoin;
+    }
+
+    @Config("optimizer.push-aggregation-through-join")
+    public FeaturesConfig setPushAggregationThroughJoin(boolean value)
+    {
+        this.pushAggregationThroughJoin = value;
+        return this;
     }
 }

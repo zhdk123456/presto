@@ -73,6 +73,7 @@ public final class SystemSessionProperties
     public static final String ITERATIVE_OPTIMIZER = "iterative_optimizer_enabled";
     public static final String EXCHANGE_COMPRESSION = "exchange_compression";
     public static final String PARSE_DECIMAL_LITERALS_AS_DOUBLE = "parse_decimal_literals_as_double";
+    public static final String PUSH_AGGREGATION_THROUGH_JOIN = "push_aggregation_through_join";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -322,6 +323,11 @@ public final class SystemSessionProperties
                         PARSE_DECIMAL_LITERALS_AS_DOUBLE,
                         "Parse decimal literals as DOUBLE instead of DECIMAL",
                         featuresConfig.isParseDecimalLiteralsAsDouble(),
+                        false),
+                booleanSessionProperty(
+                        PUSH_AGGREGATION_THROUGH_JOIN,
+                        "Allow pushing aggregations below joins",
+                        featuresConfig.isPushAggregationThroughJoin(),
                         false));
     }
 
@@ -479,7 +485,7 @@ public final class SystemSessionProperties
         return session.getSystemProperty(ITERATIVE_OPTIMIZER, Boolean.class);
     }
 
-    public static boolean isExchangeCompressionEnabled(Session session)
+        public static boolean isExchangeCompressionEnabled(Session session)
     {
         return session.getSystemProperty(EXCHANGE_COMPRESSION, Boolean.class);
     }
@@ -497,5 +503,10 @@ public final class SystemSessionProperties
     public static double getSmallTableCoefficient(Session session)
     {
         return session.getSystemProperty(SMALL_TABLE_COEFFICIENT, Double.class);
+    }
+
+    public static boolean shouldPushAggregationThroughJoin(Session session)
+    {
+        return session.getSystemProperty(PUSH_AGGREGATION_THROUGH_JOIN, Boolean.class);
     }
 }
