@@ -85,6 +85,7 @@ public class FeaturesConfig
     private int spillerThreads = 4;
     private boolean iterativeOptimizerEnabled;
     private boolean parseDecimalLiteralsAsDouble;
+    private boolean aggregationPushdownEnabled = true;
 
     public boolean isResourceGroupsEnabled()
     {
@@ -443,5 +444,17 @@ public class FeaturesConfig
     public double getSmallTableCoefficient()
     {
         return smallTableCoefficient;
+    }
+
+    public boolean isAggregationPushdownEnabled()
+    {
+        return aggregationPushdownEnabled;
+    }
+
+    @Config("optimizer.aggregation-pushdown-enabled")
+    public FeaturesConfig setAggregationPushdownEnabled(boolean value)
+    {
+        this.aggregationPushdownEnabled = value;
+        return this;
     }
 }
