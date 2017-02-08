@@ -81,22 +81,23 @@ docker-compose -f "${DOCKER_COMPOSE_LOCATION}" down || true
 trap termination_handler INT TERM
 
 # pull docker images
-docker-compose -f "${DOCKER_COMPOSE_LOCATION}" pull
+# docker-compose -f "${DOCKER_COMPOSE_LOCATION}" pull
 
 # start containers
 docker-compose -f "${DOCKER_COMPOSE_LOCATION}" up -d
+sleep 300
 
 # start docker logs for hadoop container
 docker-compose -f "${DOCKER_COMPOSE_LOCATION}" logs --no-color hadoop-master &
 
 # wait until hadoop processes is started
-retry check_hadoop
+# retry check_hadoop
 
 # generate test data
-exec_in_hadoop_master_container su hive -s /usr/bin/hive -f /files/sql/create-test.sql
-exec_in_hadoop_master_container su hive -s /usr/bin/hive -f /files/sql/create-test-hive13.sql
+exec_in_hadoop_master_container su mapr -s /usr/bin/hive -f /files/sql/create-test.sql
+exec_in_hadoop_master_container su mapr -s /usr/bin/hive -f /files/sql/create-test-hive13.sql
 
-stop_unnecessary_hadoop_services
+# stop_unnecessary_hadoop_services
 
 if [ -n "$DOCKER_MACHINE_NAME" ]
 then
@@ -115,8 +116,8 @@ set +e
   -Dhive.metastore.thrift.client.socks-proxy=$PROXY:1080 \
   -Dsun.net.spi.nameservice.provider.1=default \
   -Dsun.net.spi.nameservice.provider.2=dns,dnsjava \
-  -Ddns.server=$PROXY \
-  -Ddns.port=5353 \
+  -Ddns.server=127.0.0.1 \
+  -Ddns.port=5354 \
   -Ddns.search=. &
 PRODUCT_TESTS_PROCESS_ID=$!
 
