@@ -62,7 +62,7 @@ import static java.util.Objects.requireNonNull;
  * Example:
  * <pre>
  * - Filter ("nationkey" > "avg")
- *  - Aggregate(Group by: all columns from the left talbe, aggregation:
+ *  - Aggregate(Group by: all columns from the left table, aggregation:
  *    avg("n2.nationkey"))
  *      - LeftJoin("regionkey" = "regionkey")
  *          - AssignUniqueId (nation)
