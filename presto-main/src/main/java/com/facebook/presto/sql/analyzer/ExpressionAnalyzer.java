@@ -91,7 +91,6 @@ import com.facebook.presto.type.RowType;
 import com.facebook.presto.util.maps.IdentityLinkedHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.slice.SliceUtf8;
 
 import javax.annotation.Nullable;
@@ -163,7 +162,7 @@ public class ExpressionAnalyzer
     private final IdentityLinkedHashMap<Expression, Type> expressionCoercions = new IdentityLinkedHashMap<>();
     private final Set<Expression> typeOnlyCoercions = newSetFromMap(new IdentityLinkedHashMap<>());
     private final Set<InPredicate> subqueryInPredicates = newSetFromMap(new IdentityLinkedHashMap<>());
-    private final Set<Expression> columnReferences = newSetFromMap(new IdentityLinkedHashMap<>());
+    private final IdentityLinkedHashMap<Expression, FieldId> columnReferences = new IdentityLinkedHashMap<>();
     private final IdentityLinkedHashMap<Expression, Type> expressionTypes = new IdentityLinkedHashMap<>();
     private final Set<QuantifiedComparisonExpression> quantifiedComparisons = newSetFromMap(new IdentityLinkedHashMap<>());
     // For lambda argument references, maps each QualifiedNameReference to the referenced LambdaArgumentDeclaration
@@ -225,9 +224,9 @@ public class ExpressionAnalyzer
         return subqueryInPredicates;
     }
 
-    public Set<Expression> getColumnReferences()
+    public IdentityLinkedHashMap<Expression, FieldId> getColumnReferences()
     {
-        return ImmutableSet.copyOf(columnReferences);
+        return new IdentityLinkedHashMap<>(columnReferences);
     }
 
     public IdentityLinkedHashMap<Identifier, LambdaArgumentDeclaration> getLambdaArgumentReferences()
@@ -361,7 +360,8 @@ public class ExpressionAnalyzer
 
         private Type handleResolvedField(Expression node, ResolvedField resolvedField)
         {
-            columnReferences.add(node);
+            FieldId previous = columnReferences.put(node, FieldId.from(resolvedField));
+            checkState(previous == null, "%s already known to refer to %s", node, previous);
             return setExpressionType(node, resolvedField.getType());
         }
 
