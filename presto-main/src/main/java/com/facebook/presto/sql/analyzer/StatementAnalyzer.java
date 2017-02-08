@@ -1725,15 +1725,7 @@ class StatementAnalyzer
             Expression expression,
             Set<Expression> columnReferences)
     {
-        AggregationAnalyzer analyzer = new AggregationAnalyzer(
-                analysis,
-                groupByExpressions,
-                metadata,
-                scope,
-                columnReferences,
-                analysis.getParameters(),
-                analysis.isDescribe());
-
+        AggregationAnalyzer analyzer = new AggregationAnalyzer(groupByExpressions, metadata, scope, columnReferences, analysis.getParameters(), analysis.isDescribe());
         analyzer.analyze(expression);
     }
 
