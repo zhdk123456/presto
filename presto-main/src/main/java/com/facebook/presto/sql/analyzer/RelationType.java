@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Predicates.not;
@@ -38,19 +39,28 @@ import static java.util.Objects.requireNonNull;
 @Immutable
 public class RelationType
 {
+    private final RelationId relationId;
     private final List<Field> visibleFields;
     private final List<Field> allFields;
 
     private final Map<Field, Integer> fieldIndexes;
 
-    public RelationType(Field... fields)
+    public RelationType()
     {
-        this(ImmutableList.copyOf(fields));
+        this(RelationId.anonymous(), ImmutableList.of());
     }
 
-    public RelationType(List<Field> fields)
+    public RelationType(RelationId relationId, Field... fields)
     {
+        this(relationId, ImmutableList.copyOf(fields));
+    }
+
+    public RelationType(RelationId relationId, List<Field> fields)
+    {
+        requireNonNull(relationId, "relationId is null");
         requireNonNull(fields, "fields is null");
+
+        this.relationId = relationId;
         this.allFields = ImmutableList.copyOf(fields);
         this.visibleFields = ImmutableList.copyOf(Iterables.filter(fields, not(Field::isHidden)));
 
@@ -60,6 +70,11 @@ public class RelationType
             builder.put(field, index++);
         }
         fieldIndexes = builder.build();
+    }
+
+    public RelationId getRelationId()
+    {
+        return relationId;
     }
 
     /**
@@ -146,20 +161,20 @@ public class RelationType
      * Creates a new tuple descriptor containing all fields from this tuple descriptor
      * and all fields from the specified tuple descriptor.
      */
-    public RelationType joinWith(RelationType other)
+    public RelationType joinWith(RelationId newRelationId, RelationType other)
     {
         List<Field> fields = ImmutableList.<Field>builder()
                 .addAll(this.allFields)
                 .addAll(other.allFields)
                 .build();
 
-        return new RelationType(fields);
+        return new RelationType(newRelationId, fields);
     }
 
     /**
      * Creates a new tuple descriptor with the relation, and, optionally, the columns aliased.
      */
-    public RelationType withAlias(String relationAlias, List<String> columnAliases)
+    public RelationType withAlias(RelationId newRelationId, String relationAlias, List<String> columnAliases)
     {
         if (columnAliases != null) {
             checkArgument(columnAliases.size() == visibleFields.size(),
@@ -195,20 +210,23 @@ public class RelationType
             }
         }
 
-        return new RelationType(fieldsBuilder.build());
+        return new RelationType(newRelationId, fieldsBuilder.build());
     }
 
     /**
      * Creates a new tuple descriptor containing only the visible fields.
      */
-    public RelationType withOnlyVisibleFields()
+    public RelationType withOnlyVisibleFields(RelationId newRelationId)
     {
-        return new RelationType(visibleFields);
+        return new RelationType(newRelationId, visibleFields);
     }
 
     @Override
     public String toString()
     {
-        return allFields.toString();
+        return toStringHelper(this)
+                .addValue(relationId)
+                .addValue(allFields)
+                .toString();
     }
 }

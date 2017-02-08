@@ -1312,7 +1312,7 @@ public class ExpressionAnalyzer
         for (Entry<Integer, Type> entry : types.entrySet()) {
             fields[entry.getKey()] = Field.newUnqualified(Optional.empty(), entry.getValue());
         }
-        RelationType tupleDescriptor = new RelationType(fields);
+        RelationType tupleDescriptor = new RelationType(RelationId.anonymous(), fields);
 
         return analyzeExpressions(session, metadata, sqlParser, tupleDescriptor, ImmutableMap.of(), expressions, parameters);
     }

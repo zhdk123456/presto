@@ -27,6 +27,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.analyzer.ExpressionAnalysis;
 import com.facebook.presto.sql.analyzer.ExpressionAnalyzer;
 import com.facebook.presto.sql.analyzer.Field;
+import com.facebook.presto.sql.analyzer.RelationId;
 import com.facebook.presto.sql.analyzer.RelationType;
 import com.facebook.presto.sql.gen.ExpressionCompiler;
 import com.facebook.presto.sql.parser.SqlParser;
@@ -596,7 +597,7 @@ public class BenchmarkDecimalOperators
             for (Map.Entry<Symbol, Type> entry : symbolTypes.entrySet()) {
                 fields.add(Field.newUnqualified(entry.getKey().getName(), entry.getValue()));
             }
-            RelationType tupleDescriptor = new RelationType(fields.build());
+            RelationType tupleDescriptor = new RelationType(RelationId.anonymous(), fields.build());
 
             ExpressionAnalysis expressionAnalysis = ExpressionAnalyzer.analyzeExpressions(session, metadata, sqlParser, tupleDescriptor, symbolTypes, ImmutableList.of(parsedExpression), emptyList());
             Type resultType = expressionAnalysis.getType(parsedExpression);

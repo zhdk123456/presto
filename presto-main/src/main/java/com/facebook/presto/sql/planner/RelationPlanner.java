@@ -22,6 +22,7 @@ import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.analyzer.Analysis;
 import com.facebook.presto.sql.analyzer.Field;
+import com.facebook.presto.sql.analyzer.RelationId;
 import com.facebook.presto.sql.analyzer.RelationType;
 import com.facebook.presto.sql.analyzer.Scope;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
@@ -528,7 +529,7 @@ class RelationPlanner
     private RelationPlan addCoercions(RelationPlan plan, Type[] targetColumnTypes)
     {
         List<Symbol> oldSymbols = plan.getFieldMappings();
-        RelationType oldDescriptor = plan.getDescriptor().withOnlyVisibleFields();
+        RelationType oldDescriptor = plan.getDescriptor().withOnlyVisibleFields(RelationId.anonymous());
         verify(targetColumnTypes.length == oldSymbols.size());
         ImmutableList.Builder<Symbol> newSymbols = new ImmutableList.Builder<>();
         Field[] newFields = new Field[targetColumnTypes.length];
@@ -559,7 +560,10 @@ class RelationPlanner
                     oldField.isAliased());
         }
         ProjectNode projectNode = new ProjectNode(idAllocator.getNextId(), plan.getRoot(), assignments.build());
-        return new RelationPlan(projectNode, Scope.builder().withRelationType(new RelationType(newFields)).build(), newSymbols.build());
+        return new RelationPlan(
+                projectNode,
+                Scope.builder().withRelationType(new RelationType(RelationId.anonymous(), newFields)).build(),
+                newSymbols.build());
     }
 
     @Override
