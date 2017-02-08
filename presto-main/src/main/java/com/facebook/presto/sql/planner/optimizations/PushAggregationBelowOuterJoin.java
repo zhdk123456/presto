@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.facebook.presto.SystemSessionProperties.isAggregationPushdownEnabled;
 import static com.facebook.presto.sql.planner.optimizations.DistinctOutputQueryUtil.isDistinct;
 import static com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher.searchFrom;
 import static com.facebook.presto.sql.planner.optimizations.Predicates.isInstanceOfAny;
@@ -98,6 +99,9 @@ public class PushAggregationBelowOuterJoin
         requireNonNull(symbolAllocator, "symbolAllocator is null");
         requireNonNull(idAllocator, "idAllocator is null");
 
+        if (!isAggregationPushdownEnabled(session)) {
+            return plan;
+        }
         return SimplePlanRewriter.rewriteWith(new Rewriter(idAllocator, symbolAllocator), plan);
     }
 
