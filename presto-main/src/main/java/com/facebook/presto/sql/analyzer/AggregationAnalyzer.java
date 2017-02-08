@@ -141,7 +141,9 @@ class AggregationAnalyzer
         // For a query like "SELECT * FROM T GROUP BY a", groupByExpressions will contain "a",
         // and the '*' will be expanded to Field references. Therefore we translate all simple name expressions
         // in the group by clause to fields they reference so that the expansion from '*' can be matched against them
-        for (Expression expression : Iterables.filter(expressions, analysis.getColumnReferences()::contains)) {
+        Iterable<Expression> nonFieldReferenceGroupingExpressions = Iterables.filter(expressions,
+                expression -> analysis.getColumnReferences().contains(expression) && !(expression instanceof FieldReference));
+        for (Expression expression : nonFieldReferenceGroupingExpressions) {
             QualifiedName name;
             if (expression instanceof Identifier) {
                 name = QualifiedName.of(((Identifier) expression).getName());
