@@ -277,6 +277,11 @@ public interface Metadata
     void dropRole(Session session, String role, String catalog);
 
     /**
+     * List available roles in specified catalog.
+     */
+    Set<String> listRoles(Session session, String catalog);
+
+    /**
      * Grants the specified privilege to the specified user on the specified table
      */
     void grantTablePrivileges(Session session, QualifiedObjectName tableName, Set<Privilege> privileges, String grantee, boolean grantOption);

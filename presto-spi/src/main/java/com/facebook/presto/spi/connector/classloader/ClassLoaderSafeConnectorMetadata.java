@@ -377,6 +377,14 @@ public class ClassLoaderSafeConnectorMetadata
     }
 
     @Override
+    public Set<String> listRoles(ConnectorSession session)
+    {
+        try (ThreadContextClassLoader ignored = new ThreadContextClassLoader(classLoader)) {
+            return delegate.listRoles(session);
+        }
+    }
+
+    @Override
     public void grantTablePrivileges(ConnectorSession session, SchemaTableName tableName, Set<Privilege> privileges, String grantee, boolean grantOption)
     {
         try (ThreadContextClassLoader ignored = new ThreadContextClassLoader(classLoader)) {
