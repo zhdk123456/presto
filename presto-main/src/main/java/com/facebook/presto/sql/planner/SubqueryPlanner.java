@@ -41,6 +41,7 @@ import com.facebook.presto.sql.tree.QuantifiedComparisonExpression;
 import com.facebook.presto.sql.tree.QuantifiedComparisonExpression.Quantifier;
 import com.facebook.presto.sql.tree.SubqueryExpression;
 import com.facebook.presto.sql.tree.SymbolReference;
+import com.facebook.presto.util.IdentityHashSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -490,7 +491,7 @@ class SubqueryPlanner
                 .collect(toImmutableSet());
     }
 
-    private static Set<Expression> extractColumnReferences(Expression expression, Set<Expression> columnReferences)
+    private static Set<Expression> extractColumnReferences(Expression expression, IdentityHashSet<Expression> columnReferences)
     {
         ImmutableSet.Builder<Expression> expressionColumnReferences = ImmutableSet.builder();
         new ColumnReferencesExtractor(columnReferences).process(expression, expressionColumnReferences);
@@ -509,9 +510,9 @@ class SubqueryPlanner
     private static class ColumnReferencesExtractor
             extends DefaultExpressionTraversalVisitor<Void, ImmutableSet.Builder<Expression>>
     {
-        private final Set<Expression> columnReferences;
+        private final IdentityHashSet<Expression> columnReferences;
 
-        private ColumnReferencesExtractor(Set<Expression> columnReferences)
+        private ColumnReferencesExtractor(IdentityHashSet<Expression> columnReferences)
         {
             this.columnReferences = requireNonNull(columnReferences, "columnReferences is null");
         }

@@ -109,6 +109,7 @@ import com.facebook.presto.sql.tree.WithQuery;
 import com.facebook.presto.type.ArrayType;
 import com.facebook.presto.type.MapType;
 import com.facebook.presto.type.RowType;
+import com.facebook.presto.util.IdentityHashSet;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1668,18 +1669,18 @@ class StatementAnalyzer
         return scope;
     }
 
-    private void analyzeAggregations(
-            QuerySpecification node,
-            Scope scope,
-            List<List<Expression>> groupingSets,
-            Set<Expression> columnReferences,
-            List<Expression> expressions)
-    {
-        AggregateExtractor extractor = new AggregateExtractor(metadata.getFunctionRegistry());
-        for (Expression expression : expressions) {
-            extractor.process(expression);
-        }
-        analysis.setAggregates(node, extractor.getAggregates());
+        private void analyzeAggregations(
+                QuerySpecification node,
+                Scope scope,
+                List<List<Expression>> groupingSets,
+                IdentityHashSet<Expression> columnReferences,
+                List<Expression> expressions)
+        {
+            AggregateExtractor extractor = new AggregateExtractor(metadata.getFunctionRegistry());
+            for (Expression expression : expressions) {
+                extractor.process(expression);
+            }
+            analysis.setAggregates(node, extractor.getAggregates());
 
         // is this an aggregation query?
         if (!groupingSets.isEmpty()) {
@@ -1715,13 +1716,13 @@ class StatementAnalyzer
                 .ifPresent(extractor::process);
 
         return !extractor.getAggregates().isEmpty();
-    }
+}
 
     private void verifyAggregations(
             List<Expression> groupByExpressions,
             Scope scope,
             Expression expression,
-            Set<Expression> columnReferences)
+            IdentityHashSet<Expression> columnReferences)
     {
         AggregationAnalyzer analyzer = new AggregationAnalyzer(groupByExpressions, metadata, scope, columnReferences, analysis.getParameters(), analysis.isDescribe());
         analyzer.analyze(expression);

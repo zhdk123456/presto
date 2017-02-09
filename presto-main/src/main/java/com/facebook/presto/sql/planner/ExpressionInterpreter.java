@@ -88,12 +88,12 @@ import com.facebook.presto.type.RowType;
 import com.facebook.presto.type.RowType.RowField;
 import com.facebook.presto.util.Failures;
 import com.facebook.presto.util.FastutilSetHelper;
+import com.facebook.presto.util.IdentityHashSet;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Defaults;
 import com.google.common.base.Functions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Primitives;
 import io.airlift.joni.Regex;
@@ -176,14 +176,14 @@ public class ExpressionInterpreter
         IdentityHashMap<Expression, Type> coercions = new IdentityHashMap<>();
         coercions.putAll(analyzer.getExpressionCoercions());
         coercions.put(expression, expectedType);
-        return evaluateConstantExpression(expression, coercions, metadata, session, ImmutableSet.of(), parameters);
+        return evaluateConstantExpression(expression, coercions, metadata, session, IdentityHashSet.create(), parameters);
     }
 
     public static Object evaluateConstantExpression(
             Expression expression,
             IdentityHashMap<Expression, Type> coercions,
             Metadata metadata, Session session,
-            Set<Expression> columnReferences,
+            IdentityHashSet<Expression> columnReferences,
             List<Expression> parameters)
     {
         requireNonNull(columnReferences, "columnReferences is null");
@@ -231,7 +231,7 @@ public class ExpressionInterpreter
         return result;
     }
 
-    public static void verifyExpressionIsConstant(Set<Expression> columnReferences, Expression expression)
+    public static void verifyExpressionIsConstant(IdentityHashSet<Expression> columnReferences, Expression expression)
     {
         new ConstantExpressionVerifierVisitor(columnReferences, expression).process(expression, null);
     }
@@ -274,10 +274,10 @@ public class ExpressionInterpreter
     private static class ConstantExpressionVerifierVisitor
             extends DefaultTraversalVisitor<Void, Void>
     {
-        private final Set<Expression> columnReferences;
+        private final IdentityHashSet<Expression> columnReferences;
         private final Expression expression;
 
-        public ConstantExpressionVerifierVisitor(Set<Expression> columnReferences, Expression expression)
+        public ConstantExpressionVerifierVisitor(IdentityHashSet<Expression> columnReferences, Expression expression)
         {
             this.columnReferences = columnReferences;
             this.expression = expression;

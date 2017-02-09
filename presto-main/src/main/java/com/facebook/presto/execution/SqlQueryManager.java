@@ -32,6 +32,7 @@ import com.facebook.presto.sql.tree.Explain;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.transaction.TransactionManager;
+import com.facebook.presto.util.IdentityHashSet;
 import io.airlift.concurrent.ThreadPoolExecutorMBean;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
@@ -75,7 +76,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
@@ -405,7 +405,7 @@ public class SqlQueryManager
             throw new SemanticException(INVALID_PARAMETER_USAGE, node, "Incorrect number of parameters: expected %s but found %s", parameterCount, parameterValues.size());
         }
         for (Expression expression : parameterValues) {
-            verifyExpressionIsConstant(emptySet(), expression);
+            verifyExpressionIsConstant(IdentityHashSet.create(), expression);
         }
     }
 

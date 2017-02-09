@@ -21,6 +21,7 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.Identifier;
 import com.facebook.presto.sql.tree.QualifiedName;
 import com.facebook.presto.sql.tree.SymbolReference;
+import com.facebook.presto.util.IdentityHashSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -64,7 +65,7 @@ public final class DependencyExtractor
     }
 
     // to extract qualified name with prefix
-    public static Set<QualifiedName> extractNames(Expression expression, Set<Expression> columnReferences)
+    public static Set<QualifiedName> extractNames(Expression expression, IdentityHashSet<Expression> columnReferences)
     {
         ImmutableSet.Builder<QualifiedName> builder = ImmutableSet.builder();
         new QualifiedNameBuilderVisitor(columnReferences).process(expression, builder);
@@ -85,9 +86,9 @@ public final class DependencyExtractor
     private static class QualifiedNameBuilderVisitor
             extends DefaultTraversalVisitor<Void, ImmutableSet.Builder<QualifiedName>>
     {
-        private final Set<Expression> columnReferences;
+        private final IdentityHashSet<Expression> columnReferences;
 
-        private QualifiedNameBuilderVisitor(Set<Expression> columnReferences)
+        private QualifiedNameBuilderVisitor(IdentityHashSet<Expression> columnReferences)
         {
             this.columnReferences = requireNonNull(columnReferences, "columnReferences is null");
         }

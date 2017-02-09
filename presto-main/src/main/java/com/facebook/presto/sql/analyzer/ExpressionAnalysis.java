@@ -21,10 +21,9 @@ import com.facebook.presto.sql.tree.InPredicate;
 import com.facebook.presto.sql.tree.LambdaArgumentDeclaration;
 import com.facebook.presto.sql.tree.QuantifiedComparisonExpression;
 import com.facebook.presto.sql.tree.SubqueryExpression;
-import com.google.common.collect.ImmutableSet;
+import com.facebook.presto.util.IdentityHashSet;
 
 import java.util.IdentityHashMap;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,35 +31,35 @@ public class ExpressionAnalysis
 {
     private final IdentityHashMap<Expression, Type> expressionTypes;
     private final IdentityHashMap<Expression, Type> expressionCoercions;
-    private final Set<Expression> typeOnlyCoercions;
-    private final Set<Expression> columnReferences;
-    private final Set<InPredicate> subqueryInPredicates;
-    private final Set<SubqueryExpression> scalarSubqueries;
-    private final Set<ExistsPredicate> existsSubqueries;
-    private final Set<QuantifiedComparisonExpression> quantifiedComparisons;
+    private final IdentityHashSet<Expression> typeOnlyCoercions;
+    private final IdentityHashSet<Expression> columnReferences;
+    private final IdentityHashSet<InPredicate> subqueryInPredicates;
+    private final IdentityHashSet<SubqueryExpression> scalarSubqueries;
+    private final IdentityHashSet<ExistsPredicate> existsSubqueries;
+    private final IdentityHashSet<QuantifiedComparisonExpression> quantifiedComparisons;
     // For lambda argument references, maps each QualifiedNameReference to the referenced LambdaArgumentDeclaration
     private final IdentityHashMap<Identifier, LambdaArgumentDeclaration> lambdaArgumentReferences;
 
     public ExpressionAnalysis(
             IdentityHashMap<Expression, Type> expressionTypes,
             IdentityHashMap<Expression, Type> expressionCoercions,
-            Set<InPredicate> subqueryInPredicates,
-            Set<SubqueryExpression> scalarSubqueries,
-            Set<ExistsPredicate> existsSubqueries,
-            Set<Expression> columnReferences,
-            Set<Expression> typeOnlyCoercions,
-            Set<QuantifiedComparisonExpression> quantifiedComparisons,
+            IdentityHashSet<InPredicate> subqueryInPredicates,
+            IdentityHashSet<SubqueryExpression> scalarSubqueries,
+            IdentityHashSet<ExistsPredicate> existsSubqueries,
+            IdentityHashSet<Expression> columnReferences,
+            IdentityHashSet<Expression> typeOnlyCoercions,
+            IdentityHashSet<QuantifiedComparisonExpression> quantifiedComparisons,
             IdentityHashMap<Identifier, LambdaArgumentDeclaration> lambdaArgumentReferences)
     {
-        this.expressionTypes = requireNonNull(expressionTypes, "expressionTypes is null");
-        this.expressionCoercions = requireNonNull(expressionCoercions, "expressionCoercions is null");
-        this.typeOnlyCoercions = requireNonNull(typeOnlyCoercions, "typeOnlyCoercions is null");
-        this.columnReferences = ImmutableSet.copyOf(requireNonNull(columnReferences, "columnReferences is null"));
-        this.subqueryInPredicates = requireNonNull(subqueryInPredicates, "subqueryInPredicates is null");
-        this.scalarSubqueries = requireNonNull(scalarSubqueries, "subqueryInPredicates is null");
-        this.existsSubqueries = requireNonNull(existsSubqueries, "existsSubqueries is null");
-        this.quantifiedComparisons = requireNonNull(quantifiedComparisons, "quantifiedComparisons is null");
-        this.lambdaArgumentReferences = requireNonNull(lambdaArgumentReferences, "lambdaArgumentReferences is null");
+        this.expressionTypes = new IdentityHashMap<>(requireNonNull(expressionTypes, "expressionTypes is null"));
+        this.expressionCoercions = new IdentityHashMap<>(requireNonNull(expressionCoercions, "expressionCoercions is null"));
+        this.typeOnlyCoercions = IdentityHashSet.create(requireNonNull(typeOnlyCoercions, "typeOnlyCoercions is null"));
+        this.columnReferences = IdentityHashSet.create(requireNonNull(columnReferences, "columnReferences is null"));
+        this.subqueryInPredicates = IdentityHashSet.create(requireNonNull(subqueryInPredicates, "subqueryInPredicates is null"));
+        this.scalarSubqueries = IdentityHashSet.create(requireNonNull(scalarSubqueries, "subqueryInPredicates is null"));
+        this.existsSubqueries = IdentityHashSet.create(requireNonNull(existsSubqueries, "existsSubqueries is null"));
+        this.quantifiedComparisons = IdentityHashSet.create(requireNonNull(quantifiedComparisons, "quantifiedComparisons is null"));
+        this.lambdaArgumentReferences = new IdentityHashMap<>(requireNonNull(lambdaArgumentReferences, "lambdaArgumentReferences is null"));
     }
 
     public Type getType(Expression expression)
@@ -70,7 +69,7 @@ public class ExpressionAnalysis
 
     public IdentityHashMap<Expression, Type> getExpressionTypes()
     {
-        return expressionTypes;
+        return new IdentityHashMap<>(expressionTypes);
     }
 
     public Type getCoercion(Expression expression)
@@ -93,23 +92,23 @@ public class ExpressionAnalysis
         return columnReferences;
     }
 
-    public Set<InPredicate> getSubqueryInPredicates()
+    public IdentityHashSet<InPredicate> getSubqueryInPredicates()
     {
-        return subqueryInPredicates;
+        return IdentityHashSet.create(subqueryInPredicates);
     }
 
-    public Set<SubqueryExpression> getScalarSubqueries()
+    public IdentityHashSet<SubqueryExpression> getScalarSubqueries()
     {
-        return scalarSubqueries;
+        return IdentityHashSet.create(scalarSubqueries);
     }
 
-    public Set<ExistsPredicate> getExistsSubqueries()
+    public IdentityHashSet<ExistsPredicate> getExistsSubqueries()
     {
-        return existsSubqueries;
+        return IdentityHashSet.create(existsSubqueries);
     }
 
-    public Set<QuantifiedComparisonExpression> getQuantifiedComparisons()
+    public IdentityHashSet<QuantifiedComparisonExpression> getQuantifiedComparisons()
     {
-        return quantifiedComparisons;
+        return IdentityHashSet.create(quantifiedComparisons);
     }
 }

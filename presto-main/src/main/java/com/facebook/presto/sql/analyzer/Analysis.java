@@ -35,12 +35,11 @@ import com.facebook.presto.sql.tree.SampledRelation;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.sql.tree.SubqueryExpression;
 import com.facebook.presto.sql.tree.Table;
+import com.facebook.presto.util.IdentityHashSet;
+import com.facebook.presto.util.IdentityMultimap;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -51,10 +50,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Sets.newIdentityHashSet;
 import static java.util.Objects.requireNonNull;
 
 public class Analysis
@@ -66,7 +63,7 @@ public class Analysis
     private final IdentityHashMap<Table, Query> namedQueries = new IdentityHashMap<>();
 
     private final IdentityHashMap<Node, Scope> scopes = new IdentityHashMap<>();
-    private final Set<Expression> columnReferences = newIdentityHashSet();
+    private final IdentityHashSet<Expression> columnReferences = IdentityHashSet.create();
 
     private final IdentityHashMap<QuerySpecification, List<FunctionCall>> aggregates = new IdentityHashMap<>();
     private final IdentityHashMap<QuerySpecification, List<List<Expression>>> groupByExpressions = new IdentityHashMap<>();
@@ -77,16 +74,16 @@ public class Analysis
     private final IdentityHashMap<QuerySpecification, List<FunctionCall>> windowFunctions = new IdentityHashMap<>();
 
     private final IdentityHashMap<Join, Expression> joins = new IdentityHashMap<>();
-    private final ListMultimap<Node, InPredicate> inPredicatesSubqueries = ArrayListMultimap.create();
-    private final ListMultimap<Node, SubqueryExpression> scalarSubqueries = ArrayListMultimap.create();
-    private final ListMultimap<Node, ExistsPredicate> existsSubqueries = ArrayListMultimap.create();
-    private final ListMultimap<Node, QuantifiedComparisonExpression> quantifiedComparisonSubqueries = ArrayListMultimap.create();
+    private final IdentityMultimap<Node, InPredicate> inPredicatesSubqueries = new IdentityMultimap<>();
+    private final IdentityMultimap<Node, SubqueryExpression> scalarSubqueries = new IdentityMultimap<>();
+    private final IdentityMultimap<Node, ExistsPredicate> existsSubqueries = new IdentityMultimap<>();
+    private final IdentityMultimap<Node, QuantifiedComparisonExpression> quantifiedComparisonSubqueries = new IdentityMultimap<>();
 
     private final IdentityHashMap<Table, TableHandle> tables = new IdentityHashMap<>();
 
     private final IdentityHashMap<Expression, Type> types = new IdentityHashMap<>();
     private final IdentityHashMap<Expression, Type> coercions = new IdentityHashMap<>();
-    private final Set<Expression> typeOnlyCoercions = newIdentityHashSet();
+    private final IdentityHashSet<Expression> typeOnlyCoercions = IdentityHashSet.create();
     private final IdentityHashMap<Relation, Type[]> relationCoercions = new IdentityHashMap<>();
     private final IdentityHashMap<FunctionCall, Signature> functionSignature = new IdentityHashMap<>();
     private final IdentityHashMap<Identifier, LambdaArgumentDeclaration> lambdaArgumentReferences = new IdentityHashMap<>();
@@ -289,7 +286,7 @@ public class Analysis
     public List<InPredicate> getInPredicateSubqueries(Node node)
     {
         if (inPredicatesSubqueries.containsKey(node)) {
-            return inPredicatesSubqueries.get(node);
+            return ImmutableList.copyOf(inPredicatesSubqueries.get(node));
         }
         return ImmutableList.of();
     }
@@ -297,7 +294,7 @@ public class Analysis
     public List<SubqueryExpression> getScalarSubqueries(Node node)
     {
         if (scalarSubqueries.containsKey(node)) {
-            return scalarSubqueries.get(node);
+            return ImmutableList.copyOf(scalarSubqueries.get(node));
         }
         return ImmutableList.of();
     }
@@ -305,7 +302,7 @@ public class Analysis
     public List<ExistsPredicate> getExistsSubqueries(Node node)
     {
         if (existsSubqueries.containsKey(node)) {
-            return existsSubqueries.get(node);
+            return ImmutableList.copyOf(existsSubqueries.get(node));
         }
         return ImmutableList.of();
     }
@@ -313,7 +310,7 @@ public class Analysis
     public List<QuantifiedComparisonExpression> getQuantifiedComparisonSubqueries(Node node)
     {
         if (quantifiedComparisonSubqueries.containsKey(node)) {
-            return quantifiedComparisonSubqueries.get(node);
+            return ImmutableList.copyOf(quantifiedComparisonSubqueries.get(node));
         }
         return ImmutableList.of();
     }
@@ -333,7 +330,7 @@ public class Analysis
         return windowFunctions.get(query);
     }
 
-    public void addColumnReferences(Set<Expression> columnReferences)
+    public void addColumnReferences(IdentityHashSet<Expression> columnReferences)
     {
         this.columnReferences.addAll(columnReferences);
     }
@@ -437,9 +434,9 @@ public class Analysis
         functionSignature.putAll(infos);
     }
 
-    public Set<Expression> getColumnReferences()
+    public IdentityHashSet<Expression> getColumnReferences()
     {
-        return ImmutableSet.copyOf(columnReferences);
+        return IdentityHashSet.create(columnReferences);
     }
 
     public void addTypes(IdentityHashMap<Expression, Type> types)
@@ -455,7 +452,7 @@ public class Analysis
         }
     }
 
-    public void addCoercions(IdentityHashMap<Expression, Type> coercions, Set<Expression> typeOnlyCoercions)
+    public void addCoercions(IdentityHashMap<Expression, Type> coercions, IdentityHashSet<Expression> typeOnlyCoercions)
     {
         this.coercions.putAll(coercions);
         this.typeOnlyCoercions.addAll(typeOnlyCoercions);

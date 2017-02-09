@@ -57,15 +57,14 @@ import com.facebook.presto.sql.tree.TryExpression;
 import com.facebook.presto.sql.tree.WhenClause;
 import com.facebook.presto.sql.tree.Window;
 import com.facebook.presto.sql.tree.WindowFrame;
+import com.facebook.presto.util.IdentityHashSet;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATE_OR_GROUP_BY;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MUST_BE_AGGREGATION_FUNCTION;
@@ -88,13 +87,19 @@ class AggregationAnalyzer
     private final List<Expression> expressions;
 
     private final Metadata metadata;
-    private final Set<Expression> columnReferences;
+    private final IdentityHashSet<Expression> columnReferences;
     private final List<Expression> parameters;
     private final boolean isDescribe;
 
     private final Scope scope;
 
-    public AggregationAnalyzer(List<Expression> groupByExpressions, Metadata metadata, Scope scope, Set<Expression> columnReferences, List<Expression> parameters, boolean isDescribe)
+    public AggregationAnalyzer(
+            List<Expression> groupByExpressions,
+            Metadata metadata,
+            Scope scope,
+            IdentityHashSet<Expression> columnReferences,
+            List<Expression> parameters,
+            boolean isDescribe)
     {
         requireNonNull(groupByExpressions, "groupByExpressions is null");
         requireNonNull(metadata, "metadata is null");
@@ -104,7 +109,7 @@ class AggregationAnalyzer
 
         this.scope = scope;
         this.metadata = metadata;
-        this.columnReferences = ImmutableSet.copyOf(columnReferences);
+        this.columnReferences = IdentityHashSet.create(columnReferences);
         this.parameters = parameters;
         this.isDescribe = isDescribe;
         this.expressions = groupByExpressions.stream()
