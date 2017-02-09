@@ -42,6 +42,7 @@ import com.facebook.presto.spi.connector.ConnectorOutputMetadata;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.facebook.presto.spi.function.OperatorType;
 import com.facebook.presto.spi.predicate.TupleDomain;
+import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
@@ -788,6 +789,26 @@ public class MetadataManager
         ConnectorSession connectorSession = session.toConnectorSession(connectorId);
         Optional<ConnectorResolvedIndex> resolvedIndex = metadata.resolveIndex(connectorSession, tableHandle.getConnectorHandle(), indexableColumns, outputColumns, tupleDomain);
         return resolvedIndex.map(resolved -> new ResolvedIndex(tableHandle.getConnectorId(), transaction, resolved));
+    }
+
+    @Override
+    public void createRole(Session session, String role, Optional<PrestoPrincipal> grantor, String catalog)
+    {
+        CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalog);
+        ConnectorId connectorId = catalogMetadata.getConnectorId();
+        ConnectorMetadata metadata = catalogMetadata.getMetadata();
+
+        metadata.createRole(session.toConnectorSession(connectorId), role, grantor);
+    }
+
+    @Override
+    public void dropRole(Session session, String role, String catalog)
+    {
+        CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalog);
+        ConnectorId connectorId = catalogMetadata.getConnectorId();
+        ConnectorMetadata metadata = catalogMetadata.getMetadata();
+
+        metadata.dropRole(session.toConnectorSession(connectorId), role);
     }
 
     @Override
