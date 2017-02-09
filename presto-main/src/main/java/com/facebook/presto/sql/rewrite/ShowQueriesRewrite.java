@@ -206,7 +206,7 @@ final class ShowQueriesRewrite
 
                 catalogName = qualifiedTableName.getCatalogName();
 
-                predicate = Optional.of(equal(nameReference("table_name"), new StringLiteral(qualifiedTableName.getObjectName())));
+                predicate = Optional.of(equal(identifier("table_name"), new StringLiteral(qualifiedTableName.getObjectName())));
             }
 
             if (catalogName == null) {
