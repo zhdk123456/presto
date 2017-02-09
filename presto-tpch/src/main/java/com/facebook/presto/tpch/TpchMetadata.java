@@ -83,13 +83,14 @@ public class TpchMetadata
     private final String connectorId;
     private final Set<String> tableNames;
     private final boolean predicatePushdownEnabled;
+    private final ColumnNaming columnNaming;
 
     public TpchMetadata(String connectorId)
     {
-        this(connectorId, TpchConnectorFactory.DEFAULT_PREDICATE_PUSHDOWN_ENABLED);
+        this(connectorId, TpchConnectorFactory.DEFAULT_PREDICATE_PUSHDOWN_ENABLED, ColumnNaming.SIMPLIFIED);
     }
 
-    public TpchMetadata(String connectorId, boolean predicatePushdownEnabled)
+    public TpchMetadata(String connectorId, boolean predicatePushdownEnabled, ColumnNaming columnNaming)
     {
         ImmutableSet.Builder<String> tableNames = ImmutableSet.builder();
         for (TpchTable<?> tpchTable : TpchTable.getTables()) {
@@ -98,6 +99,7 @@ public class TpchMetadata
         this.tableNames = tableNames.build();
         this.connectorId = connectorId;
         this.predicatePushdownEnabled = predicatePushdownEnabled;
+        this.columnNaming = columnNaming;
     }
 
     @Override

@@ -70,6 +70,7 @@ public class TpchConnectorFactory
     {
         int splitsPerNode = getSplitsPerNode(properties);
         boolean predicatePushdownEnabled = isPredicatePushdownEnabled(properties);
+        ColumnNaming columnNaming = ColumnNaming.valueOf(properties.getOrDefault("tpch.column-naming", ColumnNaming.SIMPLIFIED.name()).toUpperCase());
         NodeManager nodeManager = context.getNodeManager();
 
         return new Connector()
@@ -83,7 +84,7 @@ public class TpchConnectorFactory
             @Override
             public ConnectorMetadata getMetadata(ConnectorTransactionHandle transaction)
             {
-                return new TpchMetadata(connectorId, predicatePushdownEnabled);
+                return new TpchMetadata(connectorId, predicatePushdownEnabled, columnNaming);
             }
 
             @Override
