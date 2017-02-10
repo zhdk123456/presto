@@ -54,6 +54,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
@@ -417,6 +418,11 @@ public class Analysis
     public Set<Expression> getColumnReferences()
     {
         return unmodifiableSet(columnReferences.keySet());
+    }
+
+    public Map<Expression, FieldId> getColumnReferenceFields()
+    {
+        return unmodifiableMap(columnReferences);
     }
 
     public void addTypes(IdentityLinkedHashMap<Expression, Type> types)

@@ -226,7 +226,7 @@ public class ExpressionAnalyzer
 
     public IdentityLinkedHashMap<Expression, FieldId> getColumnReferences()
     {
-        return new IdentityLinkedHashMap<>(columnReferences);
+        return columnReferences;
     }
 
     public IdentityLinkedHashMap<Identifier, LambdaArgumentDeclaration> getLambdaArgumentReferences()
