@@ -18,6 +18,7 @@ import com.teradata.tempto.AfterTestWithContext;
 import com.teradata.tempto.BeforeTestWithContext;
 import com.teradata.tempto.ProductTest;
 import com.teradata.tempto.assertions.QueryAssert;
+import com.teradata.tempto.query.QueryExecutor;
 import com.teradata.tempto.query.QueryResult;
 import org.testng.annotations.Test;
 
@@ -28,6 +29,7 @@ import static com.facebook.presto.tests.TestGroups.AUTHORIZATION;
 import static com.facebook.presto.tests.TestGroups.HIVE_CONNECTOR;
 import static com.facebook.presto.tests.TestGroups.PROFILE_SPECIFIC_TESTS;
 import static com.facebook.presto.tests.TestGroups.ROLES;
+import static com.facebook.presto.tests.utils.QueryExecutors.connectToPresto;
 import static com.facebook.presto.tests.utils.QueryExecutors.onHive;
 import static com.facebook.presto.tests.utils.QueryExecutors.onPresto;
 import static java.lang.String.format;
@@ -119,5 +121,24 @@ public class TestRoles
     {
         QueryAssert.assertThat(() -> onPresto().executeQuery(format("DROP ROLE %s", ROLE3)))
                 .failsWithMessage(format("Role '%s' not found", ROLE3));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testAccessControl()
+            throws Exception
+    {
+        // Only users that are granted with "admin" role can create, drop and list roles
+        // Alice is not granted with "admin" role
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery(format("CREATE ROLE %s", ROLE3)))
+                .failsWithMessage(format("Cannot create role %s", ROLE3));
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery(format("DROP ROLE %s", ROLE3)))
+                .failsWithMessage(format("Cannot drop role %s", ROLE3));
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.roles"))
+                .failsWithMessage("Cannot select from table information_schema.roles");
+    }
+
+    private static QueryExecutor onPrestoAlice()
+    {
+        return connectToPresto("alice@presto");
     }
 }

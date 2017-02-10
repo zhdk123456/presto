@@ -16,11 +16,13 @@ package com.facebook.presto.execution;
 import com.facebook.presto.Session;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.security.AccessControl;
+import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.sql.tree.CreateRole;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.transaction.TransactionManager;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.facebook.presto.metadata.MetadataUtil.createCatalogName;
@@ -41,11 +43,10 @@ public class CreateRoleTask
     {
         Session session = stateMachine.getSession();
         String catalog = createCatalogName(session, statement, statement.getCatalog());
-        metadata.createRole(
-                session,
-                statement.getName(),
-                statement.getGrantor().map(specification -> createPrincipal(session, specification)),
-                catalog);
+        String role = statement.getName();
+        Optional<PrestoPrincipal> grantor = statement.getGrantor().map(specification -> createPrincipal(session, specification));
+        accessControl.checkCanCreateRole(session.getRequiredTransactionId(), session.getIdentity(), role, grantor, catalog);
+        metadata.createRole(session, role, grantor, catalog);
         return completedFuture(null);
     }
 }

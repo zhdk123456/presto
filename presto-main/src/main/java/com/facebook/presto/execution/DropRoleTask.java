@@ -40,7 +40,9 @@ public class DropRoleTask
     {
         Session session = stateMachine.getSession();
         String catalog = createCatalogName(session, statement, statement.getCatalog());
-        metadata.dropRole(session, statement.getName(), catalog);
+        String role = statement.getName();
+        accessControl.checkCanDropRole(session.getRequiredTransactionId(), session.getIdentity(), role, catalog);
+        metadata.dropRole(session, role, catalog);
         return completedFuture(null);
     }
 }
