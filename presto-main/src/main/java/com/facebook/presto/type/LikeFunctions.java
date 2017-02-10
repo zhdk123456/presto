@@ -166,7 +166,7 @@ public final class LikeFunctions
         regex.append('^');
         boolean escaped = false;
         for (char currentChar : patternString.toCharArray()) {
-            checkEscape(currentChar == '%' || currentChar == '_' || currentChar == escapeChar);
+            checkEscape(!escaped || currentChar == '%' || currentChar == '_' || currentChar == escapeChar);
             if (shouldEscape && !escaped && (currentChar == escapeChar)) {
                 escaped = true;
             }
