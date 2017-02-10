@@ -15,6 +15,8 @@ package com.facebook.presto.hive.metastore;
 
 import com.facebook.presto.hive.HiveType;
 import com.facebook.presto.hive.PartitionNotFoundException;
+import com.facebook.presto.hive.RoleAlreadyExistsException;
+import com.facebook.presto.hive.RoleNotFoundException;
 import com.facebook.presto.hive.TableAlreadyExistsException;
 import com.facebook.presto.spi.ColumnNotFoundException;
 import com.facebook.presto.spi.PrestoException;
@@ -48,10 +50,10 @@ import static com.facebook.presto.hive.HiveUtil.toPartitionValues;
 import static com.facebook.presto.hive.metastore.Database.DEFAULT_DATABASE_NAME;
 import static com.facebook.presto.hive.metastore.HivePrivilegeInfo.HivePrivilege.OWNERSHIP;
 import static com.facebook.presto.hive.metastore.MetastoreUtil.makePartName;
-import static com.facebook.presto.spi.security.PrincipalType.ROLE;
-import static com.facebook.presto.spi.security.PrincipalType.USER;
 import static com.facebook.presto.spi.StandardErrorCode.ALREADY_EXISTS;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
+import static com.facebook.presto.spi.security.PrincipalType.ROLE;
+import static com.facebook.presto.spi.security.PrincipalType.USER;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,6 +83,8 @@ public class TestingHiveMetastore
     private final Map<String, Set<String>> roleGrants = new HashMap<>();
     @GuardedBy("this")
     private final Map<PrincipalTableKey, Set<HivePrivilegeInfo>> tablePrivileges = new HashMap<>();
+    @GuardedBy("this")
+    private final Set<String> roles = new HashSet<>();
 
     private final File baseDirectory;
 
@@ -407,6 +411,30 @@ public class TestingHiveMetastore
 
         dropPartition(databaseName, tableName, partition.getValues(), false);
         addPartitions(databaseName, tableName, ImmutableList.of(partition));
+    }
+
+    @Override
+    public synchronized void createRole(String role, String grantor)
+    {
+        if (roles.contains(role)) {
+            throw new RoleAlreadyExistsException(role);
+        }
+        roles.add(role);
+    }
+
+    @Override
+    public synchronized void dropRole(String role)
+    {
+        if (!roles.contains(role)) {
+            throw new RoleNotFoundException(role);
+        }
+        roles.remove(role);
+    }
+
+    @Override
+    public synchronized Set<String> listRoles()
+    {
+        return ImmutableSet.copyOf(roles);
     }
 
     @Override

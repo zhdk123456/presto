@@ -47,7 +47,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.hive.HiveColumnHandle.BUCKET_COLUMN_NAME;
 import static com.facebook.presto.hive.HiveColumnHandle.PATH_COLUMN_NAME;
@@ -1803,6 +1805,49 @@ public class TestHiveIntegrationSmokeTest
         assertQueryFails("CREATE TABLE test_avro_types (x smallint) WITH (format = 'AVRO')", "Column x is smallint, which is not supported by Avro. Use integer instead.");
 
         assertQueryFails("CREATE TABLE test_avro_types WITH (format = 'AVRO') AS SELECT cast(42 AS smallint) z", "Column z is smallint, which is not supported by Avro. Use integer instead.");
+    }
+
+    @Test
+    public void testCreateDropRole()
+            throws Exception
+    {
+        assertUpdate("CREATE ROLE role1");
+        assertEquals(getRoles(), ImmutableSet.of("role1"));
+        assertUpdate("CREATE ROLE role2 IN hive");
+        assertEquals(getRoles(), ImmutableSet.of("role1", "role2"));
+        assertUpdate("DROP ROLE role2 IN hive");
+        assertEquals(getRoles(), ImmutableSet.of("role1"));
+        assertUpdate("DROP ROLE role1");
+        assertEquals(getRoles(), ImmutableSet.of());
+
+        assertQueryFails("CREATE ROLE role1 WITH ADMIN admin", "WITH ADMIN statement is not supported");
+        assertQueryFails("CREATE ROLE all", "Role name cannot be one of the reserved roles: \\[all, default, none\\]");
+        assertQueryFails("CREATE ROLE default", "Role name cannot be one of the reserved roles: \\[all, default, none\\]");
+        assertQueryFails("CREATE ROLE none", "Role name cannot be one of the reserved roles: \\[all, default, none\\]");
+    }
+
+    private Set<String> getRoles()
+    {
+        MaterializedResult roles = queryRunner.execute("SELECT * FROM hive.information_schema.roles");
+        return roles.getMaterializedRows().stream()
+                .map(row -> row.getField(0).toString())
+                .collect(Collectors.toSet());
+    }
+
+    @Test
+    public void testCreateDuplicateRole()
+            throws Exception
+    {
+        assertUpdate("CREATE ROLE duplicate_role");
+        assertQueryFails("CREATE ROLE duplicate_role", "Role already exists: 'duplicate_role'");
+        assertUpdate("DROP ROLE duplicate_role");
+    }
+
+    @Test
+    public void testDropNonExistentRole()
+            throws Exception
+    {
+        assertQueryFails("DROP ROLE non_existent_role", "Role 'non_existent_role' not found");
     }
 
     private Session getParallelWriteSession()

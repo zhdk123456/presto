@@ -17,6 +17,8 @@ import com.facebook.presto.hive.HiveCluster;
 import com.facebook.presto.hive.HiveViewNotSupportedException;
 import com.facebook.presto.hive.PartitionNotFoundException;
 import com.facebook.presto.hive.RetryDriver;
+import com.facebook.presto.hive.RoleAlreadyExistsException;
+import com.facebook.presto.hive.RoleNotFoundException;
 import com.facebook.presto.hive.SchemaAlreadyExistsException;
 import com.facebook.presto.hive.TableAlreadyExistsException;
 import com.facebook.presto.spi.PrestoException;
@@ -211,6 +213,79 @@ public class ThriftHiveMetastore
         }
         catch (NoSuchObjectException e) {
             return Optional.empty();
+        }
+        catch (TException e) {
+            throw new PrestoException(HIVE_METASTORE_ERROR, e);
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public void createRole(String role, String grantor)
+    {
+        Set<String> roles = listRoles();
+        if (roles.contains(role)) {
+            throw new RoleAlreadyExistsException(role);
+        }
+        try {
+            retry()
+                    .stopOn(MetaException.class)
+                    .stopOnIllegalExceptions()
+                    .run("createRole", stats.getCreateRole().wrap(() -> {
+                        try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                            client.createRole(role, grantor);
+                            return null;
+                        }
+                    }));
+        }
+        catch (TException e) {
+            throw new PrestoException(HIVE_METASTORE_ERROR, e);
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public void dropRole(String role)
+    {
+        Set<String> roles = listRoles();
+        if (!roles.contains(role)) {
+            throw new RoleNotFoundException(role);
+        }
+        try {
+            retry()
+                    .stopOn(MetaException.class)
+                    .stopOnIllegalExceptions()
+                    .run("dropRole", stats.getDropRole().wrap(() -> {
+                        try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                            client.dropRole(role);
+                            return null;
+                        }
+                    }));
+        }
+        catch (TException e) {
+            throw new PrestoException(HIVE_METASTORE_ERROR, e);
+        }
+        catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public Set<String> listRoles()
+    {
+        try {
+            return retry()
+                    .stopOn(MetaException.class)
+                    .stopOnIllegalExceptions()
+                    .run("listRoles", stats.getListRoles().wrap(() -> {
+                        try (HiveMetastoreClient client = clientProvider.createMetastoreClient()) {
+                            return ImmutableSet.copyOf(client.getRoleNames());
+                        }
+                    }));
         }
         catch (TException e) {
             throw new PrestoException(HIVE_METASTORE_ERROR, e);
