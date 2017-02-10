@@ -208,7 +208,8 @@ public class TestJsonOperators
     }
 
     @Test
-    public void testCastFromNestedDecimalTypes() {
+    public void testCastFromNestedDecimalTypes()
+    {
         assertFunction("cast(ARRAY[DECIMAL '1234567890.1234567890'] as JSON)", JSON, "[1234567890.1234567890]");
         assertFunction("cast(ARRAY[ARRAY[DECIMAL '1234567890.1234567890']] as JSON)", JSON, "[[1234567890.1234567890]]");
         assertFunction("cast(MAP(ARRAY['abc'], ARRAY[DECIMAL '1234567890.1234567890']) as JSON)", JSON,
