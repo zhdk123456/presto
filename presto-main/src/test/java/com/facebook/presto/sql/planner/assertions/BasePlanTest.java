@@ -34,7 +34,7 @@ import static org.testng.Assert.fail;
 
 public class BasePlanTest
 {
-    protected final LocalQueryRunner queryRunner;
+    private final LocalQueryRunner queryRunner;
 
     public BasePlanTest()
     {
@@ -106,13 +106,8 @@ public class BasePlanTest
 
     protected Plan plan(String sql, LogicalPlanner.Stage stage)
     {
-        return plan(sql, stage, true);
-    }
-
-    protected Plan plan(String sql, LogicalPlanner.Stage stage, boolean forceSingleNode)
-    {
         try {
-            return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, stage, forceSingleNode));
+            return queryRunner.inTransaction(transactionSession -> queryRunner.createPlan(transactionSession, sql, stage));
         }
         catch (RuntimeException ex) {
             fail("Invalid SQL: " + sql, ex);

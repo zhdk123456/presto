@@ -688,11 +688,6 @@ public class LocalQueryRunner
 
     public Plan createPlan(Session session, @Language("SQL") String sql, LogicalPlanner.Stage stage)
     {
-        return createPlan(session, sql, stage, true);
-    }
-
-    public Plan createPlan(Session session, @Language("SQL") String sql, LogicalPlanner.Stage stage, boolean forceSingleNode)
-    {
         Statement statement = unwrapExecuteStatement(sqlParser.createStatement(sql), sqlParser, session);
 
         assertFormattedSql(sqlParser, statement);
@@ -700,6 +695,7 @@ public class LocalQueryRunner
         FeaturesConfig featuresConfig = new FeaturesConfig()
                 .setDistributedIndexJoinsEnabled(false)
                 .setOptimizeHashGeneration(true);
+
         PlanOptimizers planOptimizers = new PlanOptimizers(
                 metadata,
                 sqlParser,
@@ -707,7 +703,7 @@ public class LocalQueryRunner
                 costCalculator,
                 new GlobalProperties(),
                 nodeManager.getNodes(NodeState.ACTIVE).size(),
-                forceSingleNode);
+                true);
         return createPlan(session, sql, planOptimizers.get(), stage);
     }
 
