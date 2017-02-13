@@ -104,12 +104,17 @@ public final class DateOperators
     @SqlType(StandardTypes.TIMESTAMP)
     public static long castToTimestamp(ConnectorSession session, @SqlType(StandardTypes.DATE) long value)
     {
-        long utcMillis = TimeUnit.DAYS.toMillis(value);
+        if (session.isLegacyTimestamp()) {
+            long utcMillis = TimeUnit.DAYS.toMillis(value);
 
-        // date is encoded as milliseconds at midnight in UTC
-        // convert to midnight if the session timezone
-        ISOChronology chronology = getChronology(session.getTimeZoneKey());
-        return utcMillis - chronology.getZone().getOffset(utcMillis);
+            // date is encoded as milliseconds at midnight in UTC
+            // convert to midnight if the session timezone
+            ISOChronology chronology = getChronology(session.getTimeZoneKey());
+            return utcMillis - chronology.getZone().getOffset(utcMillis);
+        }
+        else {
+            return value * (1000 * 60 * 60 * 24); // FIXME
+        }
     }
 
     @ScalarOperator(CAST)
