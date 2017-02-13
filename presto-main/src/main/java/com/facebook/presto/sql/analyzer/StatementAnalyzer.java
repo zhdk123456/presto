@@ -846,7 +846,7 @@ class StatementAnalyzer
             List<Expression> outputExpressions = analyzeSelect(node, sourceScope);
             List<List<Expression>> groupByExpressions = analyzeGroupBy(node, sourceScope, outputExpressions);
 
-            Scope outputScope = computeOutputScope(node, sourceScope);
+            Scope outputScope = computeOutputScope(node, scope, sourceScope);
 
             List<Expression> orderByExpressions = analyzeOrderBy(node, sourceScope, outputScope, outputExpressions);
             analyzeHaving(node, sourceScope);
@@ -1586,7 +1586,7 @@ class StatementAnalyzer
             return groupingColumnsBuilder.build();
         }
 
-        private Scope computeOutputScope(QuerySpecification node, Scope scope)
+        private Scope computeOutputScope(QuerySpecification node, Optional<Scope> scope, Scope sourceScope)
         {
             ImmutableList.Builder<Field> outputFields = ImmutableList.builder();
 
@@ -1595,7 +1595,7 @@ class StatementAnalyzer
                     // expand * and T.*
                     Optional<QualifiedName> starPrefix = ((AllColumns) item).getPrefix();
 
-                    for (Field field : scope.getRelationType().resolveFieldsWithPrefix(starPrefix)) {
+                    for (Field field : sourceScope.getRelationType().resolveFieldsWithPrefix(starPrefix)) {
                         outputFields.add(Field.newUnqualified(field.getName(), field.getType(), field.getOriginTable(), false));
                     }
                 }
@@ -1616,7 +1616,7 @@ class StatementAnalyzer
                     }
 
                     if (name != null) {
-                        List<Field> matchingFields = scope.getRelationType().resolveFields(name);
+                        List<Field> matchingFields = sourceScope.getRelationType().resolveFields(name);
                         if (!matchingFields.isEmpty()) {
                             originTable = matchingFields.get(0).getOriginTable();
                         }
@@ -1635,7 +1635,7 @@ class StatementAnalyzer
                 }
             }
 
-            return createAndAssignScope(node, Optional.of(scope), outputFields.build());
+            return createAndAssignScope(node, scope, outputFields.build());
         }
 
         private List<Expression> analyzeSelect(QuerySpecification node, Scope scope)
