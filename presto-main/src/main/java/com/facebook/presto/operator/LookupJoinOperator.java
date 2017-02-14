@@ -110,17 +110,7 @@ public class LookupJoinOperator
         lookupJoiner.finish();
 
         if (!finishing && lookupSourceFactory.hasSpilled()) {
-            // Last LookupJoinOperator will handle spilled pages
-            int count = lookupJoinsCount.decrementAndGet();
-            checkState(count >= 0);
-            if (count > 0) {
-                spiller = Optional.empty();
-            }
-            else {
-                // last LookupJoinOperator might not spilled at all, but other parallel joins could
-                // so we have to load spiller if this operator hasn't used one yet
-                ensureSpillerLoaded();
-            }
+            ensureSpillerLoaded();
         }
         finishing = true;
     }
