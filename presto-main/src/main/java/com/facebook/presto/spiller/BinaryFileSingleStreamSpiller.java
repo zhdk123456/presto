@@ -19,7 +19,6 @@ import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import io.airlift.concurrent.MoreFutures;
 import io.airlift.slice.InputStreamSliceInput;
 import io.airlift.slice.OutputStreamSliceOutput;
 import io.airlift.slice.SliceOutput;
@@ -45,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
+import static io.airlift.concurrent.MoreFutures.toCompletableFuture;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -95,7 +95,7 @@ public class BinaryFileSingleStreamSpiller
     @Override
     public synchronized CompletableFuture<?> spill(Iterator<Page> pageIterator)
     {
-        CompletableFuture<?> future = MoreFutures.toCompletableFuture(executor.submit(
+        CompletableFuture<?> future = toCompletableFuture(executor.submit(
             () -> writePages(pageIterator)
         ));
         scheduledSpills.add(future);
@@ -106,7 +106,7 @@ public class BinaryFileSingleStreamSpiller
     @Override
     public synchronized CompletableFuture<?> spill(Page page)
     {
-        CompletableFuture<?> future = MoreFutures.toCompletableFuture(executor.submit(
+        CompletableFuture<?> future = toCompletableFuture(executor.submit(
                 () -> writePage(page)
         ));
         scheduledSpills.add(future);
@@ -141,7 +141,7 @@ public class BinaryFileSingleStreamSpiller
     @Override
     public CompletableFuture<List<Page>> getAllSpilledPages()
     {
-        return MoreFutures.toCompletableFuture(executor.submit(() ->
+        return toCompletableFuture(executor.submit(() ->
                 ImmutableList.copyOf(getSpilledPages())
         ));
     }
