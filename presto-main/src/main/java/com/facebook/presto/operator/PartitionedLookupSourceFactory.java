@@ -79,6 +79,9 @@ public final class PartitionedLookupSourceFactory
     @GuardedBy("this")
     private final List<SettableFuture<LookupSource>> lookupSourceFutures = new ArrayList<>();
 
+    @GuardedBy("this")
+    private final Map<Integer, CompletableFuture<LookupSource>> unspillLookupSourceFuturesByPartitionCache = new HashMap<>();
+
     public PartitionedLookupSourceFactory(
             List<Type> types,
             List<Type> outputTypes,
@@ -251,6 +254,14 @@ public final class PartitionedLookupSourceFactory
     {
         SingleStreamSpiller lookupSourceSpiller = spilledLookupSources.get(partition);
 
+        CompletableFuture<LookupSource> unspillLookupSourceFuture = unspillLookupSourceFuturesByPartitionCache
+                .computeIfAbsent(partition, ignored -> createUnspillLookupSourceFuture(session, lookupSourceSpiller));
+
+        return unspillLookupSourceFuture;
+    }
+
+    public CompletableFuture<LookupSource> createUnspillLookupSourceFuture(Session session, SingleStreamSpiller lookupSourceSpiller)
+    {
         return lookupSourceSpiller.getAllSpilledPages().thenApply((List<Page> spilledBuildPages) -> {
             PagesIndex index = pagesIndexFactory.newPagesIndex(types, 10_000);
 
