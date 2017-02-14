@@ -17,6 +17,7 @@ import com.facebook.presto.execution.buffer.PagesSerde;
 import com.facebook.presto.execution.buffer.PagesSerdeUtil;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.concurrent.MoreFutures;
 import io.airlift.slice.InputStreamSliceInput;
@@ -36,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
@@ -134,6 +136,14 @@ public class BinaryFileSingleStreamSpiller
         waitForSpillsToFinish();
         checkState(scheduledSpills.isEmpty(), "Can not read if writes have not finished");
         return readPages();
+    }
+
+    @Override
+    public CompletableFuture<List<Page>> getAllSpilledPages()
+    {
+        return MoreFutures.toCompletableFuture(executor.submit(() ->
+                ImmutableList.copyOf(getSpilledPages())
+        ));
     }
 
     private synchronized Iterator<Page> readPages()
