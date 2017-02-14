@@ -19,6 +19,7 @@ import com.facebook.presto.memory.LocalMemoryContext;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.PrestoException;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Closer;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.concurrent.MoreFutures;
@@ -36,6 +37,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static com.facebook.presto.execution.buffer.PagesSerdeUtil.writePage;
@@ -103,6 +105,14 @@ public class BinaryFileSingleStreamSpiller
     {
         checkNoSpillInProgress();
         return readPages();
+    }
+
+    @Override
+    public CompletableFuture<List<Page>> getAllSpilledPages()
+    {
+        return MoreFutures.toCompletableFuture(executor.submit(() ->
+                ImmutableList.copyOf(getSpilledPages())
+        ));
     }
 
     private void writePages(Iterator<Page> pageIterator)
