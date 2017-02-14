@@ -45,7 +45,7 @@ public interface LookupSourceFactory
         return ImmutableSet.of();
     }
 
-    default PartitioningSpiller getProbeSpiller(List<Type> probeTypes, HashGenerator probeHashGenerator)
+    default PartitioningSpiller createProbeSpiller(List<Type> probeTypes, HashGenerator probeHashGenerator)
     {
         throw new UnsupportedOperationException();
     }
