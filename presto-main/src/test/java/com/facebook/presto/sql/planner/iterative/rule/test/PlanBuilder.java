@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.sql.planner.iterative.rule.test;
 
+import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.parser.SqlParser;
@@ -26,6 +27,7 @@ import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
+import com.facebook.presto.sql.planner.plan.SortNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.util.ImmutableCollectors;
@@ -35,8 +37,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.facebook.presto.spi.block.SortOrder.ASC_NULLS_LAST;
 import static java.lang.String.format;
 
 public class PlanBuilder
@@ -70,6 +75,20 @@ public class PlanBuilder
     public SampleNode sample(double sampleRatio, SampleNode.Type type, PlanNode source)
     {
         return new SampleNode(idAllocator.getNextId(), source, sampleRatio, type);
+    }
+
+    public SortNode sort(List<Symbol> orderBy, PlanNode source)
+    {
+        return new SortNode(
+                idAllocator.getNextId(),
+                source,
+                orderBy,
+                orderBy.stream().collect(Collectors.toMap(Function.identity(), symbol -> ASC_NULLS_LAST)));
+    }
+
+    public SortNode sort(List<Symbol> orderBy, Map<Symbol, SortOrder> orderings, PlanNode source)
+    {
+        return new SortNode(idAllocator.getNextId(), source, orderBy, orderings);
     }
 
     public ProjectNode project(Assignments assignments, PlanNode source)
