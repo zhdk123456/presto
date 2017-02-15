@@ -140,7 +140,6 @@ Properties controlling spilling
  * **Type:** ``String`` (data size)
  * **Default value:** ``100 GB``
  * **Description:** Max spill space to be used by a single query on a single node.
->>>>>>> 9938420... Spilling documentation
 
 
 .. _tuning-pref-query:
