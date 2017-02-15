@@ -95,7 +95,7 @@ public final class TimeWithTimeZoneOperators
     @SqlType(StandardTypes.TIME)
     public static long castToTime(ConnectorSession session, @SqlType(StandardTypes.TIME_WITH_TIME_ZONE) long value)
     {
-        return unpackMillisUtc(value);
+        return castToTimestamp(session, value);
     }
 
     @ScalarOperator(CAST)
