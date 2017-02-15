@@ -110,6 +110,7 @@ import static com.facebook.presto.tests.StructuralTestUtil.decimalArrayBlockOf;
 import static com.facebook.presto.tests.StructuralTestUtil.decimalMapBlockOf;
 import static com.facebook.presto.tests.StructuralTestUtil.mapBlockOf;
 import static com.facebook.presto.tests.StructuralTestUtil.rowBlockOf;
+import static com.facebook.presto.util.DateTimeUtils.sqlTimestampOf;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Strings.padEnd;
@@ -697,7 +698,7 @@ public abstract class AbstractTestHiveFileFormats
                         assertEquals(actualValue, expectedValue);
                     }
                     else if (testColumn.getObjectInspector().getTypeName().equals("timestamp")) {
-                        SqlTimestamp expectedTimestamp = new SqlTimestamp((Long) expectedValue, SESSION.getTimeZoneKey());
+                        SqlTimestamp expectedTimestamp = sqlTimestampOf((Long) expectedValue, SESSION);
                         assertEquals(actualValue, expectedTimestamp, "Wrong value for column " + testColumn.getName());
                     }
                     else if (testColumn.getObjectInspector().getTypeName().startsWith("char")) {

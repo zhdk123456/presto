@@ -734,6 +734,11 @@ public final class FunctionAssertions
         }
     }
 
+    public Session getSession()
+    {
+        return session;
+    }
+
     static class TestSplit
             implements ConnectorSplit
     {
