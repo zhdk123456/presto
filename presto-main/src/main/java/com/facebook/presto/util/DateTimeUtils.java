@@ -15,7 +15,10 @@ package com.facebook.presto.util;
 
 import com.facebook.presto.client.IntervalDayTime;
 import com.facebook.presto.client.IntervalYearMonth;
+import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.type.SqlTime;
+import com.facebook.presto.spi.type.SqlTimestamp;
 import com.facebook.presto.spi.type.TimeZoneKey;
 import com.facebook.presto.sql.tree.IntervalLiteral.IntervalField;
 import org.joda.time.DateTime;
@@ -44,6 +47,7 @@ import java.util.stream.Stream;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
+import static com.facebook.presto.spi.type.TimeZoneKey.UTC_KEY;
 import static com.facebook.presto.util.DateTimeZoneIndex.getChronology;
 import static com.facebook.presto.util.DateTimeZoneIndex.getDateTimeZone;
 import static com.facebook.presto.util.DateTimeZoneIndex.packDateTimeWithZone;
@@ -492,6 +496,54 @@ public final class DateTimeUtils
             }
 
             return ~bestInvalidPos;
+        }
+    }
+
+    public static SqlTimestamp sqlTimestampOf(int year,
+            int monthOfYear,
+            int dayOfMonth,
+            int hourOfDay,
+            int minuteOfHour,
+            int secondOfMinute,
+            int millisOfSecond,
+            DateTimeZone baseZone,
+            TimeZoneKey timestampZone,
+            ConnectorSession session)
+    {
+        if (session.isLegacyTimestamp()) {
+            return new SqlTimestamp(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, baseZone).getMillis(), timestampZone);
+        }
+        else {
+            return new SqlTimestamp(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, getDateTimeZone(UTC_KEY)).getMillis());
+        }
+    }
+
+    public static SqlTimestamp sqlTimestampOf(long millis, ConnectorSession session)
+    {
+        if (session.isLegacyTimestamp()) {
+            return new SqlTimestamp(millis, session.getTimeZoneKey());
+        }
+        else {
+            return new SqlTimestamp(millis);
+        }
+    }
+
+    public static SqlTime sqlTimeOf(int year,
+            int monthOfYear,
+            int dayOfMonth,
+            int hourOfDay,
+            int minuteOfHour,
+            int secondOfMinute,
+            int millisOfSecond,
+            DateTimeZone baseZone,
+            TimeZoneKey timestampZone,
+            ConnectorSession session)
+    {
+        if (session.isLegacyTimestamp()) {
+            return new SqlTime(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, baseZone).getMillis(), timestampZone);
+        }
+        else {
+            return new SqlTime(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, getDateTimeZone(UTC_KEY)).getMillis());
         }
     }
 }
