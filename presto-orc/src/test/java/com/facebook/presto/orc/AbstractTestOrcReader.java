@@ -51,6 +51,7 @@ import static com.facebook.presto.spi.type.TimeZoneKey.UTC_KEY;
 import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.VarbinaryType.VARBINARY;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
+import static com.facebook.presto.testing.TestingConnectorSession.SESSION;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.cycle;
 import static com.google.common.collect.Iterables.limit;
@@ -207,7 +208,14 @@ public abstract class AbstractTestOrcReader
         tester.testRoundTrip(
                 javaTimestampObjectInspector,
                 writeValues.stream()
-                        .map(timestamp -> new SqlTimestamp(timestamp, UTC_KEY))
+                        .map(timestamp -> {
+                            if (SESSION.isLegacyTimestamp()) {
+                                return new SqlTimestamp(timestamp, UTC_KEY);
+                            }
+                            else {
+                                return new SqlTimestamp(timestamp);
+                            }
+                        })
                         .collect(toList()),
                 TIMESTAMP);
     }
