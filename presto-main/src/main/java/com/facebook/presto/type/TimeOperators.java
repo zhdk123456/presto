@@ -22,6 +22,11 @@ import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.AbstractLongType;
 import com.facebook.presto.spi.type.StandardTypes;
 import io.airlift.slice.Slice;
+import org.joda.time.chrono.ISOChronology;
+
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_CAST_ARGUMENT;
 import static com.facebook.presto.spi.function.OperatorType.BETWEEN;
@@ -37,10 +42,13 @@ import static com.facebook.presto.spi.function.OperatorType.NOT_EQUAL;
 import static com.facebook.presto.spi.type.DateTimeEncoding.packDateTimeWithZone;
 import static com.facebook.presto.util.DateTimeUtils.parseTimeWithoutTimeZone;
 import static com.facebook.presto.util.DateTimeUtils.printTimeWithoutTimeZone;
+import static com.facebook.presto.util.DateTimeZoneIndex.getChronology;
 import static io.airlift.slice.Slices.utf8Slice;
 
 public final class TimeOperators
 {
+    private static final long REFERENCE_TIMESTAMP_UTC = System.currentTimeMillis();
+
     private TimeOperators()
     {
     }
@@ -98,7 +106,16 @@ public final class TimeOperators
     @SqlType(StandardTypes.TIME_WITH_TIME_ZONE)
     public static long castToTimeWithTimeZone(ConnectorSession session, @SqlType(StandardTypes.TIME) long value)
     {
-        return packDateTimeWithZone(value, session.getTimeZoneKey());
+        if (session.isLegacyTimestamp()) {
+            return packDateTimeWithZone(value, session.getTimeZoneKey());
+        }
+        else {
+            ISOChronology localChronology = getChronology(session.getTimeZoneKey());
+
+            // This cast does treat TIME as wall time in session TZ. This means that in order to get
+            // its UTC representation we need to shift the value by the offset of TZ.
+            return packDateTimeWithZone(value - localChronology.getZone().getOffset(getTimeInstantInCurrentDay(value)), session.getTimeZoneKey());
+        }
     }
 
     @ScalarOperator(CAST)
@@ -112,7 +129,7 @@ public final class TimeOperators
     @SqlType(StandardTypes.TIMESTAMP_WITH_TIME_ZONE)
     public static long castToTimestampWithTimeZone(ConnectorSession session, @SqlType(StandardTypes.TIME) long value)
     {
-        return packDateTimeWithZone(value, session.getTimeZoneKey());
+        return castToTimeWithTimeZone(session, value);
     }
 
     @ScalarOperator(CAST)
@@ -168,5 +185,15 @@ public final class TimeOperators
             return false;
         }
         return notEqual(left, right);
+    }
+
+    private static long getTimeInstantInCurrentDay(long value)
+    {
+        // FIXME This is hack that we need to use as the timezone interpretation depends on date (not only on time)
+        // Additionally we cannot just grab current TZ offset from timezoneOffsetReferenceTimestampUtc and use it
+        // as our formatting library will fail to display expected TZ symbol.
+        long currentMillisOfDay = ChronoField.MILLI_OF_DAY.getFrom(
+                Instant.ofEpochMilli(REFERENCE_TIMESTAMP_UTC).atZone(ZoneOffset.UTC));
+        return REFERENCE_TIMESTAMP_UTC - currentMillisOfDay + value;
     }
 }
