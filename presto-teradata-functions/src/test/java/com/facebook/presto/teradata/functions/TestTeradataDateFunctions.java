@@ -25,6 +25,7 @@ import org.joda.time.DateTimeZone;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static com.facebook.presto.SystemSessionProperties.isLegacyTimestamp;
 import static com.facebook.presto.metadata.FunctionExtractor.extractFunctions;
 import static com.facebook.presto.spi.type.TimeZoneKey.getTimeZoneKey;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
@@ -141,7 +142,12 @@ public class TestTeradataDateFunctions
 
     private static SqlTimestamp toTimestamp(DateTime dateTime)
     {
-        return new SqlTimestamp(dateTime.getMillis(), SESSION.getTimeZoneKey());
+        if (isLegacyTimestamp(SESSION)) {
+            return new SqlTimestamp(dateTime.getMillis(), SESSION.getTimeZoneKey());
+        }
+        else {
+            return new SqlTimestamp(dateTime.getMillis());
+        }
     }
 
     @SuppressWarnings("SameParameterValue")
