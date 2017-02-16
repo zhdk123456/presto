@@ -99,7 +99,7 @@ public final class DateTimeFunctions
     public static long currentTime(ConnectorSession session)
     {
         // We do all calculation in UTC, as session.getStartTime() is in UTC
-        // and we need to have UTC milis for packDateTimeWithZone
+        // and we need to have UTC millis for packDateTimeWithZone
         long millis = UTC_CHRONOLOGY.millisOfDay().get(session.getStartTime());
         return packDateTimeWithZone(millis, session.getTimeZoneKey());
     }
