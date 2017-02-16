@@ -71,7 +71,7 @@ public class FeaturesConfig
     private Path spillerSpillPath = Paths.get(System.getProperty("java.io.tmpdir"), "presto", "spills");
     private int spillerThreads = 4;
     private boolean iterativeOptimizerEnabled;
-    private boolean aggregationPushdownEnabled = true;
+    private boolean pushAggregationThroughJoin = true;
 
     public boolean isResourceGroupsEnabled()
     {
@@ -392,15 +392,15 @@ public class FeaturesConfig
         return this;
     }
 
-    public boolean isAggregationPushdownEnabled()
+    public boolean isPushAggregationThroughJoin()
     {
-        return aggregationPushdownEnabled;
+        return pushAggregationThroughJoin;
     }
 
-    @Config("optimizer.aggregation-pushdown-enabled")
-    public FeaturesConfig setAggregationPushdownEnabled(boolean value)
+    @Config("optimizer.push-aggregation-through-join")
+    public FeaturesConfig setPushAggregationThroughJoin(boolean value)
     {
-        this.aggregationPushdownEnabled = value;
+        this.pushAggregationThroughJoin = value;
         return this;
     }
 }
