@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -27,7 +28,7 @@ import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackZoneKey;
 
 /**
- * This type represent instant of time in some day and timezone, where timezone
+ * This type represents instant of time in some day and timezone, where timezone
  * is known and day is not.
  */
 public final class SqlTimeWithTimeZone
@@ -35,10 +36,11 @@ public final class SqlTimeWithTimeZone
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS VV");
 
     /**
-     * As we dont have negative timestamps and max value is midnight in timezone that is ~(UTC -12:00),
-     * just not to care about precision we do use ~(UTC -24:00).
+     * We know that max allowed value is midnight in timezone that is ~(UTC -12:00)
+     * just not to care about precision of the border we do use ~(UTC -24:00).
      *
-     * It's all about protecting type from beeing used with full millisUTC.
+     * It's all about sanity checking that this type will not be fed with millisUTC
+     * being instant in day different than 1970-01-01.
      */
     private static final long MAX_MILLIS_TIME = 2 * 24 * 60 * 60 * 1000;
 
@@ -49,12 +51,12 @@ public final class SqlTimeWithTimeZone
     private final TimeZoneKey timeZoneKey;
 
     /**
-     * FIXME This is used only to determine last of TZ shifts for TIME
-     * This is workaround to avoid chaning semantic of millisUTC being part of SPI
-     * This is best information about current TZ we can get at the point of query
+     * FIXME This is used only to determine current TZ offset for TIME
+     * This is workaround to avoid changing semantic of millisUTC being part of SPI
+     * This is best information about current TZ we can get at the point of query lifetime
      *
-     * eg. Asia/Katmandu was +5:30 at some point in a history and then was changed
-     *     to +5:45, without usage of this timestamp, we would use TZ shift valid
+     * eg. Asia/Katmandu was +5:30 in 1970 and then was changed to +5:45,
+     *     without usage of this timestamp, we would use TZ shift valid
      *     on 1970-01-01, which is invalid today.
      */
     private final long timezoneOffsetReferenceTimestampUtc = System.currentTimeMillis();
@@ -63,7 +65,7 @@ public final class SqlTimeWithTimeZone
     {
         millisUtc = unpackMillisUtc(timeWithTimeZone);
         if (millisUtc > MAX_MILLIS_TIME) {
-            throw new RuntimeException("millisUtc must be time in millisecond that past since midnight UTC.");
+            throw new RuntimeException("millisUtc must be time in millisecond that passed since midnight UTC (" + millisUtc + " is to high)");
         }
         timeZoneKey = unpackZoneKey(timeWithTimeZone);
     }
@@ -72,7 +74,7 @@ public final class SqlTimeWithTimeZone
     {
         this.millisUtc = millisUtc;
         if (millisUtc > MAX_MILLIS_TIME) {
-            throw new RuntimeException("millisUtc must be time in millisecond that past since midnight UTC.");
+            throw new RuntimeException("millisUtc must be time in millisecond that passed since midnight UTC (" + millisUtc + " is to high)");
         }
         this.timeZoneKey = timeZoneKey;
     }
@@ -123,7 +125,7 @@ public final class SqlTimeWithTimeZone
         long currentMillisOfDay =
                 LocalTime.from(
                         Instant.ofEpochMilli(timezoneOffsetReferenceTimestampUtc)
-                               .atZone(ZoneId.of(TimeZoneKey.UTC_KEY.getId())))
+                               .atZone(ZoneOffset.UTC))
                         .toNanoOfDay() / 1_000_000L; // nanos to millis
         long timeMillisUtcInCurrentDay = timezoneOffsetReferenceTimestampUtc - currentMillisOfDay + millisUtc;
 
