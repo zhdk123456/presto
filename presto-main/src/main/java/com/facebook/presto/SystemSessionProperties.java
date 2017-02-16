@@ -287,7 +287,7 @@ public final class SystemSessionProperties
                         false),
                 booleanSessionProperty(
                         LEGACY_TIMESTAMP,
-                        "Use legacy TIMESTAMP, TIME & DATE semantic",
+                        "Use legacy TIMESTAMP, TIME & DATE semantics",
                         featuresConfig.isLegacyTimestamp(),
                         false));
     }
@@ -456,6 +456,7 @@ public final class SystemSessionProperties
     {
         return session.getSystemProperty(LEGACY_TIMESTAMP, Boolean.class);
     }
+
     public static boolean isExchangeCompressionEnabled(Session session)
     {
         return session.getSystemProperty(EXCHANGE_COMPRESSION, Boolean.class);
