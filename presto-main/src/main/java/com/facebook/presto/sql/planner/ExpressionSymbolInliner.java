@@ -22,29 +22,42 @@ import com.facebook.presto.sql.tree.SymbolReference;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 
 public class ExpressionSymbolInliner
-        extends ExpressionRewriter<Void>
 {
-    private final Map<Symbol, ? extends Expression> mappings;
-
-    public ExpressionSymbolInliner(Map<Symbol, ? extends Expression> mappings)
+    private ExpressionSymbolInliner()
     {
-        this.mappings = mappings;
     }
 
-    @Override
-    public Expression rewriteSymbolReference(SymbolReference node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    public static Expression inlineSymbols(Map<Symbol, ? extends Expression> mappings, Expression expression)
     {
-        Expression expression = mappings.get(Symbol.from(node));
-        checkState(expression != null, "Cannot resolve symbol %s", node.getName());
-        return expression;
+        return ExpressionTreeRewriter.rewriteWith(new Rewriter(mappings), expression);
     }
 
-    @Override
-    public Expression rewriteLambdaExpression(LambdaExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+    private static class Rewriter
+            extends ExpressionRewriter<Void>
     {
-        // Lambda does not support capture yet. As a result, relation/columns can not exist in lambda.
-        return node;
+        private final Map<Symbol, ? extends Expression> mappings;
+
+        private Rewriter(Map<Symbol, ? extends Expression> mappings)
+        {
+            this.mappings = requireNonNull(mappings, "mappings is null");
+        }
+
+        @Override
+        public Expression rewriteSymbolReference(SymbolReference node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+        {
+            Expression expression = mappings.get(Symbol.from(node));
+            checkState(expression != null, "Cannot resolve symbol %s", node.getName());
+            return expression;
+        }
+
+        @Override
+        public Expression rewriteLambdaExpression(LambdaExpression node, Void context, ExpressionTreeRewriter<Void> treeRewriter)
+        {
+            // Lambda does not support capture yet. As a result, relation/columns can not exist in lambda.
+            return node;
+        }
     }
 }
