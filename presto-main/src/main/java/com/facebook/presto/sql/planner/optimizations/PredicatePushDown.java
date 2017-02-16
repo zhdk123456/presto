@@ -241,6 +241,7 @@ public class PredicatePushDown
         }
 
         @Override
+        @Deprecated
         public PlanNode visitMarkDistinct(MarkDistinctNode node, RewriteContext<Expression> context)
         {
             checkState(!DependencyExtractor.extractUnique(context.get()).contains(node.getMarkerSymbol()), "predicate depends on marker symbol");
