@@ -78,7 +78,7 @@ docker version
 docker-compose -f "${DOCKER_COMPOSE_LOCATION}" down || true
 
 # catch terminate signals
-trap termination_handler INT TERM
+# trap termination_handler INT TERM
 
 # pull docker images
 # docker-compose -f "${DOCKER_COMPOSE_LOCATION}" pull
@@ -109,11 +109,11 @@ fi
 # run product tests
 pushd $PROJECT_ROOT
 set +e
-./mvnw -pl presto-hive-hadoop2 test -P test-hive-hadoop2 \
+./mvnw -pl presto-hive-hadoop2 test -X -P test-hive-hadoop2 \
   -Dhive.hadoop2.timeZone=UTC \
   -DHADOOP_USER_NAME=hive \
   -Dhive.hadoop2.metastoreHost=hadoop-master \
-  -Dhive.metastore.thrift.client.socks-proxy=$PROXY:1080 \
+  -Dhive.metastore.thrift.client.socks-proxy=127.0.0.1:1180 \
   -Dsun.net.spi.nameservice.provider.1=default \
   -Dsun.net.spi.nameservice.provider.2=dns,dnsjava \
   -Ddns.server=127.0.0.1 \
@@ -126,6 +126,6 @@ EXIT_CODE=$?
 set -e
 popd
 
-cleanup_docker_containers
+# cleanup_docker_containers
 
 exit ${EXIT_CODE}
