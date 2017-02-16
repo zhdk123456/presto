@@ -69,7 +69,7 @@ public final class SystemSessionProperties
     public static final String REORDER_WINDOWS = "reorder_windows";
     public static final String ITERATIVE_OPTIMIZER = "iterative_optimizer_enabled";
     public static final String EXCHANGE_COMPRESSION = "exchange_compression";
-    public static final String AGGREGATION_PUSHDOWN = "aggregation_pushdown_enabled";
+    public static final String PUSH_AGGREGATION_THROUGH_JOIN = "push_aggregation_through_join";
 
     private final List<PropertyMetadata<?>> sessionProperties;
 
@@ -286,10 +286,10 @@ public final class SystemSessionProperties
                         featuresConfig.isExchangeCompressionEnabled(),
                         false),
                 booleanSessionProperty(
-                        AGGREGATION_PUSHDOWN,
-                    "Allow pushing aggregations below joins",
-                    featuresConfig.isAggregationPushdownEnabled(),
-                    false));
+                        PUSH_AGGREGATION_THROUGH_JOIN,
+                        "Allow pushing aggregations below joins",
+                        featuresConfig.isPushAggregationThroughJoin(),
+                        false));
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()
@@ -456,8 +456,8 @@ public final class SystemSessionProperties
         return session.getSystemProperty(EXCHANGE_COMPRESSION, Boolean.class);
     }
 
-    public static boolean isAggregationPushdownEnabled(Session session)
+    public static boolean shouldPushAggregationThroughJoin(Session session)
     {
-        return session.getSystemProperty(AGGREGATION_PUSHDOWN, Boolean.class);
+        return session.getSystemProperty(PUSH_AGGREGATION_THROUGH_JOIN, Boolean.class);
     }
 }
