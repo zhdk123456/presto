@@ -25,7 +25,6 @@ import com.facebook.presto.sql.tree.Cast;
 import com.facebook.presto.sql.tree.CoalesceExpression;
 import com.facebook.presto.sql.tree.ComparisonExpression;
 import com.facebook.presto.sql.tree.CurrentTime;
-import com.facebook.presto.sql.tree.DefaultTraversalVisitor;
 import com.facebook.presto.sql.tree.DereferenceExpression;
 import com.facebook.presto.sql.tree.ExistsPredicate;
 import com.facebook.presto.sql.tree.Expression;
@@ -350,9 +349,16 @@ class AggregationAnalyzer
                                 node);
                     }
 
-                    // ensure that no output fields are referenced from ORDER BY clause
                     if (orderByScope.isPresent()) {
-                        node.getArguments().stream().forEach(expression -> new VerifyOrderByAggregationVisitor().process(expression, null));
+                        /*
+                         * Verify that no query node output columns are referenced from an aggregation in ORDER BY.
+                         * Only FROM columns are allowed.
+                         */
+                        node.getArguments().stream()
+                                .flatMap(AstUtils::preOrder)
+                                .filter(columnReferences::containsKey)
+                                .map(Expression.class::cast)
+                                .forEach(this::isColumnReferenceUseInOrderByAggregationCorrect);
                     }
 
                     return true;
@@ -370,6 +376,14 @@ class AggregationAnalyzer
             }
 
             return node.getArguments().stream().allMatch(expression -> process(expression, context));
+        }
+
+        private void isColumnReferenceUseInOrderByAggregationCorrect(Expression node)
+        {
+            FieldId fieldId = requireNonNull(columnReferences.get(node), () -> "No FieldId for " + node);
+            if (isFieldFromRelation(fieldId, orderByScope.get().getRelationType())) {
+                throw new SemanticException(REFERENCE_TO_OUTPUT_ATTRIBUTE_WITHIN_ORDER_BY_AGGREGATION, node, "Invalid reference to output projection attribute from ORDER BY aggregation");
+            }
         }
 
         @Override
@@ -578,52 +592,6 @@ class AggregationAnalyzer
             }
 
             return super.process(node, context);
-        }
-    }
-
-    /**
-     * Verifies that no query node output columns are referenced from ORDER BY expressions.
-     * Only FROM columns are allowed within ORDER BY expressions.
-     */
-    private class VerifyOrderByAggregationVisitor
-            extends DefaultTraversalVisitor<Void, Void>
-    {
-        @Override
-        protected Void visitIdentifier(Identifier node, Void context)
-        {
-            isColumnReferenceUseCorrect(node);
-            return null;
-        }
-
-        @Override
-        protected Void visitDereferenceExpression(DereferenceExpression node, Void context)
-        {
-            if (columnReferences.containsKey(node)) {
-                // Only Identifiers can reference output projections. DereferenceExpressions
-                // always reference FROM attributes
-                return null;
-            }
-
-            return super.visitDereferenceExpression(node, context);
-        }
-
-        @Override
-        protected Void visitSubqueryExpression(SubqueryExpression node, Void context)
-        {
-            AstUtils.preOrder(node)
-                    .filter(columnReferences::containsKey)
-                    .map(Expression.class::cast)
-                    .forEach(this::isColumnReferenceUseCorrect);
-
-            return null;
-        }
-
-        private void isColumnReferenceUseCorrect(Expression node)
-        {
-            FieldId fieldId = requireNonNull(columnReferences.get(node), () -> "No FieldId for " + node);
-            if (Objects.equals(orderByScope.get().getRelationType().getRelationId(), fieldId.getRelationId())) {
-                throw new SemanticException(REFERENCE_TO_OUTPUT_ATTRIBUTE_WITHIN_ORDER_BY_AGGREGATION, node, "Invalid reference to output projection attribute from ORDER BY aggregation");
-            }
         }
     }
 }
