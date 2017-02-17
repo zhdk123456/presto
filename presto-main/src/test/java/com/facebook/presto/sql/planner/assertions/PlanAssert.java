@@ -26,7 +26,7 @@ public final class PlanAssert
 
     public static void assertPlan(Session session, Metadata metadata, Plan actual, PlanMatchPattern pattern)
     {
-        MatchResult matches = actual.getRoot().accept(new PlanMatchingVisitor(session, metadata), pattern);
+    MatchResult matches = actual.getRoot().accept(new PlanMatchingVisitor(session, metadata), pattern);
         if (!matches.isMatch()) {
             String logicalPlan = textLogicalPlan(actual.getRoot(), actual.getTypes(), metadata, session);
             throw new AssertionError(format("Plan does not match, expected [\n\n%s\n] but found [\n\n%s\n]", pattern, logicalPlan));
