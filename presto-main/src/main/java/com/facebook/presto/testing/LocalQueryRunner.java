@@ -417,6 +417,11 @@ public class LocalQueryRunner
         return defaultSession;
     }
 
+    public ExpressionCompiler getExpressionCompiler()
+    {
+        return expressionCompiler;
+    }
+
     public void createCatalog(String catalogName, ConnectorFactory connectorFactory, Map<String, String> properties)
     {
         nodeManager.addCurrentNodeConnector(new ConnectorId(catalogName));
