@@ -110,6 +110,7 @@ public class LookupJoinOperator
         lookupJoiner.finish();
 
         if (!finishing && lookupSourceFactory.hasSpilled()) {
+            lookupSourceFactory.beginLookupSourceUnspilling(lookupJoinsCount.get(), operatorContext.getSession());
             ensureSpillerLoaded();
         }
         finishing = true;
@@ -119,12 +120,13 @@ public class LookupJoinOperator
     {
         checkState(spiller.isPresent());
         checkState(spilledPartitions.isPresent());
+        spilledLookupJoiner.ifPresent(joiner -> joiner.finish());
         if (spilledPartitions.get().hasNext()) {
             int currentSpilledPartition = spilledPartitions.get().next();
 
             spilledLookupJoiner = Optional.of(new SpillledLookupJoiner(
                     allTypes,
-                    lookupSourceFactory.readSpilledLookupSource(operatorContext.getSession(), currentSpilledPartition),
+                    lookupSourceFactory.unspillLookupPartition(currentSpilledPartition),
                     joinProbeFactory,
                     spiller.get().getSpilledPages(currentSpilledPartition),
                     probeOnOuterSide));
@@ -225,7 +227,7 @@ public class LookupJoinOperator
                 return null;
             }
             SpillledLookupJoiner joiner = spilledLookupJoiner.get();
-            operatorContext.setMemoryReservation(joiner.getInMemorySizeInBytes());
+            operatorContext.setMemoryReservation(joiner.getInMemorySizeInBytes()); //FIXME move to LSFactroy
             return joiner.getOutput();
         }
         else {

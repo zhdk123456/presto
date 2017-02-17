@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.MoreFutures.toListenableFuture;
 import static java.util.Objects.requireNonNull;
@@ -29,17 +30,19 @@ public class SpillledLookupJoiner
 {
     private final LookupJoiner lookupJoiner;
     private final Iterator<Page> probePages;
-    private final CompletableFuture<? extends LookupSource> lookupSourceFuture;
+    private final CompletableFuture<LookupSource> lookupSourceFuture;
+    private final CompletableFuture<LookupSourceFactory.LookupPartition> lookupPartitionFuture;
 
     public SpillledLookupJoiner(
             List<Type> allTypes,
-            CompletableFuture<? extends LookupSource> lookupSourceFuture,
+            CompletableFuture<LookupSourceFactory.LookupPartition> lookupPartitionFuture,
             JoinProbeFactory joinProbeFactory,
             Iterator<Page> probePages,
             boolean probeOnOuterSide)
     {
+        this.lookupPartitionFuture = requireNonNull(lookupPartitionFuture, "lookupPartitionFuture is null");
+        this.lookupSourceFuture = lookupPartitionFuture.thenApply(LookupSourceFactory.LookupPartition::getLookupSource);
         this.lookupJoiner = new LookupJoiner(allTypes, toListenableFuture(lookupSourceFuture), joinProbeFactory, probeOnOuterSide);
-        this.lookupSourceFuture = requireNonNull(lookupSourceFuture, "lookupSourceFuture is null");
         this.probePages = requireNonNull(probePages, "probePages is null");
     }
 
@@ -74,5 +77,11 @@ public class SpillledLookupJoiner
             return getFutureValue(lookupSourceFuture).getInMemorySizeInBytes();
         }
         return 0;
+    }
+
+    public void finish()
+    {
+        checkState(lookupPartitionFuture.isDone());
+        lookupPartitionFuture.join().release();
     }
 }

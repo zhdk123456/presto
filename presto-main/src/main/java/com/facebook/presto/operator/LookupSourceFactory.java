@@ -45,18 +45,29 @@ public interface LookupSourceFactory
         throw new UnsupportedOperationException();
     }
 
+    default boolean hasSpilled()
+    {
+        return !getSpilledPartitions().isEmpty();
+    }
+
     default Set<Integer> getSpilledPartitions()
     {
         return ImmutableSet.of();
     }
 
-    default CompletableFuture<LookupSource> readSpilledLookupSource(Session session, int partition)
+    default void beginLookupSourceUnspilling(int lookupSourceConsumers, Session session) {}
+
+    default CompletableFuture<LookupPartition> unspillLookupPartition(int partition)
     {
         throw new UnsupportedOperationException();
     }
 
-    default boolean hasSpilled()
+    interface LookupPartition
     {
-        return !getSpilledPartitions().isEmpty();
+        LookupSource getLookupSource();
+
+        int getNumber();
+
+        void release();
     }
 }
