@@ -29,7 +29,6 @@ import com.facebook.presto.sql.planner.iterative.rule.MergeLimits;
 import com.facebook.presto.sql.planner.iterative.rule.PruneTableScanColumns;
 import com.facebook.presto.sql.planner.iterative.rule.PruneValuesColumns;
 import com.facebook.presto.sql.planner.iterative.rule.PushFilter;
-import com.facebook.presto.sql.planner.iterative.rule.PushFilterThroughMultiChildNode;
 import com.facebook.presto.sql.planner.iterative.rule.PushLimitThroughMarkDistinct;
 import com.facebook.presto.sql.planner.iterative.rule.PushLimitThroughProject;
 import com.facebook.presto.sql.planner.iterative.rule.PushLimitThroughSemiJoin;
@@ -119,8 +118,7 @@ public class PlanOptimizers
 
         Set<Rule> predicatePushDownRules = ImmutableSet.of(
                 new MergeFilters(),
-                new PushFilter(),
-                new PushFilterThroughMultiChildNode());
+                new PushFilter());
 
         builder.add(
                 new DesugaringOptimizer(metadata, sqlParser), // Clean up all the sugar in expressions, e.g. AtTimeZone, must be run before all the other optimizers
