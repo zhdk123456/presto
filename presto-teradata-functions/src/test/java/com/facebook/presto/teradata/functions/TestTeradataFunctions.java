@@ -28,6 +28,7 @@ public class TestTeradataFunctions
     @BeforeClass
     public void setUp()
     {
+        super.setUp();
         functionAssertions.addFunctions(extractFunctions(new TeradataFunctionsPlugin().getFunctions()));
     }
 

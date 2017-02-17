@@ -25,6 +25,7 @@ import com.facebook.presto.type.MapType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.slice.Slice;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
@@ -37,8 +38,10 @@ import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 public class TestStringFunctions
         extends AbstractTestFunctions
 {
-    private TestStringFunctions()
+    @BeforeClass
+    public void setUp()
     {
+        super.setUp();
         registerScalar(getClass());
     }
 

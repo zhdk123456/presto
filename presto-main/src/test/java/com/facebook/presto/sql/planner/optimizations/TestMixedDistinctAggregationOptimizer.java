@@ -25,6 +25,8 @@ import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -41,12 +43,14 @@ import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.tableS
 import static com.facebook.presto.sql.planner.assertions.PlanMatchPattern.values;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static com.facebook.presto.tpch.TpchMetadata.TINY_SCHEMA_NAME;
+import static io.airlift.testing.Closeables.closeAllRuntimeException;
 
 public class TestMixedDistinctAggregationOptimizer
 {
-    private final LocalQueryRunner queryRunner;
+    private LocalQueryRunner queryRunner;
 
-    public TestMixedDistinctAggregationOptimizer()
+    @BeforeClass
+    public void setUp()
     {
         Session defaultSession = testSessionBuilder()
                 .setCatalog("local")
@@ -54,10 +58,17 @@ public class TestMixedDistinctAggregationOptimizer
                 .setSystemProperty(SystemSessionProperties.OPTIMIZE_DISTINCT_AGGREGATIONS, "true")
                 .build();
 
-        this.queryRunner = new LocalQueryRunner(defaultSession);
+        queryRunner = new LocalQueryRunner(defaultSession);
         queryRunner.createCatalog(queryRunner.getDefaultSession().getCatalog().get(),
                 new TpchConnectorFactory(1),
                 ImmutableMap.of());
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void tearDown()
+    {
+        closeAllRuntimeException(queryRunner);
+        queryRunner = null;
     }
 
     @Test
