@@ -36,8 +36,9 @@ public class TestCountNullAggregation
         extends AbstractTestAggregationFunction
 {
     @BeforeClass
-    public void setup()
+    public void setUp()
     {
+        super.setUp();
         functionRegistry.addFunctions(new FunctionListBuilder().aggregate(CountNull.class).getFunctions());
     }
 
