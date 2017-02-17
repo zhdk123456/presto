@@ -22,11 +22,13 @@
             <artifactId>presto-hive</artifactId>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>com.facebook.presto.hadoop</groupId>
             <artifactId>hadoop-apache2</artifactId>
             <scope>runtime</scope>
         </dependency>
+        -->
 
         <!-- Presto SPI -->
         <dependency>
@@ -88,6 +90,13 @@
         <dependency>
             <groupId>dnsjava</groupId>
             <artifactId>dnsjava</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.facebook.presto.hadoop</groupId>
+            <artifactId>hadoop-mapr5</artifactId>
+            <version>0.2-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
