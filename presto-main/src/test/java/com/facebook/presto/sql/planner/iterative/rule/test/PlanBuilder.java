@@ -14,15 +14,20 @@
 package com.facebook.presto.sql.planner.iterative.rule.test;
 
 import com.facebook.presto.spi.block.SortOrder;
+import com.facebook.presto.spi.connector.ConnectorPartitioningHandle;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.planner.Partitioning;
+import com.facebook.presto.sql.planner.PartitioningHandle;
+import com.facebook.presto.sql.planner.PartitioningScheme;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.AssignUniqueId;
 import com.facebook.presto.sql.planner.plan.Assignments;
 import com.facebook.presto.sql.planner.plan.ExceptNode;
+import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
 import com.facebook.presto.sql.planner.plan.IntersectNode;
 import com.facebook.presto.sql.planner.plan.LimitNode;
@@ -34,9 +39,7 @@ import com.facebook.presto.sql.planner.plan.SortNode;
 import com.facebook.presto.sql.planner.plan.UnionNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.sql.tree.Expression;
-import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import java.util.Collections;
@@ -46,9 +49,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.facebook.presto.spi.block.SortOrder.ASC_NULLS_LAST;
+import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 
@@ -145,6 +150,41 @@ public class PlanBuilder
         return new ExceptNode(idAllocator.getNextId(), ImmutableList.copyOf(sources), mapping, outputs);
     }
 
+    public ExchangeNode exchange(ListMultimap<Symbol, Symbol> mapping, PlanNode... sources)
+    {
+        ConnectorPartitioningHandle connectorPartitioningHandle = new ConnectorPartitioningHandle()
+        {
+            @Override
+            public boolean isSingleNode()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean isCoordinatorOnly()
+            {
+                return false;
+            }
+        };
+        PartitioningHandle handle = new PartitioningHandle(Optional.empty(), Optional.empty(), connectorPartitioningHandle);
+
+        List<Symbol> outputSymbols = ImmutableList.copyOf(mapping.keySet());
+        List<List<Symbol>> inputs = IntStream.range(0, sources.length)
+                .mapToObj(i -> outputSymbols.stream()
+                    .map(mapping::get)
+                    .map(columnValues -> columnValues.get(i))
+                    .collect(toImmutableList()))
+                .collect(toImmutableList());
+
+        return new ExchangeNode(
+                idAllocator.getNextId(),
+                ExchangeNode.Type.GATHER,
+                ExchangeNode.Scope.REMOTE,
+                new PartitioningScheme(Partitioning.create(handle, outputSymbols), outputSymbols),
+                ImmutableList.copyOf(sources),
+                inputs);
+    }
+
     private void checkMappingsMatchesSources(ListMultimap<Symbol, Symbol> mapping, PlanNode... sources)
     {
         checkArgument(
@@ -179,7 +219,7 @@ public class PlanBuilder
     {
         return Stream.of(expressions)
                 .map(PlanBuilder::expression)
-                .collect(ImmutableCollectors.toImmutableList());
+                .collect(toImmutableList());
     }
 
     public Map<Symbol, Type> getSymbols()
