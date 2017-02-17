@@ -26,6 +26,7 @@ import com.facebook.presto.sql.planner.Symbol;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -41,12 +42,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.OuterLookupSource.createOuterLookupSourceSupplier;
 import static com.facebook.presto.operator.PartitionedLookupSource.createPartitionedLookupSourceSupplier;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterators.peekingIterator;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.allOf;
 
 public final class PartitionedLookupSourceFactory
         implements LookupSourceFactory
@@ -62,6 +68,7 @@ public final class PartitionedLookupSourceFactory
     private final List<Integer> outputChannels;
     private final Optional<Integer> preComputedHashChannel;
     private final Optional<JoinFilterFunctionFactory> filterFunctionFactory;
+    private final PagesIndex.Factory pagesIndexFactory;
 
     @GuardedBy("this")
     private int partitionsSet;
@@ -79,7 +86,7 @@ public final class PartitionedLookupSourceFactory
     private final List<SettableFuture<LookupSource>> lookupSourceFutures = new ArrayList<>();
 
     @GuardedBy("this")
-    private final Map<Integer, CompletableFuture<LookupSource>> unspillLookupSourceFuturesByPartitionCache = new HashMap<>();
+    private Optional<PartitionedConsumption> lookupSourceUnspilling = Optional.empty();
 
     public PartitionedLookupSourceFactory(
             List<Type> types,
@@ -91,7 +98,8 @@ public final class PartitionedLookupSourceFactory
             int partitionCount,
             Map<Symbol, Integer> layout,
             boolean outer,
-            SpillerFactory spillerFactory)
+            SpillerFactory spillerFactory,
+            PagesIndex.Factory pagesIndexFactory)
     {
         this.types = ImmutableList.copyOf(requireNonNull(types, "types is null"));
         this.outputTypes = ImmutableList.copyOf(requireNonNull(outputTypes, "outputTypes is null"));
@@ -103,6 +111,7 @@ public final class PartitionedLookupSourceFactory
         this.outputChannels = outputChannels;
         this.preComputedHashChannel = preComputedHashChannel;
         this.filterFunctionFactory = filterFunctionFactory;
+        this.pagesIndexFactory = pagesIndexFactory;
 
         hashChannelTypes = hashChannels.stream()
                 .map(types::get)
@@ -214,12 +223,6 @@ public final class PartitionedLookupSourceFactory
     }
 
     @Override
-    public synchronized Set<Integer> getSpilledPartitions()
-    {
-        return spilledLookupSources.keySet();
-    }
-
-    @Override
     public synchronized PartitioningSpiller createProbeSpiller(List<Type> probeTypes, HashGenerator probeHashGenerator)
     {
         checkAllFuturesDone();
@@ -245,32 +248,28 @@ public final class PartitionedLookupSourceFactory
     }
 
     @Override
-    public synchronized CompletableFuture<LookupSource> readSpilledLookupSource(Session session, int partition)
+    public synchronized Set<Integer> getSpilledPartitions()
     {
-        SingleStreamSpiller lookupSourceSpiller = spilledLookupSources.get(partition);
-
-        CompletableFuture<LookupSource> unspillLookupSourceFuture = unspillLookupSourceFuturesByPartitionCache
-                .computeIfAbsent(partition, ignored -> createUnspillLookupSourceFuture(session, lookupSourceSpiller));
-
-        return unspillLookupSourceFuture;
+        return spilledLookupSources.keySet();
     }
 
-    public CompletableFuture<LookupSource> createUnspillLookupSourceFuture(Session session, SingleStreamSpiller lookupSourceSpiller)
+    @Override
+    public synchronized void beginLookupSourceUnspilling(int consumersCount, Session session)
     {
-        return lookupSourceSpiller.getAllSpilledPages().thenApply((List<Page> spilledBuildPages) -> {
-            PagesIndex index = new PagesIndex(types, 10_000);
+        checkState(hasSpilled());
+        if (lookupSourceUnspilling.isPresent()) {
+            checkState(lookupSourceUnspilling.get().getConsumersCount() == consumersCount, "All consumers must pass the same consumersCount");
+        }
+        else {
+            lookupSourceUnspilling = Optional.of(new PartitionedConsumption(consumersCount, session));
+        }
+    }
 
-            for (Page page : spilledBuildPages) {
-                index.addPage(page);
-            }
-
-            return index.createLookupSourceSupplier(
-                    session,
-                    hashChannels,
-                    preComputedHashChannel,
-                    filterFunctionFactory,
-                    Optional.of(outputChannels)).get();
-        });
+    @Override
+    public synchronized CompletableFuture<LookupSourceFactory.LookupPartition> unspillLookupPartition(int partition)
+    {
+        checkState(lookupSourceUnspilling.isPresent());
+        return lookupSourceUnspilling.get().getNextPartition(partition);
     }
 
     private static class SpilledLookupSource
@@ -369,5 +368,163 @@ public final class PartitionedLookupSourceFactory
         {
             return lookupSourceFutures;
         }
+    }
+
+    private class PartitionedConsumption
+    {
+        private final int consumers;
+        private final Session session;
+        private final PeekingIterator<Partition> partitions = createPartitionConsumptions(spilledLookupSources.keySet());
+
+        private Partition currentPartition;
+
+        PartitionedConsumption(int consumers, Session session)
+        {
+            this.consumers = consumers;
+            this.session = session;
+            advanceToNextPartition();
+        }
+
+        private PeekingIterator<Partition> createPartitionConsumptions(Set<Integer> partitionNumbers)
+        {
+            List<Partition> consumptions = partitionNumbers.stream()
+                    .map(PartitionedConsumption.this::createConsumption)
+                    .collect(Collectors.toList());
+            return peekingIterator(consumptions.iterator());
+        }
+
+        public int getConsumersCount()
+        {
+            return consumers;
+        }
+
+        private Partition createConsumption(Integer partitionNumber)
+        {
+            CompletableFuture<Void> partitionRequested = new CompletableFuture<>();
+            CompletableFuture<Void> previousAdvanced = new CompletableFuture<>();
+            CompletableFuture<Void> allConsumersReleased = new CompletableFuture<>();
+            CompletableFuture<LookupSourceFactory.LookupPartition> partitionLoaded = allOf(partitionRequested, previousAdvanced)
+                    .thenCompose(ignored -> readSpilledLookupSource(session, partitionNumber))
+                    .thenApply(lookupSource -> new LookupPartition(partitionNumber, lookupSource, consumers, allConsumersReleased));
+            allConsumersReleased.thenRun(this::advanceToNextPartition);
+            return new Partition(partitionNumber, partitionRequested, previousAdvanced, partitionLoaded);
+        }
+
+        public synchronized CompletableFuture<LookupSourceFactory.LookupPartition> getNextPartition(int partitionNumber)
+        {
+            checkArgument(currentPartition != null, format("Requested next partition with number [%s] when there are no more left", partitionNumber));
+            if (partitionNumber == currentPartition.partitionNumber) {
+                return currentPartition.markRequested().loaded;
+            }
+            else {
+                checkArgument(partitions.hasNext(), format(
+                        "Requested next partition with number [%s] while current is of number [%s] and there are no more partitions",
+                        partitionNumber,
+                        currentPartition.partitionNumber));
+                Partition nextPartition = partitions.peek();
+                checkArgument(partitionNumber == nextPartition.partitionNumber,
+                        format("Requested next partition with number [%s] while the current and next partitions have different numbers", partitionNumber));
+                return nextPartition.markRequested().loaded;
+            }
+        }
+
+        private synchronized void advanceToNextPartition()
+        {
+            if (partitions.hasNext()) {
+                currentPartition = partitions.next();
+                currentPartition.previousAdvanced.complete(null);
+            }
+        }
+
+        private class Partition
+        {
+            private final int partitionNumber;
+            private final CompletableFuture<Void> requested;
+            private final CompletableFuture<Void> previousAdvanced;
+            private final CompletableFuture<LookupSourceFactory.LookupPartition> loaded;
+
+            public Partition(
+                    int partitionNumber,
+                    CompletableFuture<Void> requested,
+                    CompletableFuture<Void> previousAdvanced,
+                    CompletableFuture<LookupSourceFactory.LookupPartition> loaded)
+            {
+                this.partitionNumber = partitionNumber;
+                this.requested = requested;
+                this.previousAdvanced = previousAdvanced;
+                this.loaded = loaded;
+            }
+
+            private Partition markRequested()
+            {
+                requested.complete(null);
+                return this;
+            }
+        }
+    }
+
+    static class LookupPartition
+            implements LookupSourceFactory.LookupPartition
+    {
+        private final int partitionNumber;
+        private final LookupSource lookupSource;
+
+        private int pendingReleases;
+
+        public LookupPartition(int partitionNumber, LookupSource lookupSource, int consumers, CompletableFuture<Void> allConsumersReleased)
+        {
+            this.partitionNumber = partitionNumber;
+            this.lookupSource = lookupSource;
+            this.pendingReleases = consumers;
+            this.allConsumersReleased = allConsumersReleased;
+        }
+
+        private CompletableFuture<Void> allConsumersReleased;
+
+        @Override
+        public LookupSource getLookupSource()
+        {
+            return lookupSource;
+        }
+
+        @Override
+        public int getNumber()
+        {
+            return partitionNumber;
+        }
+
+        @Override
+        public synchronized void release()
+        {
+            pendingReleases--;
+            checkState(pendingReleases >= 0);
+            if (pendingReleases == 0) {
+                lookupSource.close();
+                allConsumersReleased.complete(null);
+            }
+        }
+    }
+
+    private synchronized CompletableFuture<LookupSource> readSpilledLookupSource(Session session, int partition)
+    {
+        SingleStreamSpiller lookupSourceSpiller = spilledLookupSources.get(partition);
+        CompletableFuture<List<Page>> spilledPages = lookupSourceSpiller.getAllSpilledPages();
+        return spilledPages.thenApply((List<Page> spilledBuildPages) -> getLookupSource(session, spilledBuildPages));
+    }
+
+    private LookupSource getLookupSource(Session session, List<Page> spilledBuildPages)
+    {
+        PagesIndex index = pagesIndexFactory.newPagesIndex(types, 10_000);
+
+        for (Page page : spilledBuildPages) {
+            index.addPage(page);
+        }
+
+        return index.createLookupSourceSupplier(
+                session,
+                hashChannels,
+                preComputedHashChannel,
+                filterFunctionFactory,
+                Optional.of(outputChannels)).get();
     }
 }

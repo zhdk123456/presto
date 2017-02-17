@@ -125,7 +125,8 @@ public class HashBuilderOperator
                     partitionCount,
                     requireNonNull(layout, "layout is null"),
                     outer,
-                    spillerFactory);
+                    spillerFactory,
+                    pagesIndexFactory);
 
             this.outputChannels = ImmutableList.copyOf(requireNonNull(outputChannels, "outputChannels is null"));
             this.hashChannels = ImmutableList.copyOf(requireNonNull(hashChannels, "hashChannels is null"));

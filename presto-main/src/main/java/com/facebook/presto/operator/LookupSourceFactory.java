@@ -40,17 +40,7 @@ public interface LookupSourceFactory
 
     void destroy();
 
-    default Set<Integer> getSpilledPartitions()
-    {
-        return ImmutableSet.of();
-    }
-
     default PartitioningSpiller createProbeSpiller(List<Type> probeTypes, HashGenerator probeHashGenerator)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    default CompletableFuture<LookupSource> readSpilledLookupSource(Session session, int partition)
     {
         throw new UnsupportedOperationException();
     }
@@ -58,5 +48,26 @@ public interface LookupSourceFactory
     default boolean hasSpilled()
     {
         return !getSpilledPartitions().isEmpty();
+    }
+
+    default Set<Integer> getSpilledPartitions()
+    {
+        return ImmutableSet.of();
+    }
+
+    default void beginLookupSourceUnspilling(int lookupSourceConsumers, Session session) {}
+
+    default CompletableFuture<LookupPartition> unspillLookupPartition(int partition)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    interface LookupPartition
+    {
+        LookupSource getLookupSource();
+
+        int getNumber();
+
+        void release();
     }
 }
