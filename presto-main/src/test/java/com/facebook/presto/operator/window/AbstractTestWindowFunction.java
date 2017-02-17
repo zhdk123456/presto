@@ -17,25 +17,30 @@ import com.facebook.presto.testing.LocalQueryRunner;
 import com.facebook.presto.testing.MaterializedResult;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.testing.Closeables.closeAllRuntimeException;
 
 @Test
 public abstract class AbstractTestWindowFunction
 {
-    protected final LocalQueryRunner queryRunner;
+    protected LocalQueryRunner queryRunner;
 
-    protected AbstractTestWindowFunction()
+    @BeforeClass
+    public void setUp()
+            throws Exception
     {
         queryRunner = new LocalQueryRunner(TEST_SESSION);
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void tearDown()
     {
-        queryRunner.close();
+        closeAllRuntimeException(queryRunner);
+        queryRunner = null;
     }
 
     protected void assertWindowQuery(@Language("SQL") String sql, MaterializedResult expected)

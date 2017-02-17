@@ -88,6 +88,7 @@ import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.slice.Slices.utf8Slice;
+import static io.airlift.testing.Closeables.closeAllRuntimeException;
 import static java.lang.Math.cos;
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
@@ -168,6 +169,8 @@ public class TestExpressionCompiler
     @AfterSuite
     public void tearDownClass()
     {
+        closeAllRuntimeException(functionAssertions);
+        functionAssertions = null;
         if (executor != null) {
             executor.shutdownNow();
             executor = null;
