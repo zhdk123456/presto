@@ -83,6 +83,10 @@ public class JdbcTests
     @Named("databases.presto.port")
     private int prestoPort;
 
+    @Inject
+    @Named("databases.presto.jdbc_url")
+    private String prestoJdbcURL;
+
     @BeforeTestWithContext
     public void setup()
             throws SQLException
@@ -145,8 +149,15 @@ public class JdbcTests
             ((PrestoConnection) testConnection).setTimeZoneId(timeZoneId);
         }
         else if (usingTeradataJdbcDriver(testConnection)) {
-            testConnection = DriverManager.getConnection(
-                    String.format("jdbc:presto://%s:%d;TimeZoneID=%s", prestoServer, prestoPort, timeZoneId));
+            String prestoJdbcURLTestTimeZone;
+            String testTimeZone = "TimeZoneID=" + timeZoneId + ";";
+            if (prestoJdbcURL.contains("TimeZoneID=")) {
+                prestoJdbcURLTestTimeZone = prestoJdbcURL.replaceFirst("TimeZoneID=[\\w/]*;", testTimeZone);
+            }
+            else {
+                prestoJdbcURLTestTimeZone = prestoJdbcURL + ";" + testTimeZone;
+            }
+            testConnection = DriverManager.getConnection(prestoJdbcURLTestTimeZone);
         }
         else {
             LOGGER.warn("JDBC driver must either be the Presto open source driver or the Teradata driver.");
