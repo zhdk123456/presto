@@ -37,6 +37,8 @@ public class FinalizerService
 {
     private static final Logger log = Logger.get(FinalizerService.class);
 
+    private static final long REMOVE_TIMEOUT = 5000;
+
     private final Set<FinalizerReference> finalizers = Sets.newConcurrentHashSet();
     private final ReferenceQueue<Object> finalizerQueue = new ReferenceQueue<>();
     private final ExecutorService executor = newSingleThreadExecutor(daemonThreadsNamed("FinalizerService"));
@@ -82,9 +84,11 @@ public class FinalizerService
     {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                FinalizerReference finalizer = (FinalizerReference) finalizerQueue.remove();
-                finalizers.remove(finalizer);
-                finalizer.cleanup();
+                FinalizerReference finalizer = (FinalizerReference) finalizerQueue.remove(REMOVE_TIMEOUT);
+                if (finalizer != null) {
+                    finalizers.remove(finalizer);
+                    finalizer.cleanup();
+                }
             }
             catch (InterruptedException e) {
                 return;
