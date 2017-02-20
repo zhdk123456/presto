@@ -23,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackZoneKey;
@@ -30,22 +31,17 @@ import static com.facebook.presto.spi.type.DateTimeEncoding.unpackZoneKey;
 /**
  * This type represents instant of time in some day and timezone, where timezone
  * is known and day is not.
+ * It corresponds to HOUR, MINUTE and SECONDS(3) fields from SQL standard.
  */
 public final class SqlTimeWithTimeZone
 {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS VV");
 
-    /**
-     * We know that max allowed value is midnight in timezone that is ~(UTC -12:00)
-     * just not to care about precision of the border we do use ~(UTC -24:00).
-     *
-     * It's all about sanity checking that this type will not be fed with millisUTC
-     * being instant in day different than 1970-01-01.
-     */
-    private static final long MAX_MILLIS_TIME = 2 * 24 * 60 * 60 * 1000;
+    private static final long MAX_LOCAL_MILLIS = TimeUnit.DAYS.toMillis(1);
+    private static final long MIN_LOCAL_MILLIS = 0;
 
     /**
-     * Milliseconds relative to midnight UTC of the given time (millisUtc < MAX_MILLIS_TIME).
+     * Milliseconds relative to midnight UTC of the given time
      */
     private final long millisUtc;
     private final TimeZoneKey timeZoneKey;
@@ -64,19 +60,17 @@ public final class SqlTimeWithTimeZone
     public SqlTimeWithTimeZone(long timeWithTimeZone)
     {
         millisUtc = unpackMillisUtc(timeWithTimeZone);
-        if (millisUtc > MAX_MILLIS_TIME) {
-            throw new RuntimeException("millisUtc must be time in millisecond that passed since midnight UTC (" + millisUtc + " is to high)");
-        }
         timeZoneKey = unpackZoneKey(timeWithTimeZone);
+
+        validateMillisRange();
     }
 
     public SqlTimeWithTimeZone(long millisUtc, TimeZoneKey timeZoneKey)
     {
         this.millisUtc = millisUtc;
-        if (millisUtc > MAX_MILLIS_TIME) {
-            throw new RuntimeException("millisUtc must be time in millisecond that passed since midnight UTC (" + millisUtc + " is to high)");
-        }
         this.timeZoneKey = timeZoneKey;
+
+        validateMillisRange();
     }
 
     public SqlTimeWithTimeZone(long millisUtc, TimeZone timeZone)
@@ -119,18 +113,36 @@ public final class SqlTimeWithTimeZone
     @Override
     public String toString()
     {
+        Instant utcInstantInCurrentDay = getTimeInstantInCurrentDay();
+        ZonedDateTime zonedDateTime = utcInstantInCurrentDay.atZone(ZoneId.of(timeZoneKey.getId()));
+        return zonedDateTime.format(formatter);
+    }
+
+    private Instant getTimeInstantInCurrentDay()
+    {
         // FIXME This is hack that we need to use as the timezone interpretation depends on date (not only on time)
         // Additionally we cannot just grab current TZ offset from timezoneOffsetReferenceTimestampUtc and use it
         // as our formatting library will fail to display expected TZ symbol.
         long currentMillisOfDay =
-                LocalTime.from(
+                TimeUnit.NANOSECONDS.toMillis(LocalTime.from(
                         Instant.ofEpochMilli(timezoneOffsetReferenceTimestampUtc)
                                .atZone(ZoneOffset.UTC))
-                        .toNanoOfDay() / 1_000_000L; // nanos to millis
+                        .toNanoOfDay());
         long timeMillisUtcInCurrentDay = timezoneOffsetReferenceTimestampUtc - currentMillisOfDay + millisUtc;
+        return Instant.ofEpochMilli(timeMillisUtcInCurrentDay);
+    }
 
-        Instant utcInstantInCurrentDay = Instant.ofEpochMilli(timeMillisUtcInCurrentDay);
-        ZonedDateTime zonedDateTime = utcInstantInCurrentDay.atZone(ZoneId.of(timeZoneKey.getId()));
-        return zonedDateTime.format(formatter);
+    private void validateMillisRange()
+    {
+        if (getLocalMillis() < MIN_LOCAL_MILLIS || getLocalMillis() >= MAX_LOCAL_MILLIS) {
+            throw new RuntimeException("millisUtc + TZ offset must be between 0:00-23:59:59.999 UTC (" + this.millisUtc + " in time zone " + this.timeZoneKey + "is to high)");
+        }
+    }
+
+    private long getLocalMillis()
+    {
+        ZoneId id = ZoneId.of(timeZoneKey.getId());
+        ZoneOffset offset = id.getRules().getOffset(getTimeInstantInCurrentDay());
+        return millisUtc + TimeUnit.SECONDS.toMillis(offset.getTotalSeconds());
     }
 }
