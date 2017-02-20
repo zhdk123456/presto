@@ -16,6 +16,7 @@ package com.facebook.presto.sql.planner.iterative.rule.test;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.parser.SqlParser;
+import com.facebook.presto.sql.planner.PartitioningScheme;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
@@ -25,15 +26,19 @@ import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.planner.plan.SampleNode;
+import com.facebook.presto.sql.planner.plan.TableWriterNode;
+import com.facebook.presto.sql.planner.plan.UnionNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.util.ImmutableCollectors;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ListMultimap;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -84,6 +89,29 @@ public class PlanBuilder
     public ApplyNode apply(Assignments subqueryAssignments, List<Symbol> correlation, PlanNode input, PlanNode subquery)
     {
         return new ApplyNode(idAllocator.getNextId(), input, subquery, subqueryAssignments, correlation);
+    }
+
+    public TableWriterNode tableWriter(
+            PlanNode source,
+            TableWriterNode.WriterTarget target,
+            List<Symbol> columns,
+            List<String> columnNames,
+            List<Symbol> outputs,
+            Optional<PartitioningScheme> partitioningScheme)
+    {
+        return new TableWriterNode(
+                idAllocator.getNextId(),
+                source,
+                target,
+                columns,
+                columnNames,
+                outputs,
+                partitioningScheme);
+    }
+
+    public UnionNode union(List<PlanNode> sources, ListMultimap<Symbol, Symbol> outputsToInputs, List<Symbol> outputs)
+    {
+        return new UnionNode(idAllocator.getNextId(), sources, outputsToInputs, outputs);
     }
 
     public Symbol symbol(String name, Type type)
