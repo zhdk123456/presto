@@ -20,13 +20,12 @@ import com.facebook.presto.spi.function.ScalarOperator;
 import com.facebook.presto.spi.function.SqlType;
 import com.facebook.presto.spi.type.AbstractLongType;
 import com.facebook.presto.spi.type.StandardTypes;
-import com.facebook.presto.spi.type.TimeZoneKey;
 import io.airlift.slice.Slice;
 import org.joda.time.chrono.ISOChronology;
 
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 
 import static com.facebook.presto.spi.function.OperatorType.BETWEEN;
 import static com.facebook.presto.spi.function.OperatorType.CAST;
@@ -117,12 +116,7 @@ public final class TimeWithTimeZoneOperators
         }
         else {
             // FIXME This is hack that we need to use as the timezone interpretation depends on date (not only on time)
-            long currentMillisOfDay =
-                    LocalTime.from(
-                            Instant.ofEpochMilli(REFERENCE_TIMESTAMP_UTC)
-                                    .atZone(ZoneId.of(TimeZoneKey.UTC_KEY.getId())))
-                            .toNanoOfDay() / 1_000_000L; // nanos to millis
-
+            long currentMillisOfDay = ChronoField.MILLI_OF_DAY.getFrom(Instant.ofEpochMilli(REFERENCE_TIMESTAMP_UTC).atZone(ZoneOffset.UTC));
             long timeMillisUtcInCurrentDay = REFERENCE_TIMESTAMP_UTC - currentMillisOfDay + unpackMillisUtc(value);
 
             ISOChronology chronology = getChronology(unpackZoneKey(value));
