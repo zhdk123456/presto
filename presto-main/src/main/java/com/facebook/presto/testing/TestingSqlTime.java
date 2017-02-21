@@ -22,6 +22,9 @@ import org.joda.time.DateTimeZone;
 
 public class TestingSqlTime
 {
+    private TestingSqlTime()
+    {}
+
     public static SqlTimestamp sqlTimestampOf(int year,
             int monthOfYear,
             int dayOfMonth,
