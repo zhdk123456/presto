@@ -63,6 +63,7 @@ public class LookupJoinOperator
     private Optional<PartitioningSpiller> spiller = Optional.empty();
     private ListenableFuture<?> spillInProgress = NOT_BLOCKED;
     private Optional<Iterator<Integer>> spilledPartitions = Optional.empty();
+    private SharedPartitionedMemoryContext sharedPartitionedMemoryContext;
 
     public LookupJoinOperator(
             OperatorContext operatorContext,
@@ -73,11 +74,13 @@ public class LookupJoinOperator
             JoinProbeFactory joinProbeFactory,
             Runnable onClose,
             AtomicInteger lookupJoinsCount,
+            SharedPartitionedMemoryContext sharedPartitionedMemoryContext,
             HashGenerator hashGenerator)
     {
         this.operatorContext = requireNonNull(operatorContext, "operatorContext is null");
         this.allTypes = ImmutableList.copyOf(requireNonNull(allTypes, "allTypes is null"));
         this.probeTypes = ImmutableList.copyOf(requireNonNull(probeTypes, "probeTypes is null"));
+        this.sharedPartitionedMemoryContext = requireNonNull(sharedPartitionedMemoryContext, "sharedPartitionedMemoryContext is null");
 
         requireNonNull(joinType, "joinType is null");
 
@@ -120,11 +123,12 @@ public class LookupJoinOperator
     {
         checkState(spiller.isPresent());
         checkState(spilledPartitions.isPresent());
-        spilledLookupJoiner.ifPresent(joiner -> joiner.finish());
+        spilledLookupJoiner.ifPresent(joiner -> joiner.finish(sharedPartitionedMemoryContext));
         if (spilledPartitions.get().hasNext()) {
             int currentSpilledPartition = spilledPartitions.get().next();
 
             spilledLookupJoiner = Optional.of(new SpillledLookupJoiner(
+                    currentSpilledPartition,
                     allTypes,
                     lookupSourceFactory.unspillLookupPartition(currentSpilledPartition),
                     joinProbeFactory,
@@ -227,7 +231,7 @@ public class LookupJoinOperator
                 return null;
             }
             SpillledLookupJoiner joiner = spilledLookupJoiner.get();
-            operatorContext.setMemoryReservation(joiner.getInMemorySizeInBytes()); //FIXME move to LSFactroy
+            joiner.reserveMemory(sharedPartitionedMemoryContext, operatorContext);
             return joiner.getOutput();
         }
         else {
