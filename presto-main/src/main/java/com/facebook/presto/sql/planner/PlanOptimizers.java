@@ -208,7 +208,7 @@ public class PlanOptimizers
                         ImmutableList.of(new TransformUncorrelatedScalarToJoin()),
                         ImmutableSet.of(new com.facebook.presto.sql.planner.iterative.rule.TransformUncorrelatedScalarToJoin())
                 ),
-                new TransformCorrelatedScalarAggregationToJoin(metadata),
+                new TransformCorrelatedScalarAggregationToJoin(metadata.getFunctionRegistry()),
                 new PredicatePushDown(metadata, sqlParser),
                 new PushAggregationBelowOuterJoin(),
                 new MergeProjections(),

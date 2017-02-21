@@ -346,7 +346,7 @@ public class TestPushAggregationBelowOuterJoin
                 new PruneUnreferencedOutputs(),
                 new PruneIdentityProjections(),
                 new TransformExistsApplyToScalarApply(getQueryRunner().getMetadata()),
-                new TransformCorrelatedScalarAggregationToJoin(getQueryRunner().getMetadata()),
+                new TransformCorrelatedScalarAggregationToJoin(getQueryRunner().getMetadata().getFunctionRegistry()),
                 new PredicatePushDown(getQueryRunner().getMetadata(), new SqlParser()),
                 new PushAggregationBelowOuterJoin(),
                 new PruneUnreferencedOutputs());
