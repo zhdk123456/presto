@@ -183,7 +183,8 @@ public class TestTime
         assertFunction("cast('03:04' as time) = TIME '03:04:00.000'", BOOLEAN, true);
     }
 
-    private ConnectorSession connectorSession() {
+    private ConnectorSession connectorSession()
+    {
         return functionAssertions.getSession().toConnectorSession();
     }
 }
