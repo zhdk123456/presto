@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.operator;
 
+import com.facebook.presto.operator.LookupSourceFactory.LookupPartition;
 import com.facebook.presto.spi.Page;
 import com.facebook.presto.spi.type.Type;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,17 +32,17 @@ public class SpillledLookupJoiner
     private final LookupJoiner lookupJoiner;
     private final Iterator<Page> probePages;
     private final CompletableFuture<LookupSource> lookupSourceFuture;
-    private final CompletableFuture<LookupSourceFactory.LookupPartition> lookupPartitionFuture;
+    private final CompletableFuture<LookupPartition> lookupPartitionFuture;
 
     public SpillledLookupJoiner(
             List<Type> allTypes,
-            CompletableFuture<LookupSourceFactory.LookupPartition> lookupPartitionFuture,
+            CompletableFuture<LookupPartition> lookupPartitionFuture,
             JoinProbeFactory joinProbeFactory,
             Iterator<Page> probePages,
             boolean probeOnOuterSide)
     {
         this.lookupPartitionFuture = requireNonNull(lookupPartitionFuture, "lookupPartitionFuture is null");
-        this.lookupSourceFuture = lookupPartitionFuture.thenApply(LookupSourceFactory.LookupPartition::getLookupSource);
+        this.lookupSourceFuture = lookupPartitionFuture.thenApply(LookupPartition::getLookupSource);
         this.lookupJoiner = new LookupJoiner(allTypes, toListenableFuture(lookupSourceFuture), joinProbeFactory, probeOnOuterSide);
         this.probePages = requireNonNull(probePages, "probePages is null");
     }
@@ -73,10 +74,8 @@ public class SpillledLookupJoiner
 
     public long getInMemorySizeInBytes()
     {
-        if (lookupSourceFuture.isDone()) {
-            return getFutureValue(lookupSourceFuture).getInMemorySizeInBytes();
-        }
-        return 0;
+        checkState(lookupSourceFuture.isDone(), "Size is not known yet");
+        return getFutureValue(lookupSourceFuture).getInMemorySizeInBytes();
     }
 
     public void finish()
