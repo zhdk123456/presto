@@ -60,6 +60,7 @@ import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.Predicates.isInstanceOfAny;
 import static java.util.Objects.requireNonNull;
 
+// TODO: move this class to TransformCorrelatedScalarAggregationToJoin when old optimizer is gone
 public class ScalarAggregationToJoinRewriter
 {
     private static final QualifiedName COUNT = QualifiedName.of("count");
