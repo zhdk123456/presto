@@ -724,6 +724,11 @@ public final class FunctionAssertions
         assertEquals(actualType, expectedType);
     }
 
+    public Session getSession()
+    {
+        return session;
+    }
+
     private static class TestPageSourceProvider
             implements PageSourceProvider
     {
@@ -752,11 +757,6 @@ public final class FunctionAssertions
                 return new FixedPageSource(ImmutableList.of(SOURCE_PAGE));
             }
         }
-    }
-
-    public Session getSession()
-    {
-        return session;
     }
 
     static class TestSplit
