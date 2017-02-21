@@ -264,3 +264,31 @@ The following has been added to 0.157.1-t.0.5:
 * Fix incorrect results for UNION ALL queries with duplicate column names.
   `https://github.com/prestodb/presto/issues/6935 <https://github.com/facebook/presto/issues/6935>`_
 
+=====================
+Release 0.157.1-t.0.6
+=====================
+
+The following has been added to 0.157.1-t.0.6:
+
+* Fix ``ConnectorMetadata#beginQuery`` behavior. Now it is called before ``ConnectorSplitManager#getSplits``.
+
+=====================
+Release 0.157.1-t.0.7
+=====================
+
+The following has been added to 0.157.1-t.0.7:
+
+* Fix incorrect pruning of join output columns.
+
+=====================
+Release 0.157.1-t.0.8
+=====================
+
+The following has been added to 0.157.1-t.0.8:
+
+* Fix creating external tables so that they are properly recognized by the Hive metastore.
+  The Hive table property EXTERNAL is now set to TRUE in addition to the setting the table type.
+  Any previously created tables need to be modified to have this property.
+* Fix HDFS configuration loading in the Hive connector. Without this fix, there sometimes were problems with connecting to HA HDFS.
+* Optimize window functions to avoid copying data unnecessarily for better CPU and memory utilization.
+* Optimize LIKE predicates with escape characters.
