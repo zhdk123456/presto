@@ -16,11 +16,11 @@ package com.facebook.presto.spi.type;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.time.Instant;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -123,11 +123,8 @@ public final class SqlTimeWithTimeZone
         // FIXME This is hack that we need to use as the timezone interpretation depends on date (not only on time)
         // Additionally we cannot just grab current TZ offset from timezoneOffsetReferenceTimestampUtc and use it
         // as our formatting library will fail to display expected TZ symbol.
-        long currentMillisOfDay =
-                TimeUnit.NANOSECONDS.toMillis(LocalTime.from(
-                        Instant.ofEpochMilli(timezoneOffsetReferenceTimestampUtc)
-                               .atZone(ZoneOffset.UTC))
-                        .toNanoOfDay());
+        long currentMillisOfDay = ChronoField.MILLI_OF_DAY.getFrom(
+                Instant.ofEpochMilli(timezoneOffsetReferenceTimestampUtc).atZone(ZoneOffset.UTC));
         long timeMillisUtcInCurrentDay = timezoneOffsetReferenceTimestampUtc - currentMillisOfDay + millisUtc;
         return Instant.ofEpochMilli(timeMillisUtcInCurrentDay);
     }
