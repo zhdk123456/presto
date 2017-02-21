@@ -56,7 +56,7 @@ public class FeaturesConfig
     private boolean exchangeCompressionEnabled = false;
     private boolean legacyArrayAgg;
     private boolean legacyOrderBy;
-    private boolean legacyTimestamp;
+    private boolean legacyTimestamp = true;
     private boolean legacyMapSubscript;
     private boolean optimizeMixedDistinctAggregations;
 
