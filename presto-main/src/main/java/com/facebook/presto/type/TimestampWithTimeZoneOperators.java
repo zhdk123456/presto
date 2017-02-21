@@ -150,7 +150,7 @@ public final class TimestampWithTimeZoneOperators
         }
         else {
             ISOChronology chronology = getChronology(unpackZoneKey(value));
-            return unpackMillisUtc(value) + chronology.getZone().getOffset(value);
+            return unpackMillisUtc(value) + chronology.getZone().getOffset(unpackMillisUtc(value));
         }
     }
 
