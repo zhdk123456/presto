@@ -29,22 +29,34 @@ import static java.util.Objects.requireNonNull;
 
 public class SpillledLookupJoiner
 {
+    private final int spilledPartition;
     private final LookupJoiner lookupJoiner;
     private final Iterator<Page> probePages;
     private final CompletableFuture<LookupSource> lookupSourceFuture;
     private final CompletableFuture<LookupPartition> lookupPartitionFuture;
+    private boolean memoryReserved = false;
 
     public SpillledLookupJoiner(
+            int spilledPartition,
             List<Type> allTypes,
             CompletableFuture<LookupPartition> lookupPartitionFuture,
             JoinProbeFactory joinProbeFactory,
             Iterator<Page> probePages,
             boolean probeOnOuterSide)
     {
+        this.spilledPartition = spilledPartition;
         this.lookupPartitionFuture = requireNonNull(lookupPartitionFuture, "lookupPartitionFuture is null");
         this.lookupSourceFuture = lookupPartitionFuture.thenApply(LookupPartition::getLookupSource);
         this.lookupJoiner = new LookupJoiner(allTypes, toListenableFuture(lookupSourceFuture), joinProbeFactory, probeOnOuterSide);
         this.probePages = requireNonNull(probePages, "probePages is null");
+    }
+
+    public synchronized void reserveMemory(SharedPartitionedMemoryContext sharedPartitionedMemoryContext, OperatorContext operatorContext)
+    {
+        if (!memoryReserved && lookupSourceFuture.isDone()) {
+            sharedPartitionedMemoryContext.reserve(spilledPartition, operatorContext, getInMemorySizeInBytes());
+            memoryReserved = true;
+        }
     }
 
     public ListenableFuture<?> isBlocked()
@@ -72,15 +84,16 @@ public class SpillledLookupJoiner
         return lookupJoiner.isFinished();
     }
 
-    public long getInMemorySizeInBytes()
+    private long getInMemorySizeInBytes()
     {
         checkState(lookupSourceFuture.isDone(), "Size is not known yet");
         return getFutureValue(lookupSourceFuture).getInMemorySizeInBytes();
     }
 
-    public void finish()
+    public void finish(SharedPartitionedMemoryContext sharedPartitionedMemoryContext)
     {
         checkState(lookupPartitionFuture.isDone());
         lookupPartitionFuture.join().release();
+        sharedPartitionedMemoryContext.free(spilledPartition, getInMemorySizeInBytes());
     }
 }

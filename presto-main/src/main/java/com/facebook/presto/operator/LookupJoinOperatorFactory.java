@@ -51,6 +51,7 @@ public class LookupJoinOperatorFactory
     private final AtomicInteger lookupJoinsCount = new AtomicInteger();
     private final HashGenerator probeHashGenerator;
     private boolean closed;
+    private SharedPartitionedMemoryContext sharedPartitionedMemoryContext;
 
     public LookupJoinOperatorFactory(int operatorId,
             PlanNodeId planNodeId,
@@ -83,6 +84,7 @@ public class LookupJoinOperatorFactory
         }
 
         this.referenceCount = new ReferenceCount();
+        this.sharedPartitionedMemoryContext = new SharedPartitionedMemoryContext();
 
         if (joinType == INNER || joinType == PROBE_OUTER) {
             // when all join operators finish, destroy the lookup source (freeing the memory)
@@ -123,6 +125,7 @@ public class LookupJoinOperatorFactory
         referenceCount = other.referenceCount;
         outerOperatorFactory = other.outerOperatorFactory;
         probeHashGenerator = other.probeHashGenerator;
+        sharedPartitionedMemoryContext = other.sharedPartitionedMemoryContext;
 
         referenceCount.retain();
     }
@@ -160,6 +163,7 @@ public class LookupJoinOperatorFactory
                 joinProbeFactory,
                 referenceCount::release,
                 lookupJoinsCount,
+                sharedPartitionedMemoryContext,
                 probeHashGenerator);
     }
 
