@@ -23,6 +23,7 @@ import com.facebook.presto.sql.planner.DependencyExtractor;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
+import com.facebook.presto.sql.planner.iterative.Lookup;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.AssignUniqueId;
@@ -52,7 +53,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.sql.analyzer.TypeSignatureProvider.fromTypeSignatures;
-import static com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher.searchFrom;
 import static com.facebook.presto.sql.planner.plan.SimplePlanRewriter.rewriteWith;
 import static com.facebook.presto.sql.tree.BooleanLiteral.TRUE_LITERAL;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
@@ -66,18 +66,31 @@ public class ScalarAggregationToJoinRewriter
     private final FunctionRegistry functionRegistry;
     private final SymbolAllocator symbolAllocator;
     private final PlanNodeIdAllocator idAllocator;
+    private final Optional<Lookup> lookup;
 
+    @Deprecated
     public ScalarAggregationToJoinRewriter(FunctionRegistry functionRegistry, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator)
+    {
+        this(functionRegistry, symbolAllocator, idAllocator, Optional.empty());
+    }
+
+    public ScalarAggregationToJoinRewriter(FunctionRegistry functionRegistry, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator, Lookup lookup)
+    {
+        this(functionRegistry, symbolAllocator, idAllocator, Optional.of(lookup));
+    }
+
+    private ScalarAggregationToJoinRewriter(FunctionRegistry functionRegistry, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator, Optional<Lookup> lookup)
     {
         this.functionRegistry = requireNonNull(functionRegistry, "metadata is null");
         this.symbolAllocator = requireNonNull(symbolAllocator, "symbolAllocator is null");
         this.idAllocator = requireNonNull(idAllocator, "idAllocator is null");
+        this.lookup = requireNonNull(lookup, "lookup is null");
     }
 
     public PlanNode rewriteScalarAggregation(ApplyNode apply, AggregationNode aggregation)
     {
         List<Symbol> correlation = apply.getCorrelation();
-        Optional<DecorrelatedNode> source = decorrelateFilters(aggregation.getSource(), correlation);
+        Optional<DecorrelatedNode> source = decorrelateFilters(resolve(aggregation.getSource()), correlation);
         if (!source.isPresent()) {
             return apply;
         }
@@ -239,12 +252,14 @@ public class ScalarAggregationToJoinRewriter
         return decorrelatedNode(correlatedPredicates, node, correlation);
     }
 
-    private static Optional<DecorrelatedNode> decorrelatedNode(
+    private Optional<DecorrelatedNode> decorrelatedNode(
             List<Expression> correlatedPredicates,
             PlanNode node,
             List<Symbol> correlation)
     {
-        if (DependencyExtractor.extractUnique(node).stream().anyMatch(correlation::contains)) {
+        // TODO: lookup will become mandatory part once we get rid of the old optimizer
+        Set<Symbol> uniqueSymbols = DependencyExtractor.extractUnique(node, lookup.orElse(n -> n));
+        if (uniqueSymbols.stream().anyMatch(correlation::contains)) {
             // node is still correlated ; /
             return Optional.empty();
         }
@@ -269,7 +284,7 @@ public class ScalarAggregationToJoinRewriter
         return filterNodeSearcher.replaceAll(newFilterNode);
     }
 
-    private static PlanNode removeLimitNode(PlanNode node)
+    private PlanNode removeLimitNode(PlanNode node)
     {
         node = searchFrom(node)
                 .where(LimitNode.class::isInstance)
@@ -302,6 +317,28 @@ public class ScalarAggregationToJoinRewriter
             }
         }.process(predicate, isSupported);
         return isSupported.get();
+    }
+
+    // Helper method until we get rid of old optimizer and can hold onto new with Lookup
+    private PlanNodeSearcher searchFrom(PlanNode node)
+    {
+        if (lookup.isPresent()) {
+            return PlanNodeSearcher.searchFrom(node, lookup.get());
+        }
+        else {
+            return PlanNodeSearcher.searchFrom(node);
+        }
+    }
+
+    // Helper method until we get rid of old optimizer and can hold onto new with Lookup
+    private PlanNode resolve(PlanNode node)
+    {
+        if (lookup.isPresent()) {
+            return lookup.get().resolve(node);
+        }
+        else {
+            return node;
+        }
     }
 
     private static class DecorrelatedNode
