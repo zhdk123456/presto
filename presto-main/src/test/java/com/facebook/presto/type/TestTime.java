@@ -32,8 +32,8 @@ import static com.facebook.presto.spi.type.TimestampType.TIMESTAMP;
 import static com.facebook.presto.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
 import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
-import static com.facebook.presto.util.DateTimeUtils.sqlTimeOf;
-import static com.facebook.presto.util.DateTimeUtils.sqlTimestampOf;
+import static com.facebook.presto.testing.TestingSqlTime.sqlTimeOf;
+import static com.facebook.presto.testing.TestingSqlTime.sqlTimestampOf;
 import static com.facebook.presto.util.DateTimeZoneIndex.getDateTimeZone;
 
 public class TestTime
