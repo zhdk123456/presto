@@ -14,6 +14,7 @@
 package com.facebook.presto.sql.planner.plan;
 
 import com.facebook.presto.sql.planner.Symbol;
+import com.facebook.presto.sql.tree.SymbolReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -22,6 +23,7 @@ import javax.annotation.concurrent.Immutable;
 
 import java.util.List;
 
+import static com.facebook.presto.sql.planner.optimizations.ScalarQueryUtil.isScalar;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
@@ -81,6 +83,20 @@ public class ApplyNode
         this.subquery = subquery;
         this.subqueryAssignments = subqueryAssignments;
         this.correlation = ImmutableList.copyOf(correlation);
+    }
+
+    public boolean isResolvedScalarSubquery()
+    {
+        return isScalar(subquery) && isSubqueryResolved();
+    }
+
+    /**
+     * @return true if output symbols of subquery are directly mapped to ApplyNode output symbols
+     */
+    public boolean isSubqueryResolved()
+    {
+        return subqueryAssignments.getExpressions().stream()
+                .allMatch(expression -> expression instanceof SymbolReference);
     }
 
     @JsonProperty("input")
