@@ -25,8 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static com.facebook.presto.spi.type.TimeZoneKey.UTC_KEY;
-
 /**
  * This type represents HOUR, MINUTE and SECONDS(3) fields from SQL standard.
  * Due to legacy mode it also contains TZ ID mappable to HOUR TZ and MINUTE TZ
@@ -119,8 +117,8 @@ public final class SqlTime
             return zonedDateTime.format(formatter);
         }
         else {
-            // FIXME this should be exact equivalent of TIMESTAMP to VARCHAR cast
-            return Instant.ofEpochMilli(millisUtc).atZone(ZoneId.of(UTC_KEY.getId())).format(formatter);
+            // For testing purposes this should be exact equivalent of TIMESTAMP to VARCHAR cast
+            return Instant.ofEpochMilli(millisUtc).atZone(ZoneOffset.UTC).format(formatter);
         }
     }
 
