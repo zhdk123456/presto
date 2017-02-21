@@ -15,10 +15,7 @@ package com.facebook.presto.util;
 
 import com.facebook.presto.client.IntervalDayTime;
 import com.facebook.presto.client.IntervalYearMonth;
-import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.type.SqlTime;
-import com.facebook.presto.spi.type.SqlTimestamp;
 import com.facebook.presto.spi.type.TimeZoneKey;
 import com.facebook.presto.sql.tree.IntervalLiteral.IntervalField;
 import org.joda.time.DateTime;
@@ -47,7 +44,6 @@ import java.util.stream.Stream;
 
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
 import static com.facebook.presto.spi.type.DateTimeEncoding.unpackMillisUtc;
-import static com.facebook.presto.spi.type.TimeZoneKey.UTC_KEY;
 import static com.facebook.presto.util.DateTimeZoneIndex.getChronology;
 import static com.facebook.presto.util.DateTimeZoneIndex.getDateTimeZone;
 import static com.facebook.presto.util.DateTimeZoneIndex.packDateTimeWithZone;
