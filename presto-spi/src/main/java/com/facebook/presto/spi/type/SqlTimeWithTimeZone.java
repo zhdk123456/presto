@@ -31,7 +31,8 @@ import static com.facebook.presto.spi.type.DateTimeEncoding.unpackZoneKey;
 /**
  * This type represents instant of time in some day and timezone, where timezone
  * is known and day is not.
- * It corresponds to HOUR, MINUTE and SECONDS(3) fields from SQL standard.
+ * It corresponds to HOUR, MINUTE and SECONDS(3) fields from SQL standard + TIMEZONE
+ * that can be mapped to HOUR TZ, MINUTE TZ.
  */
 public final class SqlTimeWithTimeZone
 {
