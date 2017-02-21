@@ -582,9 +582,7 @@ public final class DateTimeUtils
         }
     }
 
-    public static SqlTime sqlTimeOf(int year,
-            int monthOfYear,
-            int dayOfMonth,
+    public static SqlTime sqlTimeOf(
             int hourOfDay,
             int minuteOfHour,
             int secondOfMinute,
@@ -594,10 +592,10 @@ public final class DateTimeUtils
             ConnectorSession session)
     {
         if (session.isLegacyTimestamp()) {
-            return new SqlTime(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, baseZone).getMillis(), timestampZone);
+            return new SqlTime(new DateTime(1970, 1, 1, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, baseZone).getMillis(), timestampZone);
         }
         else {
-            return new SqlTime(new DateTime(year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, getDateTimeZone(UTC_KEY)).getMillis());
+            return new SqlTime(new DateTime(1970, 1, 1, hourOfDay, minuteOfHour, secondOfMinute, millisOfSecond, getDateTimeZone(UTC_KEY)).getMillis());
         }
     }
 }

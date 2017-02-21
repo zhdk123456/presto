@@ -257,7 +257,7 @@ public class TestTimestampWithTimeZone
     {
         assertFunction("cast(TIMESTAMP '2001-1-22 03:04:05.321 +07:09' as time)",
                 TIME,
-                sqlTimeOf(1970, 1, 1, 3, 4, 5, 321, WEIRD_ZONE, session.getTimeZoneKey(), session.toConnectorSession()));
+                sqlTimeOf(3, 4, 5, 321, WEIRD_ZONE, session.getTimeZoneKey(), session.toConnectorSession()));
     }
 
     @Test

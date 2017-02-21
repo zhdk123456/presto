@@ -61,9 +61,9 @@ public class TestTime
     public void testLiteral()
             throws Exception
     {
-        assertFunction("TIME '03:04:05.321'", TIME, sqlTimeOf(1970, 1, 1, 3, 4, 5, 321, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
-        assertFunction("TIME '03:04:05'", TIME, sqlTimeOf(1970, 1, 1, 3, 4, 5, 0, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
-        assertFunction("TIME '03:04'", TIME, sqlTimeOf(1970, 1, 1, 3, 4, 0, 0, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
+        assertFunction("TIME '03:04:05.321'", TIME, sqlTimeOf(3, 4, 5, 321, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
+        assertFunction("TIME '03:04:05'", TIME, sqlTimeOf(3, 4, 5, 0, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
+        assertFunction("TIME '03:04'", TIME, sqlTimeOf(3, 4, 0, 0, DATE_TIME_ZONE, TIME_ZONE_KEY, functionAssertions.getSession().toConnectorSession()));
     }
 
     @Test

@@ -185,7 +185,7 @@ public class TestTimestamp
     public void testCastToTime()
             throws Exception
     {
-        assertFunction("cast(TIMESTAMP '2001-1-22 03:04:05.321' as time)", TIME, sqlTimeOf(1970, 1, 1, 3, 4, 5, 321, DATE_TIME_ZONE, TIME_ZONE_KEY, connectorSession()));
+        assertFunction("cast(TIMESTAMP '2001-1-22 03:04:05.321' as time)", TIME, sqlTimeOf(3, 4, 5, 321, DATE_TIME_ZONE, TIME_ZONE_KEY, connectorSession()));
     }
 
     @Test
