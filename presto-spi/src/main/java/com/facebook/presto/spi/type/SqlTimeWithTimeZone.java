@@ -140,7 +140,6 @@ public final class SqlTimeWithTimeZone
     private long getLocalMillis()
     {
         ZoneId id = ZoneId.of(timeZoneKey.getId());
-        ZoneOffset offset = id.getRules().getOffset(getTimeInstantInCurrentDay());
-        return millisUtc + TimeUnit.SECONDS.toMillis(offset.getTotalSeconds());
+        return ChronoField.MILLI_OF_DAY.getFrom(getTimeInstantInCurrentDay().atZone(id));
     }
 }
