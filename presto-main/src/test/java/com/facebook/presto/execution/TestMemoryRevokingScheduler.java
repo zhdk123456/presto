@@ -240,7 +240,7 @@ public class TestMemoryRevokingScheduler
     private OperatorContext createContexts(SqlTask sqlTask)
     {
         TaskContext taskContext = sqlTask.getQueryContext().addTaskContext(new TaskStateMachine(new TaskId("q", 1, 1), executor), session, false, false);
-        PipelineContext pipelineContext = taskContext.addPipelineContext(0, false, false);
+        PipelineContext pipelineContext = taskContext.addPipelineContext(false, false);
         DriverContext driverContext = pipelineContext.addDriverContext();
         OperatorContext operatorContext = driverContext.addOperatorContext(1, new PlanNodeId("na"), "na");
 
