@@ -44,6 +44,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -154,9 +155,11 @@ public class ScalarAggregationToJoinRewriter
                 .skipOnlyWhen(EnforceSingleRowNode.class::isInstance)
                 .findFirst();
 
+        List<Symbol> aggregationOutputSymbols = getTruncatedAggregationSymbols(applyNode, aggregationNode.get());
+
         if (subqueryProjection.isPresent()) {
             Assignments assignments = Assignments.builder()
-                    .putAll(Assignments.identity(aggregationNode.get().getOutputSymbols()))
+                    .putAll(Assignments.identity(aggregationOutputSymbols))
                     .putAll(subqueryProjection.get().getAssignments())
                     .build();
 
@@ -166,8 +169,23 @@ public class ScalarAggregationToJoinRewriter
                     assignments);
         }
         else {
-            return aggregationNode.get();
+            Assignments assignments = Assignments.builder()
+                    .putAll(Assignments.identity(aggregationOutputSymbols))
+                    .build();
+
+            return new ProjectNode(
+                    idAllocator.getNextId(),
+                    aggregationNode.get(),
+                    assignments);
         }
+    }
+
+    private static List<Symbol> getTruncatedAggregationSymbols(ApplyNode applyNode, AggregationNode aggregationNode)
+    {
+        Set<Symbol> applySymbols = new HashSet<>(applyNode.getOutputSymbols());
+        return aggregationNode.getOutputSymbols().stream()
+                .filter(symbol -> applySymbols.contains(symbol))
+                .collect(toImmutableList());
     }
 
     private Optional<AggregationNode> createAggregationNode(
