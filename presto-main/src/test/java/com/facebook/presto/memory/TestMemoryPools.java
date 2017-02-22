@@ -104,7 +104,7 @@ public class TestMemoryPools
     {
         final AtomicReference<RevocableMemoryOperator> createOperator = new AtomicReference<>();
         setUp(() -> {
-            DriverContext driverContext = taskContext.addPipelineContext(0, false, false).addDriverContext();
+            DriverContext driverContext = taskContext.addPipelineContext(false, false).addDriverContext();
             OperatorContext revokableOperatorContext = driverContext.addOperatorContext(
                     Integer.MAX_VALUE,
                     new PlanNodeId("revokable_operator"),
