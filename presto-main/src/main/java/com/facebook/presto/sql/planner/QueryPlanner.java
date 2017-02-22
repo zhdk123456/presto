@@ -273,8 +273,9 @@ class QueryPlanner
 
         // rewrite expressions which contain already handled subqueries
         predicate = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), predicate);
+        // Expression rewritten = predicate;
         if (node instanceof QuerySpecification) {
-            predicate = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), predicate);
+            predicate = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata, symbolAllocator.getGroupIdSymbols()), predicate);
         }
         Expression rewrittenBeforeSubqueries = subPlan.rewrite(predicate);
         subPlan = subqueryPlanner.handleSubqueries(subPlan, rewrittenBeforeSubqueries, node);
@@ -292,7 +293,7 @@ class QueryPlanner
         for (Expression expression : expressions) {
             Expression rewritten = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), expression);
             if (node instanceof QuerySpecification) {
-                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata), rewritten);
+                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata, symbolAllocator.getGroupIdSymbols()), rewritten);
             }
             Symbol symbol = symbolAllocator.newSymbol(rewritten, analysis.getTypeWithCoercions(expression));
             projections.put(symbol, subPlan.rewrite(rewritten));
@@ -454,7 +455,7 @@ class QueryPlanner
         Optional<Symbol> groupIdSymbol = Optional.empty();
         if (groupingSets.size() > 1) {
             groupIdSymbol = Optional.of(symbolAllocator.newSymbol("groupId", BIGINT));
-            analysis.addGroupIdSymbol(node, groupIdSymbol.get());
+            symbolAllocator.addGroupIdSymbolForQuerySpecification(node, groupIdSymbol.get());
             GroupIdNode groupId = new GroupIdNode(idAllocator.getNextId(), subPlan.getRoot(), groupingSymbols, groupingSetMappings, argumentMappings, groupIdSymbol.get());
             subPlan = new PlanBuilder(groupingTranslations, groupId, analysis.getParameters());
         }
@@ -569,14 +570,6 @@ class QueryPlanner
             return subPlan;
         }
 
-        // Rewrite any GROUPING() expressions in the window function
-        ImmutableList.Builder<FunctionCall> rewrittenWindowFunctionsBuilder = ImmutableList.builder();
-        for (FunctionCall windowFunction : windowFunctions) {
-            FunctionCall rewrittenFunctionCall = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(node, analysis, metadata), windowFunction);
-            rewrittenWindowFunctionsBuilder.add(rewrittenFunctionCall);
-        }
-        windowFunctions = rewrittenWindowFunctionsBuilder.build();
-
         for (FunctionCall windowFunction : windowFunctions) {
             Window window = windowFunction.getWindow().get();
 
@@ -613,7 +606,7 @@ class QueryPlanner
                 inputs.add(frameEnd);
             }
 
-            subPlan = subPlan.appendProjections(inputs.build(), symbolAllocator, idAllocator);
+            subPlan = subPlan.appendProjections(inputs.build(), symbolAllocator, idAllocator, node, metadata, analysis);
 
             // Rewrite PARTITION BY in terms of pre-projected inputs
             ImmutableList.Builder<Symbol> partitionBySymbols = ImmutableList.builder();
@@ -645,7 +638,8 @@ class QueryPlanner
             TranslationMap outputTranslations = subPlan.copyTranslations();
 
             // Rewrite function call in terms of pre-projected inputs
-            Expression parametersReplaced = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), windowFunction);
+            Expression groupingRewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter(node, analysis, metadata, symbolAllocator.getGroupIdSymbols()), windowFunction);
+            Expression parametersReplaced = ExpressionTreeRewriter.rewriteWith(new ParameterRewriter(analysis.getParameters(), analysis), groupingRewritten);
             outputTranslations.addIntermediateMapping(windowFunction, parametersReplaced);
             Expression rewritten = subPlan.rewrite(parametersReplaced);
 

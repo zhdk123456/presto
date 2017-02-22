@@ -266,8 +266,8 @@ class RelationPlanner
             rightPlanBuilder = subqueryPlanner.handleSubqueries(rightPlanBuilder, rightComparisonExpressions, node);
 
             // Add projections for join criteria
-            leftPlanBuilder = leftPlanBuilder.appendProjections(leftComparisonExpressions, symbolAllocator, idAllocator);
-            rightPlanBuilder = rightPlanBuilder.appendProjections(rightComparisonExpressions, symbolAllocator, idAllocator);
+            leftPlanBuilder = leftPlanBuilder.appendProjections(leftComparisonExpressions, symbolAllocator, idAllocator, node, metadata, analysis);
+            rightPlanBuilder = rightPlanBuilder.appendProjections(rightComparisonExpressions, symbolAllocator, idAllocator, node, metadata, analysis);
 
             for (int i = 0; i < leftComparisonExpressions.size(); i++) {
                 if (joinConditionComparisonTypes.get(i) == ComparisonExpressionType.EQUAL) {
@@ -364,7 +364,7 @@ class RelationPlanner
 
         // Add a projection for all the unnest arguments
         PlanBuilder planBuilder = initializePlanBuilder(leftPlan);
-        planBuilder = planBuilder.appendProjections(node.getExpressions(), symbolAllocator, idAllocator);
+        planBuilder = planBuilder.appendProjections(node.getExpressions(), symbolAllocator, idAllocator, joinNode, metadata, analysis);
         TranslationMap translations = planBuilder.getTranslations();
         ProjectNode projectNode = checkType(planBuilder.getRoot(), ProjectNode.class, "planBuilder.getRoot()");
 

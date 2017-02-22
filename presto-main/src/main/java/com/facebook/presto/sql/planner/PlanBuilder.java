@@ -13,11 +13,14 @@
  */
 package com.facebook.presto.sql.planner;
 
+import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.sql.analyzer.Analysis;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
 import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.ExpressionTreeRewriter;
+import com.facebook.presto.sql.tree.Node;
+import com.facebook.presto.sql.tree.QuerySpecification;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
@@ -89,7 +92,7 @@ class PlanBuilder
         return translations;
     }
 
-    public PlanBuilder appendProjections(Iterable<Expression> expressions, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator)
+    public PlanBuilder appendProjections(Iterable<Expression> expressions, SymbolAllocator symbolAllocator, PlanNodeIdAllocator idAllocator, Node node, Metadata metadata, Analysis analysis)
     {
         TranslationMap translations = copyTranslations();
 
@@ -103,7 +106,11 @@ class PlanBuilder
         ImmutableMap.Builder<Symbol, Expression> newTranslations = ImmutableMap.builder();
         ParameterRewriter parameterRewriter = new ParameterRewriter(parameters, getAnalysis());
         for (Expression expression : expressions) {
-            Expression rewritten = ExpressionTreeRewriter.rewriteWith(parameterRewriter, expression);
+            Expression rewritten = expression;
+            if (node instanceof QuerySpecification) {
+                rewritten = ExpressionTreeRewriter.rewriteWith(new GroupingOperationRewriter((QuerySpecification) node, analysis, metadata, symbolAllocator.getGroupIdSymbols()), rewritten);
+            }
+            rewritten = ExpressionTreeRewriter.rewriteWith(parameterRewriter, rewritten);
             translations.addIntermediateMapping(expression, rewritten);
             Symbol symbol = symbolAllocator.newSymbol(rewritten, getAnalysis().getTypeWithCoercions(expression));
             projections.put(symbol, translations.rewrite(rewritten));

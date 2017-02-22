@@ -20,10 +20,12 @@ import com.facebook.presto.sql.tree.Expression;
 import com.facebook.presto.sql.tree.FunctionCall;
 import com.facebook.presto.sql.tree.GroupingOperation;
 import com.facebook.presto.sql.tree.QualifiedNameReference;
+import com.facebook.presto.sql.tree.QuerySpecification;
 import com.facebook.presto.sql.tree.SymbolReference;
 import com.google.common.primitives.Ints;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
@@ -33,6 +35,7 @@ public class SymbolAllocator
 {
     private final Map<Symbol, Type> symbols = new HashMap<>();
     private int nextId;
+    private final IdentityHashMap<QuerySpecification, Symbol> groupIdSymbols = new IdentityHashMap<>();
 
     public Symbol newSymbol(String nameHint, Type type)
     {
@@ -116,5 +119,15 @@ public class SymbolAllocator
     private int nextId()
     {
         return nextId++;
+    }
+
+    public void addGroupIdSymbolForQuerySpecification(QuerySpecification node, Symbol groupIdSymbol)
+    {
+        groupIdSymbols.put(node, groupIdSymbol);
+    }
+
+    public Map<QuerySpecification, Symbol> getGroupIdSymbols()
+    {
+        return groupIdSymbols;
     }
 }

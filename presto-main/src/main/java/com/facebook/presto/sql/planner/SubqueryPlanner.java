@@ -193,7 +193,7 @@ class SubqueryPlanner
 
     private PlanBuilder appendInPredicateApplyNode(PlanBuilder subPlan, InPredicate inPredicate, boolean correlationAllowed)
     {
-        subPlan = subPlan.appendProjections(ImmutableList.of(inPredicate.getValue()), symbolAllocator, idAllocator);
+        subPlan = subPlan.appendProjections(ImmutableList.of(inPredicate.getValue()), symbolAllocator, idAllocator, inPredicate, metadata, analysis);
 
         checkState(inPredicate.getValueList() instanceof SubqueryExpression);
         PlanNode subquery = createRelationPlan(((SubqueryExpression) inPredicate.getValueList()).getQuery()).getRoot();
@@ -201,7 +201,7 @@ class SubqueryPlanner
         if (!correlationAllowed && correlation.isEmpty()) {
             throwNotSupportedException(inPredicate, "Correlated subquery in given context");
         }
-        subPlan = subPlan.appendProjections(correlation.keySet(), symbolAllocator, idAllocator);
+        subPlan = subPlan.appendProjections(correlation.keySet(), symbolAllocator, idAllocator, inPredicate, metadata, analysis);
         subquery = replaceExpressionsWithSymbols(subquery, correlation);
 
         TranslationMap translationMap = subPlan.copyTranslations();
@@ -488,7 +488,7 @@ class SubqueryPlanner
         if (!correlationAllowed && !correlation.isEmpty()) {
             throwNotSupportedException(subquery, "Correlated subquery in given context");
         }
-        subPlan = subPlan.appendProjections(correlation.keySet(), symbolAllocator, idAllocator);
+        subPlan = subPlan.appendProjections(correlation.keySet(), symbolAllocator, idAllocator, subquery, metadata, analysis);
         subqueryNode = replaceExpressionsWithSymbols(subqueryNode, correlation);
 
         TranslationMap translations = subPlan.copyTranslations();
