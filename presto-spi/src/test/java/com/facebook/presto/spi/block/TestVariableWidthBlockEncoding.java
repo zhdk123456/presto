@@ -67,7 +67,7 @@ public class TestVariableWidthBlockEncoding
         @Override
         public boolean isLegacyTimestamp()
         {
-            return false;
+            return true;
         }
 
         @Override
