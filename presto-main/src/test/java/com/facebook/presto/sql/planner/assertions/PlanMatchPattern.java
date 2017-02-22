@@ -22,6 +22,7 @@ import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
+import com.facebook.presto.sql.planner.plan.AssignUniqueId;
 import com.facebook.presto.sql.planner.plan.ExceptNode;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.FilterNode;
@@ -258,6 +259,12 @@ public final class PlanMatchPattern
     public static PlanMatchPattern union(PlanMatchPattern... sources)
     {
         return node(UnionNode.class, sources);
+    }
+
+    public static PlanMatchPattern assignUniqueId(String uniqueSymbolAlias, PlanMatchPattern source)
+    {
+        return node(AssignUniqueId.class, source)
+                .withAlias(uniqueSymbolAlias, new AssignUniqueIdMatcher());
     }
 
     public static PlanMatchPattern intersect(PlanMatchPattern... sources)
