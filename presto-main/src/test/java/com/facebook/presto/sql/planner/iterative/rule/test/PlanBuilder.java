@@ -18,9 +18,12 @@ import com.facebook.presto.sql.ExpressionUtils;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
+import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
+import com.facebook.presto.sql.planner.plan.AssignUniqueId;
 import com.facebook.presto.sql.planner.plan.Assignments;
 import com.facebook.presto.sql.planner.plan.FilterNode;
+import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.ProjectNode;
@@ -34,6 +37,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -84,6 +88,35 @@ public class PlanBuilder
     public ApplyNode apply(Assignments subqueryAssignments, List<Symbol> correlation, PlanNode input, PlanNode subquery)
     {
         return new ApplyNode(idAllocator.getNextId(), input, subquery, subqueryAssignments, correlation);
+    }
+
+    public AggregationNode aggregation(
+            PlanNode source,
+            Map<Symbol, AggregationNode.Aggregation> assignments,
+            List<List<Symbol>> groupingSets,
+            AggregationNode.Step step,
+            Optional<Symbol> hashSymbol,
+            Optional<Symbol> groupIdSymbol)
+    {
+        return new AggregationNode(idAllocator.getNextId(), source, assignments, groupingSets, step, hashSymbol, groupIdSymbol);
+    }
+
+    public JoinNode join(
+            JoinNode.Type type,
+            PlanNode left,
+            PlanNode right,
+            List<JoinNode.EquiJoinClause> criteria,
+            List<Symbol> outputSymbols,
+            Optional<Expression> filter,
+            Optional<Symbol> leftHashSymbol,
+            Optional<Symbol> rightHashSymbol)
+    {
+        return new JoinNode(idAllocator.getNextId(), type, left, right, criteria, outputSymbols, filter, leftHashSymbol, rightHashSymbol);
+    }
+
+    public AssignUniqueId assignUniqueId(PlanNode source, Symbol unique)
+    {
+        return new AssignUniqueId(idAllocator.getNextId(), source, unique);
     }
 
     public Symbol symbol(String name, Type type)
