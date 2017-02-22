@@ -29,6 +29,7 @@ import com.facebook.presto.sql.planner.PartitioningScheme;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.TestingTableHandle;
+import com.facebook.presto.sql.planner.plan.AggregationNode;
 import com.facebook.presto.sql.planner.plan.ApplyNode;
 import com.facebook.presto.sql.planner.plan.AssignUniqueId;
 import com.facebook.presto.sql.planner.plan.Assignments;
@@ -327,6 +328,11 @@ public class PlanBuilder
     public UnionNode union(List<? extends PlanNode> sources, ListMultimap<Symbol, Symbol> outputsToInputs, List<Symbol> outputs)
     {
         return new UnionNode(idAllocator.getNextId(), (List<PlanNode>) sources, outputsToInputs, outputs);
+    }
+
+    public AggregationNode aggregate(Map<Symbol, AggregationNode.Aggregation> assignments, List<List<Symbol>> groupingSets, PlanNode source)
+    {
+        return new AggregationNode(idAllocator.getNextId(), source, assignments, groupingSets, AggregationNode.Step.SINGLE, Optional.empty(), Optional.empty());
     }
 
     public Symbol symbol(String name, Type type)
