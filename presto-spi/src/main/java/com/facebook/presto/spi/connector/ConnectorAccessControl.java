@@ -14,6 +14,8 @@
 package com.facebook.presto.spi.connector;
 
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.SchemaTablePrefix;
+import com.facebook.presto.spi.security.GrantInfo;
 import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
@@ -42,6 +44,7 @@ import static com.facebook.presto.spi.security.AccessDeniedException.denyRevokeT
 import static com.facebook.presto.spi.security.AccessDeniedException.denySelectTable;
 import static com.facebook.presto.spi.security.AccessDeniedException.denySelectView;
 import static com.facebook.presto.spi.security.AccessDeniedException.denySetCatalogSessionProperty;
+import static com.facebook.presto.spi.security.AccessDeniedException.denyShowGrants;
 import static com.facebook.presto.spi.security.AccessDeniedException.denyShowSchemas;
 import static com.facebook.presto.spi.security.AccessDeniedException.denyShowTables;
 
@@ -289,5 +292,23 @@ public interface ConnectorAccessControl
     default void checkCanDropRole(ConnectorTransactionHandle transactionHandle, Identity identity, String role)
     {
         denyDropRole(role);
+    }
+
+    /**
+     * Check if identity is allowed to show grants on the specified catalog or schema or table.
+     *
+     * @throws com.facebook.presto.spi.security.AccessDeniedException if not allowed
+     */
+    default void checkCanShowGrants(ConnectorTransactionHandle transactionHandle, Identity identity, String catalogName, SchemaTablePrefix schemaTablePrefix)
+    {
+        denyShowGrants(catalogName + "." + schemaTablePrefix.toString());
+    }
+
+    /**
+     * Filter the list of grants to those visible to the identity.
+     */
+    default Set<GrantInfo> filterGrants(ConnectorTransactionHandle transactionHandle, Identity identity, String catalogName, SchemaTablePrefix schemaTablePrefix, Set<GrantInfo> grantInfos)
+    {
+        return Collections.emptySet();
     }
 }
