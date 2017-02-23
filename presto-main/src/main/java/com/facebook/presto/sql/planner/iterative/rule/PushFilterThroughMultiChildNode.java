@@ -38,9 +38,9 @@ import java.util.stream.IntStream;
 import static com.facebook.presto.sql.ExpressionUtils.combineConjuncts;
 import static com.facebook.presto.sql.ExpressionUtils.extractConjuncts;
 import static com.facebook.presto.sql.planner.ExpressionSymbolInliner.inlineSymbols;
-import static com.facebook.presto.sql.planner.optimizations.Predicates.predicate;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableMap;
+import static com.facebook.presto.util.Predicates.predicate;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Collections.emptyList;
 
