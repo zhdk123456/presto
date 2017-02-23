@@ -1092,16 +1092,6 @@ public class TestSqlParser
     }
 
     @Test
-    public void testGroupingOperationTooManyArguments()
-    {
-        String query = "SELECT GROUPING(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
-                "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
-                "a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a," +
-                "a, a) FROM foo";
-        assertInvalidStatement(query, "More than 63 grouping columns are not allowed as the resulting bit set won't fit in a Java long data type.");
-    }
-
-    @Test
     public void testCreateSchema()
     {
         assertStatement("CREATE SCHEMA test",

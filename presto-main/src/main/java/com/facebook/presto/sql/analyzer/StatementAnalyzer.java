@@ -1035,10 +1035,12 @@ class StatementAnalyzer
             }
 
             for (Expression expression : window.getPartitionBy()) {
+                analyzeExpression(expression, Scope.create());
                 nestedExtractor.process(expression, null);
             }
 
             for (SortItem sortItem : window.getOrderBy()) {
+                analyzeExpression(sortItem.getSortKey(), Scope.create());
                 nestedExtractor.process(sortItem.getSortKey(), null);
             }
 

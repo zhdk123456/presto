@@ -77,11 +77,12 @@ public final class GroupingOperationFunction
         }
 
         long grouping = 0;
-        // Rightmost argument to grouping() is represented by the least significant bit
-        // so we start the conversion from binary to decimal from the left.
-        for (int i = groupingOrdinals.size() - 1, j = 0; i >= 0; i--, j++) {
-            if (groupingBinary.get(i)) {
-                grouping |= 1 << j;
+        // Rightmost argument to grouping() (i.e. rightmost element of the groupingBinary BitSet)
+        // is represented by the least significant bit in the grouping result so we start the
+        // conversion from binary to decimal from the right side of the groupingBinary BitSet.
+        for (int groupingBitIndex = 0; groupingBitIndex < groupingOrdinals.size(); groupingBitIndex++) {
+            if (groupingBinary.get(groupingOrdinals.size() - 1 - groupingBitIndex)) {
+                grouping |= 1 << groupingBitIndex;
             }
         }
 

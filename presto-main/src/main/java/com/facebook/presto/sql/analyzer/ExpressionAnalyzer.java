@@ -125,6 +125,7 @@ import static com.facebook.presto.spi.type.VarcharType.VARCHAR;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.EXPRESSION_NOT_CONSTANT;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_LITERAL;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_PARAMETER_USAGE;
+import static com.facebook.presto.sql.analyzer.SemanticErrorCode.INVALID_PROCEDURE_ARGUMENTS;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.MULTIPLE_FIELDS_FROM_SUBQUERY;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.sql.analyzer.SemanticErrorCode.STANDALONE_LAMBDA;
@@ -1112,6 +1113,9 @@ public class ExpressionAnalyzer
 
         public Type visitGroupingOperation(GroupingOperation node, StackableAstVisitorContext<Context> context)
         {
+            if (node.getGroupingColumns().size() > 63) {
+                throw new SemanticException(INVALID_PROCEDURE_ARGUMENTS, node, "GROUPING supports up to 63 column arguments");
+            }
             for (Expression columnArgument : node.getGroupingColumns()) {
                 process(columnArgument, context);
             }

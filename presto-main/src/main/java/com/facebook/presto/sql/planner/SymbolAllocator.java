@@ -99,7 +99,7 @@ public class SymbolAllocator
             nameHint = ((SymbolReference) expression).getName();
         }
         else if (expression instanceof GroupingOperation) {
-            nameHint = ((GroupingOperation) expression).getName();
+            nameHint = "grouping_operation";
         }
 
         return newSymbol(nameHint, type, suffix);

@@ -14,8 +14,6 @@
 package com.facebook.presto.sql.planner;
 
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.metadata.Signature;
-import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.analyzer.Analysis;
 import com.facebook.presto.sql.analyzer.TypeSignatureProvider;
 import com.facebook.presto.sql.tree.ArrayConstructor;
@@ -36,14 +34,11 @@ import com.facebook.presto.type.ListLiteralType;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.facebook.presto.operator.scalar.GroupingOperationFunction.GROUPING;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
-import static com.facebook.presto.spi.type.IntegerType.INTEGER;
 import static com.facebook.presto.sql.analyzer.ExpressionAnalyzer.resolveFunction;
 import static com.facebook.presto.util.ImmutableCollectors.toImmutableList;
 import static com.google.common.base.Preconditions.checkState;
@@ -77,44 +72,32 @@ public class GroupingOperationRewriter
         Expression rewrittenExpression = rewriteGroupingOperationToExpression(node, queryNode);
         if (rewrittenExpression instanceof FunctionCall) {
             FunctionCall rewrittenFunctionCall = (FunctionCall) rewrittenExpression;
-            IdentityHashMap<Expression, Type> expressionTypes = new IdentityHashMap<>();
-            IdentityHashMap<FunctionCall, Signature> functionSignatures = new IdentityHashMap<>();
             List<TypeSignatureProvider> functionTypes = Arrays.asList(
                     new TypeSignatureProvider(BIGINT.getTypeSignature()),
                     new TypeSignatureProvider(ListLiteralType.LIST_LITERAL.getTypeSignature()),
                     new TypeSignatureProvider(ListLiteralType.LIST_LITERAL.getTypeSignature())
             );
-            Signature functionSignature = resolveFunction(rewrittenFunctionCall, functionTypes, metadata.getFunctionRegistry());
-
-            expressionTypes.put(rewrittenExpression, INTEGER);
-            functionSignatures.put(rewrittenFunctionCall, functionSignature);
+            resolveFunction(rewrittenFunctionCall, functionTypes, metadata.getFunctionRegistry());
         }
 
         return rewrittenExpression;
     }
 
-    public Expression rewriteGroupingOperationToExpression(GroupingOperation expression, QuerySpecification node)
+    private Expression rewriteGroupingOperationToExpression(GroupingOperation expression, QuerySpecification node)
     {
         List<Expression> columnReferences = ImmutableList.copyOf(analysis.getColumnReferences());
-        List<Expression> groupingOrdinals;
-        ImmutableList.Builder<Expression> groupingOrdinalsBuilder = ImmutableList.builder();
-        groupingOrdinalsBuilder.addAll(expression.getGroupingColumns().stream()
+        List<Expression> groupingOrdinals = expression.getGroupingColumns().stream()
                 .map(columnReferences::indexOf)
                 .map(columnOrdinal -> new LongLiteral(Integer.toString(columnOrdinal)))
-                .collect(Collectors.toList()));
-        groupingOrdinals = groupingOrdinalsBuilder.build();
+                .collect(toImmutableList());
 
         List<List<Expression>> groupingSetOrdinals;
         ImmutableList.Builder<List<Expression>> groupingSetOrdinalsBuilder = ImmutableList.builder();
         for (List<Expression> groupingSet : analysis.getGroupingSets(node)) {
-            ImmutableList.Builder<Expression> ordinalsBuilder = ImmutableList.builder();
-            ordinalsBuilder.addAll(groupingSet.stream()
+            groupingSetOrdinalsBuilder.add(groupingSet.stream()
                     .map(columnReferences::indexOf)
                     .map(columnOrdinal -> new LongLiteral(Integer.toString(columnOrdinal)))
-                    .collect(Collectors.toList())
-            );
-
-            groupingSetOrdinalsBuilder.add(ordinalsBuilder.build());
+                    .collect(toImmutableList()));
         }
         groupingSetOrdinals = groupingSetOrdinalsBuilder.build();
 
@@ -136,7 +119,7 @@ public class GroupingOperationRewriter
             firstArgument = groupIdSymbols.get(node).toSymbolReference();
         }
 
-        List<Expression> arguments = Arrays.asList(
+        List<Expression> arguments = ImmutableList.of(
                 firstArgument,
                 new Cast(new ArrayConstructor(groupingOrdinals), ListLiteralType.NAME),
                 new Cast(new ArrayConstructor(groupingSetOrdinals.stream().map(ArrayConstructor::new).collect(toImmutableList())), ListLiteralType.NAME)
