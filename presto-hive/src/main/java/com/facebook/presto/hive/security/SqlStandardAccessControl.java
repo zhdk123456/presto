@@ -313,6 +313,47 @@ public class SqlStandardAccessControl
         }
     }
 
+    @Override
+    public void checkCanGrantRoles(ConnectorTransactionHandle transactionHandle, Identity identity, Set<String> roles, Set<PrestoPrincipal> grantees, boolean withAdminOption, Optional<PrestoPrincipal> grantor, String catalogName)
+    {
+        // currently specifying grantor is supported by metastore, but it is not supported by Hive itself
+        if (grantor.isPresent()) {
+            throw new AccessDeniedException("Hive Connector does not support GRANTED BY statement");
+        }
+        if (isAdmin(transactionHandle, identity)) {
+            return;
+        }
+        if (!hasAdminOption(transactionHandle, identity, roles)) {
+            denyGrantRoles(roles, grantees);
+        }
+    }
+
+    @Override
+    public void checkCanRevokeRoles(ConnectorTransactionHandle transactionHandle, Identity identity, Set<String> roles, Set<PrestoPrincipal> grantees, boolean adminOptionFor, Optional<PrestoPrincipal> grantor, String catalogName)
+    {
+        // currently specifying grantor is supported by metastore, but it is not supported by Hive itself
+        if (grantor.isPresent()) {
+            throw new AccessDeniedException("Hive Connector does not support GRANTED BY statement");
+        }
+        if (isAdmin(transactionHandle, identity)) {
+            return;
+        }
+        if (!hasAdminOption(transactionHandle, identity, roles)) {
+            denyRevokeRoles(roles, grantees);
+        }
+    }
+
+    private boolean hasAdminOption(ConnectorTransactionHandle transaction, Identity identity, Set<String> roles)
+    {
+        SemiTransactionalHiveMetastore metastore = metastoreProvider.apply(((HiveTransactionHandle) transaction));
+        Set<RoleGrant> grants = MetastoreUtil.listApplicableRoles(new PrestoPrincipal(USER, identity.getUser()), metastore::listRoleGrants);
+        Set<String> rolesWithGrantOption = grants.stream()
+                .filter(RoleGrant::isGrantable)
+                .map(RoleGrant::getRoleName)
+                .collect(toSet());
+        return rolesWithGrantOption.containsAll(roles);
+    }
+
     private boolean checkDatabasePermission(ConnectorTransactionHandle transaction, Identity identity, String schemaName, HivePrivilege... requiredPrivileges)
     {
         SemiTransactionalHiveMetastore metastore = metastoreProvider.apply(((HiveTransactionHandle) transaction));
