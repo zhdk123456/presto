@@ -20,6 +20,6 @@ public class TestReorderWindowsIterativeOptimizer
 {
     public TestReorderWindowsIterativeOptimizer()
     {
-        super(ImmutableMap.of("iterative_optimizer_enabled", "true"));
+        super(ImmutableMap.of("iterative_optimizer_enabled", "true", "reorder_windows", "true"));
     }
 }
