@@ -20,8 +20,10 @@ import com.facebook.presto.hive.metastore.HivePrivilegeInfo;
 import com.facebook.presto.hive.metastore.SemiTransactionalHiveMetastore;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.connector.ConnectorAccessControl;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import com.facebook.presto.spi.security.GrantInfo;
 import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
@@ -297,6 +299,17 @@ public class SqlStandardAccessControl
         if (!isAdmin(transactionHandle, identity)) {
             denyDropRole(role);
         }
+    }
+
+    @Override
+    public void checkCanShowGrants(ConnectorTransactionHandle transaction, Identity identity, String catalogName, SchemaTablePrefix schemaTablePrefix)
+    {
+    }
+
+    @Override
+    public Set<GrantInfo> filterGrants(ConnectorTransactionHandle transaction, Identity identity, String catalogName, SchemaTablePrefix schemaTablePrefix, Set<GrantInfo> grantInfos)
+    {
+        return grantInfos;
     }
 
     private boolean checkDatabasePermission(ConnectorTransactionHandle transaction, Identity identity, String schemaName, HivePrivilege... requiredPrivileges)
