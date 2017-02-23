@@ -20,16 +20,6 @@ public class Predicates
 {
     private Predicates() {}
 
-    /**
-     * A factory method for promoting method references into Predicate instances.
-     *
-     * Example usage: {@code predicate(this::isFunky).negate()}.
-     */
-    public static <T> Predicate<T> predicate(Predicate<T> predicate)
-    {
-        return predicate;
-    }
-
     public static <T> Predicate<T> isInstanceOfAny(Class... classes)
     {
         Predicate predicate = alwaysFalse();
@@ -49,6 +39,11 @@ public class Predicates
         return x -> false;
     }
 
+    /**
+     * A factory method for promoting method references into Predicate instances.
+     *
+     * Example usage: {@code predicate(this::isFunky).negate()}.
+     */
     public static <T> Predicate<T> predicate(Predicate<T> predicate)
     {
         return predicate;
