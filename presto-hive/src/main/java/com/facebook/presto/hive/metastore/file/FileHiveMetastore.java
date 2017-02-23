@@ -67,7 +67,6 @@ import java.util.function.Function;
 
 import static com.facebook.presto.hive.HiveErrorCode.HIVE_METASTORE_ERROR;
 import static com.facebook.presto.hive.HiveUtil.toPartitionValues;
-import static com.facebook.presto.hive.metastore.Database.DEFAULT_DATABASE_NAME;
 import static com.facebook.presto.hive.metastore.HivePrivilegeInfo.HivePrivilege.OWNERSHIP;
 import static com.facebook.presto.hive.metastore.MetastoreUtil.makePartName;
 import static com.facebook.presto.spi.StandardErrorCode.ALREADY_EXISTS;
@@ -88,7 +87,6 @@ import static org.apache.hadoop.hive.metastore.TableType.VIRTUAL_VIEW;
 public class FileHiveMetastore
         implements ExtendedHiveMetastore
 {
-    private static final String PUBLIC_ROLE_NAME = "public";
     private static final String PRESTO_SCHEMA_FILE_NAME = ".prestoSchema";
     private static final String PRESTO_PERMISSIONS_DIRECTORY_NAME = ".prestoPermissions";
 
@@ -655,9 +653,15 @@ public class FileHiveMetastore
     public Set<RoleGrant> listRoleGrants(PrestoPrincipal principal)
     {
         synchronized (rolesLock) {
-            return ImmutableSet.copyOf(listRoleGrantsSanitized().stream()
+            ImmutableSet.Builder<RoleGrant> result = ImmutableSet.builder();
+            if (principal.getType() == USER) {
+                result.add(new RoleGrant(principal, "admin", false));
+                result.add(new RoleGrant(principal, "public", false));
+            }
+            result.addAll(listRoleGrantsSanitized().stream()
                     .filter(grant -> grant.getGrantee().equals(principal))
                     .collect(toSet()));
+            return removeDuplicatedEntries(result.build());
         }
     }
 
@@ -821,51 +825,18 @@ public class FileHiveMetastore
     }
 
     @Override
-    public synchronized Set<String> getRoles(String user)
+    public synchronized Set<HivePrivilegeInfo> listTablePrivileges(String databaseName, String tableName, PrestoPrincipal principal)
     {
-        return ImmutableSet.<String>builder()
-                .add(PUBLIC_ROLE_NAME)
-                .add("admin")  // todo there should be a way to manage the admins list
-                .build();
-    }
-
-    @Override
-    public synchronized Set<HivePrivilegeInfo> getDatabasePrivileges(String user, String databaseName)
-    {
-        Set<HivePrivilegeInfo> privileges = new HashSet<>();
-        if (isDatabaseOwner(user, databaseName)) {
-            privileges.add(new HivePrivilegeInfo(OWNERSHIP, true));
-        }
-        return privileges;
-    }
-
-    @Override
-    public synchronized Set<HivePrivilegeInfo> getTablePrivileges(String user, String databaseName, String tableName)
-    {
+        ImmutableSet.Builder<HivePrivilegeInfo> result = ImmutableSet.builder();
         Table table = getRequiredTable(databaseName, tableName);
-
-        Set<HivePrivilegeInfo> privileges = new HashSet<>();
-        if (user.equals(table.getOwner())) {
-            privileges.add(new HivePrivilegeInfo(OWNERSHIP, true));
+        if (principal.getType() == USER && table.getOwner().equals(principal.getName())) {
+            result.add(new HivePrivilegeInfo(OWNERSHIP, true));
         }
-
-        Path permissionsDirectory = getPermissionsDirectory(table);
-        privileges.addAll(getTablePrivileges(permissionsDirectory, user, USER));
-        for (String role : getRoles(user)) {
-            privileges.addAll(getTablePrivileges(permissionsDirectory, role, ROLE));
-        }
-        return privileges;
-    }
-
-    private synchronized Collection<HivePrivilegeInfo> getTablePrivileges(
-            Path permissionsDirectory,
-            String principalName,
-            PrincipalType principalType)
-    {
-        Path permissionFilePath = getPermissionsPath(permissionsDirectory, principalName, principalType);
-        return readFile("permissions", permissionFilePath, permissionsCodec).orElse(ImmutableList.of()).stream()
+        Path permissionFilePath = getPermissionsPath(getPermissionsDirectory(table), principal.getName(), principal.getType());
+        result.addAll(readFile("permissions", permissionFilePath, permissionsCodec).orElse(ImmutableList.of()).stream()
                 .map(PermissionMetadata::toHivePrivilegeInfo)
-                .collect(toList());
+                .collect(toSet()));
+        return result.build();
     }
 
     @Override
@@ -877,7 +848,7 @@ public class FileHiveMetastore
     @Override
     public synchronized void revokeTablePrivileges(String databaseName, String tableName, String grantee, Set<HivePrivilegeInfo> privileges)
     {
-        Set<HivePrivilegeInfo> currentPrivileges = getTablePrivileges(grantee, databaseName, tableName);
+        Set<HivePrivilegeInfo> currentPrivileges = listTablePrivileges(databaseName, tableName, new PrestoPrincipal(USER, grantee));
         currentPrivileges.removeAll(privileges);
 
         setTablePrivileges(grantee, USER, databaseName, tableName, currentPrivileges);
@@ -926,30 +897,6 @@ public class FileHiveMetastore
         catch (IOException e) {
             throw new PrestoException(HIVE_METASTORE_ERROR, "Could not delete table permissions", e);
         }
-    }
-
-    private boolean isDatabaseOwner(String user, String databaseName)
-    {
-        // all users are "owners" of the default database
-        if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(databaseName)) {
-            return true;
-        }
-
-        Optional<Database> databaseMetadata = getDatabase(databaseName);
-        if (!databaseMetadata.isPresent()) {
-            return false;
-        }
-
-        Database database = databaseMetadata.get();
-
-        // a database can be owned by a user or role
-        if (database.getOwnerType() == USER && user.equals(database.getOwnerName())) {
-            return true;
-        }
-        if (database.getOwnerType() == ROLE && getRoles(user).contains(database.getOwnerName())) {
-            return true;
-        }
-        return false;
     }
 
     private Path getDatabaseMetadataDirectory(String databaseName)
