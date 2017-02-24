@@ -189,10 +189,10 @@ public class PlanPrinter
         return new PlanPrinter(plan, types, metadata, costCalculator, session, stats, indent).toString();
     }
 
-    public static String textDistributedPlan(List<StageInfo> stages, Metadata metadata, CostCalculator costCalculator, Session session)
+    public static String textDistributedPlan(StageInfo outputStageInfo, Metadata metadata, CostCalculator costCalculator, Session session)
     {
         StringBuilder builder = new StringBuilder();
-        List<StageInfo> allStages = stages.stream()
+        List<StageInfo> allStages = outputStageInfo.getSubStages().stream()
                 .flatMap(stage -> getAllStages(Optional.of(stage)).stream())
                 .collect(toImmutableList());
         for (StageInfo stageInfo : allStages) {
