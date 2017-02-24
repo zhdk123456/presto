@@ -32,6 +32,7 @@ import static com.facebook.presto.tests.TestGroups.ROLES;
 import static com.facebook.presto.tests.utils.QueryExecutors.connectToPresto;
 import static com.facebook.presto.tests.utils.QueryExecutors.onHive;
 import static com.facebook.presto.tests.utils.QueryExecutors.onPresto;
+import static com.teradata.tempto.assertions.QueryAssert.Row.row;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -103,7 +104,7 @@ public class TestRoles
         onPresto().executeQuery(format("CREATE ROLE %s IN hive", ROLE2));
         QueryResult expected = onHive().executeQuery("SHOW ROLES");
         QueryResult actual = onPresto().executeQuery("SELECT * FROM hive.information_schema.roles");
-        assertThat(actual.rows()).containsExactly(expected.rows().toArray(new List[] {}));
+        assertThat(actual.rows()).containsOnly(expected.rows().toArray(new List[] {}));
     }
 
     @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
@@ -124,7 +125,7 @@ public class TestRoles
     }
 
     @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
-    public void testAccessControl()
+    public void testCreateDropRoleAccessControl()
             throws Exception
     {
         // Only users that are granted with "admin" role can create, drop and list roles
@@ -137,8 +138,198 @@ public class TestRoles
                 .failsWithMessage("Cannot select from table information_schema.roles");
     }
 
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testPublicRoleIsGrantedToEveryone()
+            throws Exception
+    {
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .contains(row("alice", "USER", "public", "NO"));
+        QueryAssert.assertThat(onPrestoBob().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .contains(row("bob", "USER", "public", "NO"));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testAdminRoleIsGrantedToHive()
+            throws Exception
+    {
+        QueryAssert.assertThat(onPresto().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .contains(row("hdfs", "USER", "admin", "YES"));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testGrantRevokeRole()
+            throws Exception
+    {
+        onPresto().executeQuery("CREATE ROLE role1");
+        onPresto().executeQuery("CREATE ROLE role2");
+        onPresto().executeQuery("CREATE ROLE role3");
+
+        onPresto().executeQuery("GRANT role1 TO USER alice, USER bob");
+        onPresto().executeQuery("GRANT role2, role3 TO ROLE role1");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"),
+                        row("role1", "ROLE", "role2", "NO"),
+                        row("role1", "ROLE", "role3", "NO"));
+
+        onPresto().executeQuery("REVOKE role3 FROM ROLE role1");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"),
+                        row("role1", "ROLE", "role2", "NO"));
+
+        onPresto().executeQuery("GRANT role3 TO ROLE role1");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"),
+                        row("role1", "ROLE", "role2", "NO"),
+                        row("role1", "ROLE", "role3", "NO"));
+
+        onPresto().executeQuery("DROP ROLE role3");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"),
+                        row("role1", "ROLE", "role2", "NO"));
+
+        onPresto().executeQuery("DROP ROLE role1");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testGrantRoleWithGrantOption()
+            throws Exception
+    {
+        onPresto().executeQuery("CREATE ROLE role1");
+        onPresto().executeQuery("CREATE ROLE role2");
+
+        onPresto().executeQuery("GRANT role1 TO USER alice");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"));
+
+        onPresto().executeQuery("GRANT role1 TO USER alice WITH ADMIN OPTION");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "YES"));
+
+        onPresto().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER alice");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"));
+
+        onPresto().executeQuery("GRANT role2 TO USER alice");
+        onPresto().executeQuery("GRANT role1 TO ROLE role2 WITH ADMIN OPTION");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"),
+                        row("alice", "USER", "role2", "NO"),
+                        row("role2", "ROLE", "role1", "YES"));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testGrantRevokeRoleMultipleTimes()
+    {
+        onPresto().executeQuery("CREATE ROLE role1");
+
+        onPresto().executeQuery("GRANT role1 TO USER alice");
+        onPresto().executeQuery("GRANT role1 TO USER alice");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"));
+
+        onPresto().executeQuery("GRANT role1 TO USER alice WITH ADMIN OPTION");
+        onPresto().executeQuery("GRANT role1 TO USER alice WITH ADMIN OPTION");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "YES"));
+
+        onPresto().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER alice");
+        onPresto().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER alice");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"),
+                        row("alice", "USER", "role1", "NO"));
+
+        onPresto().executeQuery("REVOKE role1 FROM USER alice");
+        onPresto().executeQuery("REVOKE role1 FROM USER alice");
+        QueryAssert.assertThat(onPrestoAlice().executeQuery("SELECT * FROM hive.information_schema.applicable_roles"))
+                .containsOnly(
+                        row("alice", "USER", "public", "NO"));
+    }
+
+    @Test(groups = {HIVE_CONNECTOR, ROLES, AUTHORIZATION, PROFILE_SPECIFIC_TESTS})
+    public void testGrantRevokeRoleAccessControl()
+            throws Exception
+    {
+        onPresto().executeQuery("CREATE ROLE role1");
+        onPresto().executeQuery("CREATE ROLE role2");
+
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob WITH ADMIN OPTION"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+
+        onPresto().executeQuery("GRANT role1 TO USER alice WITH ADMIN OPTION");
+
+        onPrestoAlice().executeQuery("GRANT role1 TO USER bob");
+        onPrestoAlice().executeQuery("GRANT role1 TO USER bob WITH ADMIN OPTION");
+        onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER bob");
+        onPrestoAlice().executeQuery("REVOKE role1 FROM USER bob");
+
+        onPresto().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER alice");
+
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob WITH ADMIN OPTION"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+
+        onPresto().executeQuery("GRANT role2 TO USER alice");
+        onPresto().executeQuery("GRANT role1 TO ROLE role2 WITH ADMIN OPTION");
+
+        onPrestoAlice().executeQuery("GRANT role1 TO USER bob");
+        onPrestoAlice().executeQuery("GRANT role1 TO USER bob WITH ADMIN OPTION");
+        onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER bob");
+        onPrestoAlice().executeQuery("REVOKE role1 FROM USER bob");
+
+        onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM ROLE role2");
+
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("GRANT role1 TO USER bob WITH ADMIN OPTION"))
+                .failsWithMessage("Cannot grant roles [role1] to [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+        QueryAssert.assertThat(() -> onPrestoAlice().executeQuery("REVOKE ADMIN OPTION FOR role1 FROM USER bob"))
+                .failsWithMessage("Cannot revoke roles [role1] from [USER bob]");
+    }
+
     private static QueryExecutor onPrestoAlice()
     {
         return connectToPresto("alice@presto");
+    }
+
+    private static QueryExecutor onPrestoBob()
+    {
+        return connectToPresto("bob@presto");
     }
 }
