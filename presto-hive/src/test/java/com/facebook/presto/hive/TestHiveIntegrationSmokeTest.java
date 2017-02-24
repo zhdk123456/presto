@@ -22,6 +22,7 @@ import com.facebook.presto.metadata.TableLayoutResult;
 import com.facebook.presto.metadata.TableMetadata;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.spi.type.TypeManager;
 import com.facebook.presto.spi.type.TypeSignature;
@@ -71,6 +72,7 @@ import static com.facebook.presto.spi.type.TinyintType.TINYINT;
 import static com.facebook.presto.spi.type.VarcharType.createUnboundedVarcharType;
 import static com.facebook.presto.spi.type.VarcharType.createVarcharType;
 import static com.facebook.presto.testing.MaterializedResult.resultBuilder;
+import static com.facebook.presto.tests.QueryAssertions.assertContains;
 import static com.facebook.presto.tests.QueryAssertions.assertEqualsIgnoreOrder;
 import static com.facebook.presto.transaction.TransactionBuilder.transaction;
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -1845,6 +1847,211 @@ public class TestHiveIntegrationSmokeTest
             throws Exception
     {
         assertQueryFails("DROP ROLE non_existent_role", ".*?Role 'non_existent_role' does not exist");
+    }
+
+    @Test
+    public void testPublicRoleIsGrantedToAnyone()
+            throws Exception
+    {
+        Session session = Session.builder(queryRunner.getDefaultSession())
+                .setIdentity(new Identity("some_user", Optional.empty()))
+                .build();
+        MaterializedResult actual = queryRunner.execute(session, "SELECT * FROM hive.information_schema.applicable_roles");
+        MaterializedResult expected = MaterializedResult.resultBuilder(session, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("some_user", "USER", "public", "NO")
+                .build();
+        assertContains(actual, expected);
+    }
+
+    @Test
+    public void testAdminRoleIsGrantedToAdmin()
+            throws Exception
+    {
+        Session session = Session.builder(queryRunner.getDefaultSession())
+                .setIdentity(new Identity("admin_user", Optional.empty()))
+                .build();
+        MaterializedResult actual = queryRunner.execute(session, "SELECT * FROM hive.information_schema.applicable_roles");
+        MaterializedResult expected = MaterializedResult.resultBuilder(session, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("admin_user", "USER", "admin", "NO")
+                .build();
+        assertContains(actual, expected);
+    }
+
+    @Test
+    public void testGrantRevokeRole()
+            throws Exception
+    {
+        assertUpdate("CREATE ROLE grant_revoke_role_1");
+        assertUpdate("CREATE ROLE grant_revoke_role_2");
+        assertUpdate("CREATE ROLE grant_revoke_role_3");
+        assertUpdate("GRANT grant_revoke_role_1 TO USER grant_revoke_user_1, USER grant_revoke_user_2");
+        assertUpdate("GRANT grant_revoke_role_2, grant_revoke_role_3 TO ROLE grant_revoke_role_1");
+
+        Session user1 = Session.builder(queryRunner.getDefaultSession())
+                .setIdentity(new Identity("grant_revoke_user_1", Optional.empty()))
+                .build();
+
+        MaterializedResult actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        MaterializedResult expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_user_1", "USER", "public", "NO")
+                .row("grant_revoke_user_1", "USER", "grant_revoke_role_1", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_2", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_3", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("REVOKE grant_revoke_role_3 FROM ROLE grant_revoke_role_1");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_user_1", "USER", "public", "NO")
+                .row("grant_revoke_user_1", "USER", "grant_revoke_role_1", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_2", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("GRANT grant_revoke_role_3 TO ROLE grant_revoke_role_1");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_user_1", "USER", "public", "NO")
+                .row("grant_revoke_user_1", "USER", "grant_revoke_role_1", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_2", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_3", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("DROP ROLE grant_revoke_role_3");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_user_1", "USER", "public", "NO")
+                .row("grant_revoke_user_1", "USER", "grant_revoke_role_1", "NO")
+                .row("grant_revoke_role_1", "ROLE", "grant_revoke_role_2", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("DROP ROLE grant_revoke_role_1");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_user_1", "USER", "public", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("DROP ROLE grant_revoke_role_2");
+    }
+
+    @Test
+    public void testGrantRoleWithGrantOption()
+            throws Exception
+    {
+        Session user1 = Session.builder(queryRunner.getDefaultSession())
+                .setIdentity(new Identity("grant_revoke_with_grant_user_1", Optional.empty()))
+                .build();
+
+        assertUpdate("CREATE ROLE grant_revoke_role_with_grant_1");
+        assertUpdate("CREATE ROLE grant_revoke_role_with_grant_2");
+
+        assertUpdate("GRANT grant_revoke_role_with_grant_1 TO USER grant_revoke_with_grant_user_1");
+        MaterializedResult actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        MaterializedResult expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_with_grant_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "public", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "grant_revoke_role_with_grant_1", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("GRANT grant_revoke_role_with_grant_1 TO USER grant_revoke_with_grant_user_1 WITH ADMIN OPTION");
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_with_grant_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "public", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "grant_revoke_role_with_grant_1", "YES")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("REVOKE ADMIN OPTION FOR grant_revoke_role_with_grant_1 FROM USER grant_revoke_with_grant_user_1");
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_with_grant_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "public", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "grant_revoke_role_with_grant_1", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("GRANT grant_revoke_role_with_grant_2 TO USER grant_revoke_with_grant_user_1");
+        assertUpdate("GRANT grant_revoke_role_with_grant_1 TO ROLE grant_revoke_role_with_grant_2 WITH ADMIN OPTION");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_with_grant_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "public", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "grant_revoke_role_with_grant_1", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "grant_revoke_role_with_grant_2", "NO")
+                .row("grant_revoke_role_with_grant_2", "ROLE", "grant_revoke_role_with_grant_1", "YES")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("DROP ROLE grant_revoke_role_with_grant_1");
+        assertUpdate("DROP ROLE grant_revoke_role_with_grant_2");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_with_grant_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_with_grant_user_1", "USER", "public", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+    }
+
+    @Test
+    public void testGrantRevokeMultipleTimes()
+            throws Exception
+    {
+        Session user1 = Session.builder(queryRunner.getDefaultSession())
+                .setIdentity(new Identity("grant_revoke_multiple_user_1", Optional.empty()))
+                .build();
+
+        assertUpdate("CREATE ROLE grant_revoke_role_multiple_times_1");
+        assertUpdate("GRANT grant_revoke_role_multiple_times_1 TO USER grant_revoke_multiple_user_1");
+        assertUpdate("GRANT grant_revoke_role_multiple_times_1 TO USER grant_revoke_multiple_user_1");
+
+        MaterializedResult actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        MaterializedResult expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_multiple_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_multiple_user_1", "USER", "public", "NO")
+                .row("grant_revoke_multiple_user_1", "USER", "grant_revoke_role_multiple_times_1", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("REVOKE grant_revoke_role_multiple_times_1 FROM USER grant_revoke_multiple_user_1");
+        assertUpdate("REVOKE grant_revoke_role_multiple_times_1 FROM USER grant_revoke_multiple_user_1");
+
+        actual = queryRunner.execute(user1, "SELECT * FROM hive.information_schema.applicable_roles");
+        expected = MaterializedResult.resultBuilder(user1, createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType(), createUnboundedVarcharType())
+                .row("grant_revoke_multiple_user_1", "USER", "admin", "NO")
+                .row("grant_revoke_multiple_user_1", "USER", "public", "NO")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        assertUpdate("DROP ROLE grant_revoke_role_multiple_times_1");
+    }
+
+    @Test
+    public void testGrantRevokeNonExistingRoles()
+            throws Exception
+    {
+        assertQueryFails("GRANT grant_revoke_role_existing_1 TO USER grant_revoke_existing_user_1", ".*?Role 'grant_revoke_role_existing_1' does not exist");
+        assertQueryFails("REVOKE grant_revoke_role_existing_1 FROM USER grant_revoke_existing_user_1", ".*?Role 'grant_revoke_role_existing_1' does not exist");
+        assertUpdate("CREATE ROLE grant_revoke_role_existing_1");
+        assertQueryFails("GRANT grant_revoke_role_existing_1 TO ROLE grant_revoke_role_existing_2", ".*?Role 'grant_revoke_role_existing_2' does not exist");
+        assertQueryFails("REVOKE grant_revoke_role_existing_1 FROM ROLE grant_revoke_role_existing_2", ".*?Role 'grant_revoke_role_existing_2' does not exist");
+        assertUpdate("DROP ROLE grant_revoke_role_existing_1");
     }
 
     private Session getParallelWriteSession()
