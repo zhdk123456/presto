@@ -22,7 +22,7 @@ import com.facebook.presto.sql.planner.plan.PlanNode;
 
 import java.util.Map;
 
-import static com.facebook.presto.sql.planner.PlanPrinter.textLogicalPlan;
+import static com.facebook.presto.sql.planner.planPrinter.PlanPrinter.textLogicalPlan;
 import static java.lang.String.format;
 
 public final class PlanAssert
