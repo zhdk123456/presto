@@ -1277,9 +1277,8 @@ public class ExpressionAnalyzer
 
     public static Signature resolveFunction(FunctionCall node, List<TypeSignatureProvider> argumentTypes, FunctionRegistry functionRegistry)
     {
-        Signature function;
         try {
-            function = functionRegistry.resolveFunction(node.getName(), argumentTypes);
+            return functionRegistry.resolveFunction(node.getName(), argumentTypes);
         }
         catch (PrestoException e) {
             if (e.getErrorCode().getCode() == StandardErrorCode.FUNCTION_NOT_FOUND.toErrorCode().getCode()) {
@@ -1290,7 +1289,6 @@ public class ExpressionAnalyzer
             }
             throw e;
         }
-        return function;
     }
 
     public static IdentityHashMap<Expression, Type> getExpressionTypes(
