@@ -39,13 +39,13 @@ public class ListLiteralType
     @Override
     public BlockBuilder createBlockBuilder(BlockBuilderStatus blockBuilderStatus, int expectedEntries, int expectedBytesPerEntry)
     {
-        throw new PrestoException(GENERIC_INTERNAL_ERROR, "ListOfLists type cannot be serialized");
+        throw new PrestoException(GENERIC_INTERNAL_ERROR, "ListLiteral type cannot be serialized");
     }
 
     @Override
     public BlockBuilder createBlockBuilder(BlockBuilderStatus blockBuilderStatus, int expectedEntries)
     {
-        throw new PrestoException(GENERIC_INTERNAL_ERROR, "ListOfLists type cannot be serialized");
+        throw new PrestoException(GENERIC_INTERNAL_ERROR, "ListLiteral type cannot be serialized");
     }
 
     @Override
