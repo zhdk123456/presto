@@ -15,6 +15,7 @@ package com.facebook.presto.sql.planner.iterative;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.SystemSessionProperties;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.sql.planner.PlanNodeIdAllocator;
 import com.facebook.presto.sql.planner.StatsRecorder;
@@ -22,6 +23,7 @@ import com.facebook.presto.sql.planner.Symbol;
 import com.facebook.presto.sql.planner.SymbolAllocator;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.plan.PlanNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -30,11 +32,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.facebook.presto.spi.StandardErrorCode.OPTIMIZER_TIMEOUT;
 import static com.google.common.base.Preconditions.checkState;
+import static java.lang.String.format;
 
 public class IterativeOptimizer
         implements PlanOptimizer
 {
+    private final long timeLimitInMillis;
+
     private final List<PlanOptimizer> legacyRules;
     private final Set<Rule> rules;
     private final StatsRecorder stats;
@@ -46,11 +52,24 @@ public class IterativeOptimizer
 
     public IterativeOptimizer(StatsRecorder stats, List<PlanOptimizer> legacyRules, Set<Rule> newRules)
     {
+        this(stats, legacyRules, newRules, 5000);
+    }
+
+    @VisibleForTesting
+    IterativeOptimizer(StatsRecorder stats, Set<Rule> rules, long timeLimitInMillis)
+    {
+        this(stats, ImmutableList.of(), rules, timeLimitInMillis);
+    }
+
+    private IterativeOptimizer(StatsRecorder stats, List<PlanOptimizer> legacyRules, Set<Rule> newRules, long timeoutInMillis)
+    {
         this.legacyRules = ImmutableList.copyOf(legacyRules);
         this.rules = ImmutableSet.copyOf(newRules);
         this.stats = stats;
 
         stats.registerAll(rules);
+
+        this.timeLimitInMillis = timeoutInMillis;
     }
 
     @Override
@@ -74,7 +93,7 @@ public class IterativeOptimizer
             return node;
         };
 
-        exploreGroup(memo.getRootGroup(), new Context(memo, lookup, idAllocator, symbolAllocator));
+        exploreGroup(memo.getRootGroup(), new Context(memo, lookup, idAllocator, symbolAllocator, System.nanoTime()));
 
         return memo.extract();
     }
@@ -107,6 +126,10 @@ public class IterativeOptimizer
         boolean progress = false;
 
         while (!done) {
+            if (isTimeLimitExhausted(context)) {
+                throw new PrestoException(OPTIMIZER_TIMEOUT, format("The optimizer exhausted the time limit of %d ms", timeLimitInMillis));
+            }
+
             done = true;
             for (Rule rule : rules) {
                 Optional<PlanNode> transformed;
@@ -134,6 +157,11 @@ public class IterativeOptimizer
         return progress;
     }
 
+    private boolean isTimeLimitExhausted(Context context)
+    {
+        return ((System.nanoTime() - context.getStartTimeInNanos()) / 1_000_000) >= timeLimitInMillis;
+    }
+
     private boolean exploreChildren(int group, Context context)
     {
         boolean progress = false;
@@ -156,13 +184,15 @@ public class IterativeOptimizer
         private final Lookup lookup;
         private final PlanNodeIdAllocator idAllocator;
         private final SymbolAllocator symbolAllocator;
+        private final long startTimeInNanos;
 
-        public Context(Memo memo, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator)
+        public Context(Memo memo, Lookup lookup, PlanNodeIdAllocator idAllocator, SymbolAllocator symbolAllocator, long startTimeInNanos)
         {
             this.memo = memo;
             this.lookup = lookup;
             this.idAllocator = idAllocator;
             this.symbolAllocator = symbolAllocator;
+            this.startTimeInNanos = startTimeInNanos;
         }
 
         public Memo getMemo()
@@ -183,6 +213,11 @@ public class IterativeOptimizer
         public SymbolAllocator getSymbolAllocator()
         {
             return symbolAllocator;
+        }
+
+        public long getStartTimeInNanos()
+        {
+            return startTimeInNanos;
         }
     }
 }
