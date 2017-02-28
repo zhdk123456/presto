@@ -20,7 +20,9 @@ import com.facebook.presto.execution.buffer.PagesSerdeFactory;
 import com.facebook.presto.execution.buffer.SerializedPage;
 import com.facebook.presto.metadata.Split;
 import com.facebook.presto.spi.Page;
+import com.facebook.presto.spi.PageBuilder;
 import com.facebook.presto.spi.UpdatablePageSource;
+import com.facebook.presto.spi.block.Block;
 import com.facebook.presto.spi.block.SortOrder;
 import com.facebook.presto.spi.type.Type;
 import com.facebook.presto.split.RemoteSplit;
@@ -37,6 +39,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -59,8 +62,9 @@ public class MergeOperator
         private final PlanNodeId sourceId;
         private final ExchangeClientSupplier exchangeClientSupplier;
         private final PagesSerdeFactory serdeFactory;
-        private final List<Type> types;
+        private final List<Type> sourceTypes;
         private final List<Integer> outputChannels;
+        private final List<Type> outputTypes;
         private final List<Integer> sortChannels;
         private final List<SortOrder> sortOrder;
         private boolean closed;
@@ -70,19 +74,29 @@ public class MergeOperator
                 PlanNodeId sourceId,
                 ExchangeClientSupplier exchangeClientSupplier,
                 PagesSerdeFactory serdeFactory,
-                List<Type> types,
+                List<Type> sourceTypes,
                 List<Integer> outputChannels,
                 List<Integer> sortChannels,
                 List<SortOrder> sortOrder)
         {
             this.operatorId = operatorId;
-            this.sourceId = sourceId;
-            this.exchangeClientSupplier = exchangeClientSupplier;
-            this.serdeFactory = serdeFactory;
-            this.types = types;
-            this.outputChannels = outputChannels;
-            this.sortChannels = sortChannels;
-            this.sortOrder = sortOrder;
+            this.sourceId = requireNonNull(sourceId, "sourceId is null");
+            this.exchangeClientSupplier = requireNonNull(exchangeClientSupplier, "exchangeClientSupplier is null");
+            this.serdeFactory = requireNonNull(serdeFactory, "serdeFactory is null");
+            this.sourceTypes = requireNonNull(sourceTypes, "sourceTypes is null");
+            this.outputChannels = requireNonNull(outputChannels, "outputChannels is null");
+            this.outputTypes = outputTypes(sourceTypes, outputChannels);
+            this.sortChannels = requireNonNull(sortChannels, "sortChannels is null");
+            this.sortOrder = requireNonNull(sortOrder, "sortOrder is null");
+        }
+
+        private static List<Type> outputTypes(List<? extends Type> sourceTypes, List<Integer> outputChannels)
+        {
+            ImmutableList.Builder<Type> types = ImmutableList.builder();
+            for (int channel : outputChannels) {
+                types.add(sourceTypes.get(channel));
+            }
+            return types.build();
         }
 
         @Override
@@ -94,7 +108,7 @@ public class MergeOperator
         @Override
         public List<Type> getTypes()
         {
-            return types;
+            return outputTypes;
         }
 
         @Override
@@ -105,13 +119,12 @@ public class MergeOperator
 
             return new MergeOperator(
                     operatorContext,
-                    types,
                     sourceId,
-                    serdeFactory.createPagesSerde(),
                     () -> exchangeClientSupplier.get(new UpdateSystemMemory(driverContext.getPipelineContext())),
+                    serdeFactory.createPagesSerde(),
+                    new SimpleMergeSortComparator(sourceTypes, sortChannels, sortOrder),
                     outputChannels,
-                    sortChannels,
-                    sortOrder);
+                    outputTypes);
         }
 
         @Override
@@ -147,35 +160,39 @@ public class MergeOperator
     private final OperatorContext operatorContext;
     private final PlanNodeId sourceId;
     private final Supplier<ExchangeClient> exchangeClientSupplier;
+    private final PagesSerde pagesSerde;
+    private final MergeSortComparator comparator;
     private final List<Integer> outputChannels;
-    private final List<Integer> sortChannels;
-    private final List<SortOrder> sortOrder;
-    private final List<Type> types;
-    private final PagesSerde serde;
+    private final List<Type> outputTypes;
+    private final PageBuilder pageBuilder;
+
+    private final SettableFuture<Void> blockedOnSplits = SettableFuture.create();
+
     private final Set<URI> locations = new HashSet<>();
-    private final SettableFuture<Void> isBlockedOnSplits = SettableFuture.create();
-    private ListenableFuture<?> isBlockedOnPages = null;
-    private MergeSources mergeSources;
+
     private final Closer closer = Closer.create();
+    private ListenableFuture<?> blockedOnPages = null;
+    private MergeSources mergeSources;
+
+    private boolean closed;
 
     public MergeOperator(
             OperatorContext operatorContext,
-            List<Type> types,
             PlanNodeId sourceId,
-            PagesSerde serde,
             Supplier<ExchangeClient> exchangeClientSupplier,
+            PagesSerde pagesSerde,
+            MergeSortComparator comparator,
             List<Integer> outputChannels,
-            List<Integer> sortChannels,
-            List<SortOrder> sortOrder)
+            List<Type> outputTypes)
     {
         this.operatorContext = requireNonNull(operatorContext, "operatorContext is null");
         this.sourceId = requireNonNull(sourceId, "sourceId is null");
-        this.serde = requireNonNull(serde, "serde is null");
-        this.types = requireNonNull(types, "types is null");
-        this.exchangeClientSupplier = exchangeClientSupplier;
-        this.outputChannels = outputChannels;
-        this.sortChannels = sortChannels;
-        this.sortOrder = sortOrder;
+        this.exchangeClientSupplier = requireNonNull(exchangeClientSupplier, "exchangeClientSupplier is null");
+        this.pagesSerde = requireNonNull(pagesSerde, "pagesSerde is null");
+        this.comparator = requireNonNull(comparator, "comparator is null");
+        this.outputChannels = requireNonNull(outputChannels, "outputChannels is null");
+        this.outputTypes = requireNonNull(outputTypes, "outputTypes is null");
+        this.pageBuilder = new PageBuilder(outputTypes);
     }
 
     @Override
@@ -200,16 +217,16 @@ public class MergeOperator
     {
         ImmutableList.Builder<MergeSource> builder = ImmutableList.builder();
         for (URI location : locations) {
-            ExchangeClient exchangeClient = closer.register(exchangeClientSupplier.get();
+            ExchangeClient exchangeClient = closer.register(exchangeClientSupplier.get());
             exchangeClient.addLocation(location);
             exchangeClient.noMoreLocations();
-            builder.add(new MergeSource(exchangeClient, serde));
+            builder.add(new MergeSource(location, exchangeClient, pagesSerde));
             // TODO: figure out how to merge statistics - e.g. operatorContext.setInfoSupplier(exchangeClient::getStatus);
         }
 
         mergeSources = new MergeSources(builder.build());
-        isBlockedOnPages = mergeSources.isBlocked();
-        isBlockedOnSplits.set(null);
+        blockedOnPages = mergeSources.isBlocked();
+        blockedOnSplits.set(null);
     }
 
     @Override
@@ -221,7 +238,7 @@ public class MergeOperator
     @Override
     public List<Type> getTypes()
     {
-        return types;
+        return outputTypes;
     }
 
     @Override
@@ -233,18 +250,18 @@ public class MergeOperator
     @Override
     public boolean isFinished()
     {
-        //return exchangeClients.stream().map(ExchangeClient::isFinished).collect(Collectors.toList());
+        return closed || mergeSources.isFinished();
     }
 
     @Override
     public ListenableFuture<?> isBlocked()
     {
-        if (!isBlockedOnSplits.isDone()) {
-            return isBlockedOnSplits;
-        } else {
-            checkState(isBlockedOnPages != null, "isBlockedOnPages is null");
-            return isBlockedOnPages;
+        if (!blockedOnSplits.isDone()) {
+            return blockedOnSplits;
         }
+
+        checkState(blockedOnPages != null, "isBlockedOnPages is null");
+        return blockedOnPages;
     }
 
     @Override
@@ -262,79 +279,191 @@ public class MergeOperator
     @Override
     public Page getOutput()
     {
-        if (!isBlockedOnPages.isDone()) {
-            return null;
+        checkState(blockedOnPages != null, "isBlockedOnPages is null");
+
+        while (blockedOnPages.isDone() && !pageBuilder.isFull()) {
+            List<PageWithPosition> pages = mergeSources.getPages();
+            if (pages.isEmpty()) {
+                break;
+            }
+            PageWithPosition pageWithPosition = selectTopPage(pages.iterator());
+            Page page = pageWithPosition.getPage();
+            int position = pageWithPosition.getPosition();
+
+            // append the row
+            pageBuilder.declarePosition();
+            for (int i = 0; i < outputChannels.size(); i++) {
+                int outputChannel = outputChannels.get(i);
+                Type type = outputTypes.get(outputChannel);
+                Block block = page.getBlock(outputChannel);
+                type.appendTo(block, position, pageBuilder.getBlockBuilder(i));
+            }
+
+            pageWithPosition.incrementPosition();
+            blockedOnPages = mergeSources.isBlocked();
         }
 
-        mergeSources
-        SerializedPage page = exchangeClient.pollPage();
-        if (page == null) {
+        if (pageBuilder.isEmpty()) {
             return null;
         }
-
+        Page page = pageBuilder.build();
         operatorContext.recordGeneratedInput(page.getSizeInBytes(), page.getPositionCount());
-        return serde.deserialize(page);
+        pageBuilder.reset();
+        return page;
+    }
+
+    private PageWithPosition selectTopPage(Iterator<PageWithPosition> pages)
+    {
+        checkArgument(pages.hasNext(), "pages is empty");
+        PageWithPosition result = pages.next();
+        while (pages.hasNext()) {
+            PageWithPosition current = pages.next();
+            int compareResult = comparator.compareTo(result.getPage(), result.getPosition(), current.getPage(), current.getPosition());
+            if (compareResult < 0) {
+                result = current;
+            }
+        }
+        return result;
     }
 
     @Override
     public void close()
-            throws IOException
     {
-        closer.close();
+        try {
+            closed = true;
+            closer.close();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private static class MergeSources {
+    private static class MergeSources
+    {
         private final List<MergeSource> mergeSources;
 
-        public MergeSources(List<MergeSource> mergeSources) {
+        public MergeSources(List<MergeSource> mergeSources)
+        {
             this.mergeSources = mergeSources;
         }
 
-        public ListenableFuture<?> isBlocked() {
+        public ListenableFuture<?> isBlocked()
+        {
+            if (mergeSources.stream().allMatch(source -> source.isBlocked().isDone())) {
+                return NOT_BLOCKED;
+            }
             return Futures.allAsList(mergeSources.stream().map(MergeSource::isBlocked).collect(Collectors.toList()));
         }
 
-        public Page createMergedPage() {
-//            if (!pageInProgress.isPresent()) {
-//                // maybe not with Optional<Page>, but keep the page in progress; you might not
-//                // be able to return a full page with the inputs that are available now, so if not,
-//                // keep the partially merged page and return null.
-//            }
-            return null;
+        public boolean isFinished()
+        {
+            return mergeSources.stream().allMatch(MergeSource::isFinished);
+        }
+
+        public List<PageWithPosition> getPages()
+        {
+            ImmutableList.Builder<PageWithPosition> result = ImmutableList.builder();
+            for (MergeSource mergeSource : mergeSources) {
+                checkState(mergeSource.isBlocked().isDone(), "merge source is blocked: %s", mergeSource.getLocation());
+                if (!mergeSource.isFinished()) {
+                    result.add(mergeSource.getPage());
+                }
+            }
+            return result.build();
         }
     }
 
-    private static class MergeSource {
-
+    private static class MergeSource
+    {
+        private final URI location;
         private final ExchangeClient exchangeClient;
         private final PagesSerde serde;
 
-        private Optional<Page> bufferedPage = Optional.empty();
+        private PageWithPosition currentPage;
+        private ListenableFuture<?> blocked;
 
-        public MergeSource(ExchangeClient exchangeClient, PagesSerde serde) {
-            this.exchangeClient = exchangeClient;
-            this.serde = serde;
+        public MergeSource(URI location, ExchangeClient exchangeClient, PagesSerde serde)
+        {
+            this.location = requireNonNull(location, "location is null");
+            this.exchangeClient = requireNonNull(exchangeClient, "exchangeClient is null");
+            this.serde = requireNonNull(serde, "serde is null");
         }
 
-        public ListenableFuture<?> isBlocked() {
-            if (bufferedPage.isPresent()) {
+        public URI getLocation()
+        {
+            return location;
+        }
+
+        public ListenableFuture<?> isBlocked()
+        {
+            if (currentPage != null && !currentPage.isFinished()) {
                 return NOT_BLOCKED;
             }
-            return exchangeClient.isBlocked();
+            if (blocked != null && !blocked.isDone()) {
+                return blocked;
+            }
+            blocked = exchangeClient.isBlocked();
+            return blocked;
         }
 
-        public Page getPage() {
-            if (bufferedPage.isPresent()) {
-                return bufferedPage.get();
+        public boolean isFinished()
+        {
+            return exchangeClient.isFinished() && (currentPage == null || currentPage.isFinished());
+        }
+
+        public PageWithPosition getPage()
+        {
+            if (currentPage != null && !currentPage.isFinished()) {
+                return currentPage;
             }
 
-            checkState(exchangeClient.isBlocked().isDone());
+            checkState(blocked != null, "blocked is null");
+            checkState(blocked.isDone(), "blocked is not in done state");
+            checkState(exchangeClient.isBlocked().isDone(), "exchange client is still blocked: %", location);
             SerializedPage serializedPage = exchangeClient.pollPage();
-            checkState(serializedPage != null, "serializedPage is null");
-            bufferedPage = Optional.of(serde.deserialize(serializedPage));
-            return bufferedPage.get();
+            checkState(serializedPage != null, "exchange client has returned null for the next page");
+            Page page = serde.deserialize(serializedPage);
+            currentPage = new PageWithPosition(page);
+            return currentPage;
         }
     }
 
-    //private static class PageWithPosi
+    private static class PageWithPosition
+    {
+        private final Page page;
+        private int position = 0;
+
+        public PageWithPosition(Page page)
+        {
+            this.page = requireNonNull(page, "page is null");
+        }
+
+        public Page getPage()
+        {
+            return page;
+        }
+
+        public int getPosition()
+        {
+            checkPosition();
+            return position;
+        }
+
+        public void incrementPosition()
+        {
+            checkPosition();
+            position++;
+        }
+
+        public boolean isFinished()
+        {
+            return position == page.getPositionCount();
+        }
+
+        private void checkPosition()
+        {
+            int positionCount = page.getPositionCount();
+            checkState(position < positionCount, "Invalid position: %d of %d", position, positionCount);
+        }
+    }
 }
