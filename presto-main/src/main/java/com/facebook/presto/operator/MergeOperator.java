@@ -285,7 +285,6 @@ public class MergeOperator
 
     private static class MergeSources {
         private final List<MergeSource> mergeSources;
-        private Optional<Page> pageInProgress = Optional.empty();
 
         public MergeSources(List<MergeSource> mergeSources) {
             this.mergeSources = mergeSources;
@@ -296,20 +295,21 @@ public class MergeOperator
         }
 
         public Page createMergedPage() {
-            if (!pageInProgress.isPresent()) {
-                // maybe not with Optional<Page>, but keep the page in progress; you might not
-                // be able to return a full page with the inputs that are available now, so if not,
-                // keep the partially merged page and return null.
-            }
+//            if (!pageInProgress.isPresent()) {
+//                // maybe not with Optional<Page>, but keep the page in progress; you might not
+//                // be able to return a full page with the inputs that are available now, so if not,
+//                // keep the partially merged page and return null.
+//            }
             return null;
         }
     }
 
     private static class MergeSource {
-        private Optional<Page> bufferedPage = Optional.empty();
-        private int currentPosition = 0;
+
         private final ExchangeClient exchangeClient;
         private final PagesSerde serde;
+
+        private Optional<Page> bufferedPage = Optional.empty();
 
         public MergeSource(ExchangeClient exchangeClient, PagesSerde serde) {
             this.exchangeClient = exchangeClient;
@@ -326,13 +326,15 @@ public class MergeOperator
         public Page getPage() {
             if (bufferedPage.isPresent()) {
                 return bufferedPage.get();
-            } else {
-                checkState(exchangeClient.isBlocked().isDone());
-                SerializedPage serializedPage = exchangeClient.pollPage();
-                checkState(serializedPage != null, "serializedPage is null");
-                bufferedPage = Optional.of(serde.deserialize(serializedPage));
-                return bufferedPage.get();
             }
+
+            checkState(exchangeClient.isBlocked().isDone());
+            SerializedPage serializedPage = exchangeClient.pollPage();
+            checkState(serializedPage != null, "serializedPage is null");
+            bufferedPage = Optional.of(serde.deserialize(serializedPage));
+            return bufferedPage.get();
         }
     }
+
+    //private static class PageWithPosi
 }
