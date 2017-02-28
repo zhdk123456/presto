@@ -119,7 +119,7 @@ public class TestMergeOperator
         exchangeClientSupplier = null;
     }
 
-    @Test(invocationCount = 5000, threadPoolSize = 20)
+    @Test
     public void testSingleStreamSameOutputColumns()
             throws Exception
     {
