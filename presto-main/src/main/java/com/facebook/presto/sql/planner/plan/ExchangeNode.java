@@ -42,7 +42,8 @@ public class ExchangeNode
     {
         GATHER,
         REPARTITION,
-        REPLICATE
+        REPLICATE,
+        MERGE_GATHER
     }
 
     public enum Scope

@@ -582,9 +582,11 @@ public class LocalExecutionPlanner
         {
             List<Type> types = getSourceOperatorTypes(node, context.getTypes());
 
-            if (!context.getDriverInstanceCount().isPresent()) {
-                context.setDriverInstanceCount(getTaskConcurrency(session));
-            }
+            //if (!context.getDriverInstanceCount().isPresent()) {
+            //    context.setDriverInstanceCount(getTaskConcurrency(session));
+            //}
+            // As a POC, we're going back to enforcing a driver instance count of 1 since we need multiple exchange clients
+            context.setDriverInstanceCount(1);
 
             OperatorFactory operatorFactory = new ExchangeOperatorFactory(
                     context.getNextOperatorId(),
