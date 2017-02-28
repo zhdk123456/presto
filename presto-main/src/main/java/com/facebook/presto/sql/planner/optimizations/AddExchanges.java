@@ -484,7 +484,7 @@ public class AddExchanges
             if (child.getProperties().isSingleNode()) {
                 return rebaseAndDeriveProperties(node, child);
             }
-
+            // TODO: the merging exchange needs to have all of the ordering symbols
             PlanWithProperties sortThenMerge = withDerivedProperties(
                     mergingExchange(idAllocator.getNextId(), REMOTE, node),
                     child.getProperties());

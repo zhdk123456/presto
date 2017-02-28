@@ -63,6 +63,7 @@ import com.facebook.presto.operator.RowNumberOperator;
 import com.facebook.presto.operator.ScanFilterAndProjectOperator;
 import com.facebook.presto.operator.SetBuilderOperator.SetBuilderOperatorFactory;
 import com.facebook.presto.operator.SetBuilderOperator.SetSupplier;
+import com.facebook.presto.operator.SimpleMergeSortComparator;
 import com.facebook.presto.operator.SourceOperatorFactory;
 import com.facebook.presto.operator.TableScanOperator.TableScanOperatorFactory;
 import com.facebook.presto.operator.TaskOutputOperator.TaskOutputFactory;
@@ -625,6 +626,7 @@ public class LocalExecutionPlanner
                     node.getId(),
                     exchangeClientSupplier,
                     new PagesSerdeFactory(blockEncodingSerde, isExchangeCompressionEnabled(session)),
+                    new SimpleMergeSortComparator.Factory(),
                     types,
                     outputChannels.build(),
                     sortChannels,
