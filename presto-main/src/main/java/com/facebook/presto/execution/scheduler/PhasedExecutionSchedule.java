@@ -19,6 +19,7 @@ import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.PlanFragmentId;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
@@ -250,6 +251,12 @@ public class PhasedExecutionSchedule
             }
 
             return sources.build();
+        }
+
+        @Override
+        public Set<PlanFragmentId> visitMerge(MergeNode node, PlanFragmentId currentFragmentId)
+        {
+            return visitRemoteSource(node, currentFragmentId);
         }
 
         @Override

@@ -115,6 +115,7 @@ import static com.facebook.presto.sql.planner.optimizations.ScalarQueryUtil.isSc
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Scope.REMOTE;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.Type.GATHER;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.gatheringExchange;
+import static com.facebook.presto.sql.planner.plan.ExchangeNode.mergingExchange;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.partitionedExchange;
 import static com.facebook.presto.sql.planner.plan.ExchangeNode.replicatedExchange;
 import static com.facebook.presto.sql.planner.plan.JoinNode.Type.FULL;
@@ -354,6 +355,7 @@ public class AddExchanges
         @Override
         public PlanWithProperties visitWindow(WindowNode node, Context context)
         {
+            // TODO: add a distributed sort before window
             List<LocalProperty<Symbol>> desiredProperties = new ArrayList<>();
             if (!node.getPartitionBy().isEmpty()) {
                 desiredProperties.add(new GroupingProperty<>(node.getPartitionBy()));
@@ -479,13 +481,14 @@ public class AddExchanges
         {
             PlanWithProperties child = planChild(node, context.withPreferredProperties(PreferredProperties.undistributed()));
 
-            if (!child.getProperties().isSingleNode()) {
-                child = withDerivedProperties(
-                        gatheringExchange(idAllocator.getNextId(), REMOTE, child.getNode()),
-                        child.getProperties());
+            if (child.getProperties().isSingleNode()) {
+                return rebaseAndDeriveProperties(node, child);
             }
 
-            return rebaseAndDeriveProperties(node, child);
+            PlanWithProperties sortThenMerge = withDerivedProperties(
+                    mergingExchange(idAllocator.getNextId(), REMOTE, node),
+                    child.getProperties());
+            return sortThenMerge;
         }
 
         @Override

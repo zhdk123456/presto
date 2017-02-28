@@ -450,6 +450,18 @@ class PropertyDerivations
                             .global(coordinatorOnly ? coordinatorSingleStreamPartition() : singleStreamPartition())
                             .constants(constants)
                             .build();
+                case MERGE_GATHER:
+                    coordinatorOnly = node.getPartitioningScheme().getPartitioning().getHandle().isCoordinatorOnly();
+                    checkState(node.getSources().get(0) instanceof SortNode, "Merge must be preceded by sort");
+                    SortNode sortNode = (SortNode) node.getSources().get(0);
+                    List<SortingProperty<Symbol>> localProperties = sortNode.getOrderBy().stream()
+                            .map(column -> new SortingProperty<>(column, sortNode.getOrderings().get(column)))
+                            .collect(toImmutableList());
+                    return ActualProperties.builder()
+                            .global(coordinatorOnly ? coordinatorSingleStreamPartition() : singleStreamPartition())
+                            .local(localProperties)
+                            .constants(constants)
+                            .build();
                 case REPARTITION:
                     return ActualProperties.builder()
                             .global(partitionedOn(

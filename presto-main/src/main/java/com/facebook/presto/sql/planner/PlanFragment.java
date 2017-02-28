@@ -14,6 +14,7 @@
 package com.facebook.presto.sql.planner;
 
 import com.facebook.presto.spi.type.Type;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.PlanFragmentId;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanNodeId;
@@ -168,7 +169,7 @@ public class PlanFragment
             findRemoteSourceNodes(source, builder);
         }
 
-        if (node instanceof RemoteSourceNode) {
+        if (node instanceof RemoteSourceNode || node instanceof MergeNode) {
             builder.add((RemoteSourceNode) node);
         }
     }

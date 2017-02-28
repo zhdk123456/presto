@@ -30,6 +30,7 @@ import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.MarkDistinctNode;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.MetadataDeleteNode;
 import com.facebook.presto.sql.planner.plan.OutputNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
@@ -181,6 +182,13 @@ public class DistributedExecutionPlanner
         public Map<PlanNodeId, SplitSource> visitRemoteSource(RemoteSourceNode node, Void context)
         {
             // remote source node does not have splits
+            return ImmutableMap.of();
+        }
+
+        @Override
+        public Map<PlanNodeId, SplitSource> visitMerge(MergeNode node, Void context)
+        {
+            // merge node does not have splits
             return ImmutableMap.of();
         }
 

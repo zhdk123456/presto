@@ -212,6 +212,7 @@ public class PlanOptimizers
             builder.add(new AddExchanges(metadata, sqlParser));
         }
 
+        // TODO: make sure that all of the below Optimizers can deal with MergeNode
         builder.add(new PickLayout(metadata));
 
         builder.add(new EmptyDeleteOptimizer()); // Run after table scan is removed by PickLayout

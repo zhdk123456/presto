@@ -36,6 +36,7 @@ import com.facebook.presto.sql.planner.plan.IntersectNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
 import com.facebook.presto.sql.planner.plan.LimitNode;
 import com.facebook.presto.sql.planner.plan.MarkDistinctNode;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.MetadataDeleteNode;
 import com.facebook.presto.sql.planner.plan.OutputNode;
 import com.facebook.presto.sql.planner.plan.PlanNode;
@@ -481,6 +482,27 @@ public final class ValidateDependenciesChecker
         public Void visitRemoteSource(RemoteSourceNode node, Set<Symbol> boundSymbols)
         {
             verifyUniqueId(node);
+
+            return null;
+        }
+
+        @Override
+        public Void visitMerge(MergeNode node, Set<Symbol> boundSymbols)
+        {
+            verifyUniqueId(node);
+
+            /* TODO: check the inputs
+            PlanNode source = node.getSource();
+
+            source.accept(this, boundSymbols); // visit child
+
+            verifyUniqueId(node);
+
+            Set<Symbol> inputs = createInputs(source, boundSymbols);
+            checkDependencies(inputs, node.getOutputSymbols(), "Invalid node. Output symbols (%s) not in source plan output (%s)", node.getOutputSymbols(), node.getSource().getOutputSymbols());
+            checkDependencies(inputs, node.getOrderBy(), "Invalid node. Order by dependencies (%s) not in source plan output (%s)", node.getOrderBy(), node.getSource().getOutputSymbols());
+            if possible, verify that child is a sort node and has proper outputs/order by/orderings
+            */
 
             return null;
         }

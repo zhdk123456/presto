@@ -19,6 +19,7 @@ import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.PlanFragmentId;
 import com.facebook.presto.sql.planner.plan.PlanNode;
 import com.facebook.presto.sql.planner.plan.PlanVisitor;
@@ -160,6 +161,12 @@ public class AllAtOnceExecutionSchedule
             node.getSourceFragmentIds()
                     .forEach(this::processFragment);
             return null;
+        }
+
+        @Override
+        public Void visitMerge(MergeNode node, Void context)
+        {
+            return visitRemoteSource(node, context);
         }
 
         @Override

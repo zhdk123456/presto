@@ -22,6 +22,7 @@ import com.facebook.presto.sql.planner.plan.ExchangeNode;
 import com.facebook.presto.sql.planner.plan.ExplainAnalyzeNode;
 import com.facebook.presto.sql.planner.plan.IndexJoinNode;
 import com.facebook.presto.sql.planner.plan.JoinNode;
+import com.facebook.presto.sql.planner.plan.MergeNode;
 import com.facebook.presto.sql.planner.plan.MetadataDeleteNode;
 import com.facebook.presto.sql.planner.plan.OutputNode;
 import com.facebook.presto.sql.planner.plan.PlanFragmentId;
@@ -31,6 +32,7 @@ import com.facebook.presto.sql.planner.plan.PlanVisitor;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
 import com.facebook.presto.sql.planner.plan.SemiJoinNode;
 import com.facebook.presto.sql.planner.plan.SimplePlanRewriter;
+import com.facebook.presto.sql.planner.plan.SortNode;
 import com.facebook.presto.sql.planner.plan.TableFinishNode;
 import com.facebook.presto.sql.planner.plan.TableScanNode;
 import com.facebook.presto.sql.planner.plan.ValuesNode;
@@ -187,7 +189,7 @@ public class PlanFragmenter
             PartitioningScheme partitioningScheme = exchange.getPartitioningScheme();
 
             ImmutableList.Builder<SubPlan> builder = ImmutableList.builder();
-            if (exchange.getType() == ExchangeNode.Type.GATHER) {
+            if (exchange.getType() == ExchangeNode.Type.GATHER || exchange.getType() == ExchangeNode.Type.MERGE_GATHER) {
                 context.get().setSingleNodeDistribution();
 
                 for (int i = 0; i < exchange.getSources().size(); i++) {
@@ -214,6 +216,15 @@ public class PlanFragmenter
                     .map(PlanFragment::getId)
                     .collect(toImmutableList());
 
+            if (exchange.getType() == ExchangeNode.Type.MERGE_GATHER) {
+                // TODO: figure out how to get the orderBy and orderings here. for now, we just assume the previous node is a SortNode.
+                // We may want to have MergeNode as a top level PlanNode that we create right at the beginning.
+                // MERGE_GATHER has slightly different guarantees than GATHER (maybe) so think about whether we want to allow pushdown/treat it
+                // like any other exchange -- yes?
+                checkState(exchange.getSources().get(0) instanceof SortNode, "Merge must be preceded by sort");
+                SortNode sortNode = (SortNode) exchange.getSources().get(0);
+                return new MergeNode(exchange.getId(), childrenIds, exchange.getOutputSymbols(), sortNode.getOrderBy(), sortNode.getOrderings());
+            }
             return new RemoteSourceNode(exchange.getId(), childrenIds, exchange.getOutputSymbols());
         }
 
