@@ -322,7 +322,7 @@ public class MergeOperator
         PageWithPosition result = pages.next();
         while (pages.hasNext()) {
             PageWithPosition current = pages.next();
-            int compareResult = comparator.compareTo(result.getPage(), result.getPosition(), current.getPage(), current.getPosition());
+            int compareResult = comparator.compareTo(current.getPage(), current.getPosition(), result.getPage(), result.getPosition());
             if (compareResult < 0) {
                 result = current;
             }

@@ -67,6 +67,7 @@ import static com.facebook.presto.client.PrestoHeaders.PRESTO_TASK_INSTANCE_ID;
 import static com.facebook.presto.execution.buffer.PagesSerdeUtil.writeSerializedPages;
 import static com.facebook.presto.operator.MergeOperator.REMOTE_CONNECTOR_ID;
 import static com.facebook.presto.operator.OperatorAssertion.assertOperatorIsBlocked;
+import static com.facebook.presto.operator.OperatorAssertion.assertOperatorIsUnblocked;
 import static com.facebook.presto.operator.PageAssertions.assertPageEquals;
 import static com.facebook.presto.spi.block.SortOrder.ASC_NULLS_FIRST;
 import static com.facebook.presto.spi.type.BigintType.BIGINT;
@@ -140,38 +141,237 @@ public class TestMergeOperator
         assertFalse(operator.isFinished());
         assertFalse(operator.isBlocked().isDone());
 
-        PageBuilder pageBuilder = new PageBuilder(types);
-        pageBuilder.declarePosition();
-        pageBuilder.getBlockBuilder(0).writeLong(1).closeEntry();
-        pageBuilder.getBlockBuilder(1).writeLong(1).closeEntry();
-        pageBuilder.declarePosition();
-        pageBuilder.getBlockBuilder(0).writeLong(2).closeEntry();
-        pageBuilder.getBlockBuilder(1).writeLong(2).closeEntry();
-        Page page1 = pageBuilder.build();
+        Page page1 = createPage(types, new long[][] {
+                new long[] {1, 1},
+                new long[] {2, 2}});
 
-        pageBuilder.reset();
-        pageBuilder.declarePosition();
-        pageBuilder.getBlockBuilder(0).writeLong(3).closeEntry();
-        pageBuilder.getBlockBuilder(1).writeLong(3).closeEntry();
-        pageBuilder.declarePosition();
-        pageBuilder.getBlockBuilder(0).writeLong(4).closeEntry();
-        pageBuilder.getBlockBuilder(1).writeLong(4).closeEntry();
-        Page page2 = pageBuilder.build();
+        Page page2 = createPage(types, new long[][] {
+                new long[] {3, 3},
+                new long[] {4, 4}});
 
         assertOperatorIsBlocked(operator);
         responseProcessor.addPage(sourceUri, page1);
-        OperatorAssertion.assertOperatorIsUnblocked(operator);
+        assertOperatorIsUnblocked(operator);
         assertPageEquals(types, operator.getOutput(), page1);
 
         assertOperatorIsBlocked(operator);
         responseProcessor.addPage(sourceUri, page2);
-        OperatorAssertion.assertOperatorIsUnblocked(operator);
+        assertOperatorIsUnblocked(operator);
         assertPageEquals(types, operator.getOutput(), page2);
 
         assertOperatorIsBlocked(operator);
         responseProcessor.complete(sourceUri);
-        OperatorAssertion.assertOperatorIsUnblocked(operator);
+        assertOperatorIsUnblocked(operator);
 
+        assertTrue(operator.isFinished());
+
+        operator.close();
+    }
+
+    @Test
+    public void testSingleStreamDifferentOutputColumns()
+            throws Exception
+    {
+        String taskId = "testSingleStreamDifferentOutputColumns_" + operatorId.incrementAndGet();
+        URI sourceUri = createUri("host1", taskId);
+
+        List<Type> types = ImmutableList.of(BIGINT, BIGINT);
+
+        MergeOperator operator = createMergeOperator(types, ImmutableList.of(0), ImmutableList.of(0, 1), ImmutableList.of(ASC_NULLS_FIRST, ASC_NULLS_FIRST));
+        operator.addSplit(createRemoteSplit(sourceUri));
+        operator.noMoreSplits();
+
+        Page page1 = createPage(types, new long[][] {
+                new long[] {1, 2},
+                new long[] {3, 4}});
+
+        responseProcessor.addPage(sourceUri, page1);
+        assertOperatorIsUnblocked(operator);
+        Page expected = createPage(ImmutableList.of(BIGINT), new long[][] {
+                new long[] {1},
+                new long[] {3}});
+        assertPageEquals(ImmutableList.of(BIGINT), operator.getOutput(), expected);
+
+        responseProcessor.complete(sourceUri);
+        assertOperatorIsUnblocked(operator);
+        assertTrue(operator.isFinished());
+        operator.close();
+    }
+
+    @Test(invocationCount = 5000, threadPoolSize = 20)
+    public void testMultipleStreamsSameOutputColumns()
+    {
+        String taskId = "testMultipleStreamsSameOutputColumns_" + operatorId.incrementAndGet();
+
+        URI source1 = createUri("host1", taskId);
+        URI source2 = createUri("host2", taskId);
+        URI source3 = createUri("host3", taskId);
+
+        List<Type> types = ImmutableList.of(BIGINT, BIGINT, BIGINT);
+
+        MergeOperator operator = createMergeOperator(types, ImmutableList.of(0, 1, 2), ImmutableList.of(0), ImmutableList.of(ASC_NULLS_FIRST));
+        operator.addSplit(createRemoteSplit(source1));
+        operator.addSplit(createRemoteSplit(source2));
+        operator.addSplit(createRemoteSplit(source3));
+        operator.noMoreSplits();
+
+        assertFalse(operator.isFinished());
+        assertFalse(operator.isBlocked().isDone());
+
+        Page source1page1 = createPage(types, new long[][] {
+                new long[] {1, 1, 2},
+                new long[] {8, 1, 1},
+                new long[] {19, 1, 3},
+                new long[] {27, 1, 4},
+                new long[] {41, 2, 5}
+        });
+
+        Page source1page2 = createPage(types, new long[][] {
+                new long[] {55, 1, 2},
+                new long[] {89, 1, 3},
+                new long[] {101, 1, 4},
+                new long[] {202, 1, 3},
+                new long[] {399, 2, 2}
+        });
+
+        Page source1page3 = createPage(types, new long[][] {
+                new long[] {400, 1, 1},
+                new long[] {401, 1, 7},
+                new long[] {402, 1, 6}
+        });
+
+        Page source2page1 = createPage(types, new long[][] {
+                new long[] {2, 1, 2},
+                new long[] {8, 1, 1},
+                new long[] {19, 1, 3},
+                new long[] {25, 1, 4},
+                new long[] {26, 2, 5}
+        });
+
+        Page source2page2 = createPage(types, new long[][] {
+                new long[] {56, 1, 2},
+                new long[] {66, 1, 3},
+                new long[] {77, 1, 4},
+                new long[] {88, 1, 3},
+                new long[] {99, 2, 2}
+        });
+
+        Page source2page3 = createPage(types, new long[][] {
+                new long[] {99, 1, 1},
+                new long[] {100, 1, 7},
+                new long[] {100, 1, 6}
+        });
+
+        Page source3page1 = createPage(types, new long[][] {
+                new long[] {88, 1, 3},
+                new long[] {89, 1, 3},
+                new long[] {90, 1, 3},
+                new long[] {91, 1, 4},
+                new long[] {92, 2, 5}
+        });
+
+        Page source3page2 = createPage(types, new long[][] {
+                new long[] {93, 1, 2},
+                new long[] {94, 1, 3},
+                new long[] {95, 1, 4},
+                new long[] {97, 1, 3},
+                new long[] {98, 2, 2}
+        });
+
+        responseProcessor.addPage(source1, source1page1);
+        assertOperatorIsBlocked(operator);
+        responseProcessor.addPage(source2, source2page1);
+        assertOperatorIsBlocked(operator);
+        responseProcessor.addPage(source3, source3page1);
+        assertOperatorIsUnblocked(operator);
+        Page expected = createPage(types, new long[][] {
+                new long[] {1, 1, 2},
+                new long[] {2, 1, 2},
+                new long[] {8, 1, 1},
+                new long[] {8, 1, 1},
+                new long[] {19, 1, 3},
+                new long[] {19, 1, 3},
+                new long[] {25, 1, 4},
+                new long[] {26, 2, 5},
+                });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.addPage(source1, source1page2);
+        assertOperatorIsBlocked(operator);
+        responseProcessor.addPage(source2, source2page2);
+        assertOperatorIsUnblocked(operator);
+        expected = createPage(types, new long[][] {
+                new long[] {27, 1, 4},
+                new long[] {41, 2, 5},
+                new long[] {55, 1, 2},
+                new long[] {56, 1, 2},
+                new long[] {66, 1, 3},
+                new long[] {77, 1, 4},
+                new long[] {88, 1, 3},
+                new long[] {88, 1, 3},
+                new long[] {89, 1, 3},
+                new long[] {89, 1, 3},
+                new long[] {90, 1, 3},
+                new long[] {91, 1, 4},
+                new long[] {92, 2, 5}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.addPage(source3, source3page2);
+        assertOperatorIsUnblocked(operator);
+        expected = createPage(types, new long[][] {
+                new long[] {93, 1, 2},
+                new long[] {94, 1, 3},
+                new long[] {95, 1, 4},
+                new long[] {97, 1, 3},
+                new long[] {98, 2, 2}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.complete(source3);
+        assertOperatorIsUnblocked(operator);
+
+        expected = createPage(types, new long[][] {
+                new long[] {99, 2, 2}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.addPage(source2, source2page3);
+        assertOperatorIsUnblocked(operator);
+        expected = createPage(types, new long[][] {
+                new long[] {99, 1, 1},
+                new long[] {100, 1, 7},
+                new long[] {100, 1, 6}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.complete(source2);
+        assertOperatorIsUnblocked(operator);
+        expected = createPage(types, new long[][] {
+                new long[] {101, 1, 4},
+                new long[] {202, 1, 3},
+                new long[] {399, 2, 2}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.addPage(source1, source1page3);
+        assertOperatorIsUnblocked(operator);
+        expected = createPage(types, new long[][] {
+                new long[] {400, 1, 1},
+                new long[] {401, 1, 7},
+                new long[] {402, 1, 6}
+        });
+        assertPageEquals(types, operator.getOutput(), expected);
+        assertOperatorIsBlocked(operator);
+
+        responseProcessor.complete(source1);
+        assertOperatorIsUnblocked(operator);
         assertTrue(operator.isFinished());
 
         operator.close();
@@ -209,6 +409,21 @@ public class TestMergeOperator
     {
         RemoteSplit remoteSplit = new RemoteSplit(uri);
         return new Split(REMOTE_CONNECTOR_ID, new TestingTransactionHandle(UUID.randomUUID()), remoteSplit);
+    }
+
+    private static Page createPage(List<Type> types, long[][] rows)
+    {
+        checkState(types.stream().allMatch(type -> type.equals(BIGINT)));
+        PageBuilder pageBuilder = new PageBuilder(types);
+        for (long[] row : rows) {
+            checkState(row.length == types.size());
+            pageBuilder.declarePosition();
+            for (int columnIndex = 0; columnIndex < row.length; columnIndex++) {
+                long value = row[columnIndex];
+                pageBuilder.getBlockBuilder(columnIndex).writeLong(value).closeEntry();
+            }
+        }
+        return pageBuilder.build();
     }
 
     private static ExchangeClientFactory createExchangeClientFactory(HttpClient httpClient, ScheduledExecutorService executorService)
