@@ -315,6 +315,10 @@ public class ExchangeClient
             return false;
         }
 
+        if (pages.isEmpty()) {
+            return true;
+        }
+
         pageBuffer.addAll(pages);
 
         // notify all blocked callers
