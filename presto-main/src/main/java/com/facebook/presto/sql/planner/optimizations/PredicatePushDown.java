@@ -157,6 +157,10 @@ public class PredicatePushDown
         @Override
         public PlanNode visitExchange(ExchangeNode node, RewriteContext<Expression> context)
         {
+            if (node.getType() == ExchangeNode.Type.MERGE_GATHER) {
+                return node;
+            }
+
             boolean modified = false;
             ImmutableList.Builder<PlanNode> builder = ImmutableList.builder();
             for (int i = 0; i < node.getSources().size(); i++) {

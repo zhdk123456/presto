@@ -74,7 +74,7 @@ public class ProjectionPushDown
             if (source instanceof UnionNode) {
                 return pushProjectionThrough(node, (UnionNode) source);
             }
-            else if (source instanceof ExchangeNode) {
+            else if (source instanceof ExchangeNode && ((ExchangeNode) source).getType() != ExchangeNode.Type.MERGE_GATHER) {
                 return pushProjectionThrough(node, (ExchangeNode) source);
             }
             return replaceChildren(node, ImmutableList.of(source));
