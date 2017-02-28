@@ -67,6 +67,7 @@ public class MergeOperator
         private final List<Type> outputTypes;
         private final List<Integer> sortChannels;
         private final List<SortOrder> sortOrder;
+        private final MergeSortComparatorFactory mergeSortComparatorFactory;
         private boolean closed;
 
         public MergeOperatorFactory(
@@ -74,6 +75,7 @@ public class MergeOperator
                 PlanNodeId sourceId,
                 ExchangeClientSupplier exchangeClientSupplier,
                 PagesSerdeFactory serdeFactory,
+                MergeSortComparatorFactory mergeSortComparatorFactory,
                 List<Type> sourceTypes,
                 List<Integer> outputChannels,
                 List<Integer> sortChannels,
@@ -88,6 +90,7 @@ public class MergeOperator
             this.outputTypes = outputTypes(sourceTypes, outputChannels);
             this.sortChannels = requireNonNull(sortChannels, "sortChannels is null");
             this.sortOrder = requireNonNull(sortOrder, "sortOrder is null");
+            this.mergeSortComparatorFactory = requireNonNull(mergeSortComparatorFactory, "mergeSortComparatorFactory is null");
         }
 
         private static List<Type> outputTypes(List<? extends Type> sourceTypes, List<Integer> outputChannels)
@@ -122,7 +125,7 @@ public class MergeOperator
                     sourceId,
                     () -> exchangeClientSupplier.get(new UpdateSystemMemory(driverContext.getPipelineContext())),
                     serdeFactory.createPagesSerde(),
-                    new SimpleMergeSortComparator(sourceTypes, sortChannels, sortOrder),
+                    mergeSortComparatorFactory.create(sourceTypes, sortChannels, sortOrder),
                     outputChannels,
                     outputTypes);
         }
@@ -169,9 +172,7 @@ public class MergeOperator
     private final SettableFuture<Void> blockedOnSplits = SettableFuture.create();
 
     private final Set<URI> locations = new HashSet<>();
-
     private final Closer closer = Closer.create();
-    private ListenableFuture<?> blockedOnPages = null;
     private MergeSources mergeSources;
 
     private boolean closed;
@@ -225,7 +226,6 @@ public class MergeOperator
         }
 
         mergeSources = new MergeSources(builder.build());
-        blockedOnPages = mergeSources.isBlocked();
         blockedOnSplits.set(null);
     }
 
@@ -250,7 +250,7 @@ public class MergeOperator
     @Override
     public boolean isFinished()
     {
-        return closed || mergeSources.isFinished();
+        return closed || (mergeSources != null && mergeSources.isFinished());
     }
 
     @Override
@@ -259,9 +259,7 @@ public class MergeOperator
         if (!blockedOnSplits.isDone()) {
             return blockedOnSplits;
         }
-
-        checkState(blockedOnPages != null, "isBlockedOnPages is null");
-        return blockedOnPages;
+        return mergeSources.isBlocked();
     }
 
     @Override
@@ -279,9 +277,11 @@ public class MergeOperator
     @Override
     public Page getOutput()
     {
-        checkState(blockedOnPages != null, "isBlockedOnPages is null");
+        if (closed) {
+            return null;
+        }
 
-        while (blockedOnPages.isDone() && !pageBuilder.isFull()) {
+        while (mergeSources.isBlocked().isDone() && !pageBuilder.isFull()) {
             List<PageWithPosition> pages = mergeSources.getPages();
             if (pages.isEmpty()) {
                 break;
@@ -300,7 +300,6 @@ public class MergeOperator
             }
 
             pageWithPosition.incrementPosition();
-            blockedOnPages = mergeSources.isBlocked();
         }
 
         if (pageBuilder.isEmpty()) {
@@ -309,6 +308,11 @@ public class MergeOperator
         Page page = pageBuilder.build();
         operatorContext.recordGeneratedInput(page.getSizeInBytes(), page.getPositionCount());
         pageBuilder.reset();
+
+        if (mergeSources.isFinished()) {
+            close();
+        }
+
         return page;
     }
 
