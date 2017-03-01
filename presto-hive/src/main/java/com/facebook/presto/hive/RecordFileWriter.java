@@ -78,7 +78,7 @@ public class RecordFileWriter
             TypeManager typeManager)
     {
         this.path = requireNonNull(path, "path is null");
-        this.conf = requireNonNull(conf, "conf can not be null");
+        this.conf = requireNonNull(conf, "conf is null");
 
         // existing tables may have columns in a different order
         List<String> fileColumnNames = Splitter.on(',').trimResults().omitEmptyStrings().splitToList(schema.getProperty(META_TABLE_COLUMNS, ""));
@@ -163,7 +163,7 @@ public class RecordFileWriter
     {
         try {
             recordWriter.close(true);
-            // perform explicit delete of written file here as recordWriter.close() ignore the abort flag.
+            // perform explicit delete of written file here as recordWriter.close() ignores the abort flag.
             path.getFileSystem(conf).delete(path, false);
         }
         catch (IOException e) {
