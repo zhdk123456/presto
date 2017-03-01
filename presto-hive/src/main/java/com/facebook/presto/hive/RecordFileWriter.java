@@ -23,6 +23,7 @@ import com.facebook.presto.spi.type.TypeManager;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -56,6 +57,8 @@ import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFacto
 public class RecordFileWriter
         implements HiveFileWriter
 {
+    private static final Logger log = Logger.get(RecordFileWriter.class);
+
     private final Path path;
     private final JobConf conf;
     private final int fieldCount;
@@ -167,7 +170,7 @@ public class RecordFileWriter
             path.getFileSystem(conf).delete(path, false);
         }
         catch (IOException e) {
-            throw new PrestoException(HIVE_WRITER_CLOSE_ERROR, "Error rolling back write to Hive", e);
+            log.warn(e, "Error rolling back write to Hive for writer %s", this);
         }
     }
 
